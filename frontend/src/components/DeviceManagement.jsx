@@ -21,47 +21,10 @@ import {
   X
 } from 'lucide-react';
 import api from '../services/api';
-
-const PURPOSE_MAP = {
-  CHECK_IN: {
-    label: 'Cổng Vào (Check-in)',
-    icon: LogIn,
-    color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  },
-  CHECK_OUT: {
-    label: 'Cổng Ra (Check-out)',
-    icon: LogOut,
-    color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-  },
-  BOTH: {
-    label: 'Hai Chiều (Cả Hai)',
-    icon: ArrowLeftRight,
-    color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-  },
-};
-
-const RTSP_PRESETS = [
-  {
-    name: 'FaceTime HD (MacBook)',
-    url: '0',
-    location: 'Bàn lễ tân / Cửa A',
-    purpose: 'CHECK_IN',
-  },
-  {
-    name: 'Tapo C200 (IP RTSP)',
-    url: 'rtsp://hautph:H%40utph1983%21%40%23@192.168.1.8:554/stream1',
-    location: 'Sảnh chính Tòa nhà',
-    purpose: 'BOTH',
-  },
-  {
-    name: 'Hikvision / Dahua (Cổng Ra B)',
-    url: 'rtsp://admin:admin123@192.168.1.101:554/stream1',
-    location: 'Cổng xuất cảnh - Cửa Ra B',
-    purpose: 'CHECK_OUT',
-  },
-];
+import { useI18n } from '../i18n/I18nContext';
 
 const DeviceManagement = () => {
+  const { t } = useI18n();
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
@@ -74,7 +37,7 @@ const DeviceManagement = () => {
   const [formData, setFormData] = useState({
     device_name: '',
     rtsp_url: '',
-    location: 'Văn phòng chính',
+    location: 'Main Office',
     purpose: 'CHECK_IN',
     is_active: true,
   });
@@ -92,7 +55,7 @@ const DeviceManagement = () => {
         setDevices(res.data);
       }
     } catch (err) {
-      showToast(err.message || 'Không thể tải danh sách thiết bị', 'error');
+      showToast(err.message || 'Cannot fetch devices list', 'error');
     } finally {
       setLoading(false);
     }
@@ -109,14 +72,14 @@ const DeviceManagement = () => {
       const res = await api.toggleDevice(device.id);
       if (res.data) {
         showToast(
-          `Thiết bị "${device.device_name}" đã được ${
-            res.data.is_active ? 'BẬT (Khởi chạy luồng)' : 'TẮT (Tạm dừng luồng)'
+          `Camera "${device.device_name}" ${
+            res.data.is_active ? 'STARTED (Worker Active)' : 'STOPPED (Worker Standby)'
           }.`
         );
         fetchDevices();
       }
     } catch (err) {
-      showToast(err.message || 'Không thể đổi trạng thái thiết bị', 'error');
+      showToast(err.message || 'Cannot toggle device status', 'error');
     } finally {
       setTogglingId(null);
     }
@@ -126,24 +89,24 @@ const DeviceManagement = () => {
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!formData.device_name.trim() || !formData.rtsp_url.trim()) {
-      showToast('Vui lòng điền đầy đủ tên thiết bị và địa chỉ luồng RTSP', 'error');
+      showToast('Please fill in camera name and stream URL/index', 'error');
       return;
     }
 
     try {
       await api.createDevice(formData);
-      showToast(`Đã thêm camera "${formData.device_name}" thành công!`);
+      showToast(`Added camera "${formData.device_name}" successfully!`);
       setShowAddModal(false);
       setFormData({
         device_name: '',
         rtsp_url: '',
-        location: 'Văn phòng chính',
+        location: 'Main Office',
         purpose: 'CHECK_IN',
         is_active: true,
       });
       fetchDevices();
     } catch (err) {
-      showToast(err.message || 'Lỗi khi thêm thiết bị mới', 'error');
+      showToast(err.message || 'Error creating camera device', 'error');
     }
   };
 
@@ -153,78 +116,108 @@ const DeviceManagement = () => {
     if (!editingDevice) return;
 
     try {
-      await api.updateDevice(editingDevice.id, {
-        device_name: editingDevice.device_name,
-        rtsp_url: editingDevice.rtsp_url,
-        location: editingDevice.location,
-        purpose: editingDevice.purpose,
-        is_active: editingDevice.is_active,
-      });
-      showToast(`Đã cập nhật camera "${editingDevice.device_name}" thành công!`);
+      await api.updateDevice(editingDevice.id, formData);
+      showToast(`Updated camera "${formData.device_name}" successfully!`);
       setShowEditModal(false);
       setEditingDevice(null);
       fetchDevices();
     } catch (err) {
-      showToast(err.message || 'Lỗi khi cập nhật thiết bị', 'error');
+      showToast(err.message || 'Error updating camera device', 'error');
     }
   };
 
-  // Handle Delete Device
-  const handleDelete = async (device) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa camera "${device.device_name}" khỏi hệ thống?`)) {
-      return;
-    }
-
-    try {
-      await api.deleteDevice(device.id);
-      showToast(`Đã xóa camera "${device.device_name}" thành công.`);
-      fetchDevices();
-    } catch (err) {
-      showToast(err.message || 'Lỗi khi xóa thiết bị', 'error');
-    }
-  };
-
-  const applyPreset = (preset) => {
+  const openEditModal = (device) => {
+    setEditingDevice(device);
     setFormData({
-      device_name: preset.name,
-      rtsp_url: preset.url,
-      location: preset.location,
-      purpose: preset.purpose,
-      is_active: true,
+      device_name: device.device_name,
+      rtsp_url: device.rtsp_url,
+      location: device.location || '',
+      purpose: device.purpose,
+      is_active: device.is_active,
     });
+    setShowEditModal(true);
   };
 
-  const activeCount = devices.filter((d) => d.is_active).length;
+  const handleDeleteDevice = async (device) => {
+    if (window.confirm(`${t('delete_camera_confirm')} (${device.device_name})`)) {
+      try {
+        await api.deleteDevice(device.id);
+        showToast(`Removed camera "${device.device_name}"`);
+        fetchDevices();
+      } catch (err) {
+        showToast(err.message || 'Cannot delete camera device', 'error');
+      }
+    }
+  };
+
+  const PURPOSE_MAP = {
+    CHECK_IN: {
+      label: t('purpose_checkin'),
+      icon: LogIn,
+      color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    },
+    CHECK_OUT: {
+      label: t('purpose_checkout'),
+      icon: LogOut,
+      color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+    },
+    BOTH: {
+      label: t('purpose_both'),
+      icon: ArrowLeftRight,
+      color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+    },
+  };
+
+  const RTSP_PRESETS = [
+    {
+      name: 'FaceTime HD (MacBook)',
+      url: '0',
+      location: 'Reception / Gate A',
+      purpose: 'CHECK_IN',
+    },
+    {
+      name: 'Tapo C200 (IP RTSP)',
+      url: 'rtsp://hautph:H%40utph1983%21%40%23@192.168.1.8:554/stream1',
+      location: 'Main Lobby',
+      purpose: 'BOTH',
+    },
+    {
+      name: 'Hikvision / Dahua (Exit Gate B)',
+      url: 'rtsp://admin:admin123@192.168.1.101:554/stream1',
+      location: 'Customs / Exit B',
+      purpose: 'CHECK_OUT',
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed top-5 right-5 z-50 p-4 rounded-2xl shadow-2xl flex items-center space-x-3 text-sm font-semibold transition-all border ${
+          className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl border shadow-2xl flex items-center space-x-3 transition-all animate-bounce ${
             notification.type === 'error'
-              ? 'bg-red-950/90 border-red-500/80 text-red-200 shadow-red-500/20'
-              : 'bg-emerald-950/90 border-emerald-500/80 text-emerald-200 shadow-emerald-500/20'
+              ? 'bg-rose-950 border-rose-500 text-rose-200'
+              : 'bg-slate-900 border-indigo-500 text-white'
           }`}
         >
           {notification.type === 'error' ? (
-            <AlertCircle className="w-5 h-5 text-red-400" />
+            <AlertCircle className="w-5 h-5 text-rose-400" />
           ) : (
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           )}
-          <span>{notification.message}</span>
+          <span className="text-xs font-semibold">{notification.message}</span>
         </div>
       )}
 
-      {/* Header & Controls */}
+      {/* Header Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-white tracking-wide flex items-center space-x-3">
-            <Server className="w-7 h-7 text-indigo-400" />
-            <span>Quản Lý Thiết Bị Camera Tập Trung</span>
+            <Video className="w-7 h-7 text-cyan-400" />
+            <span>{t('devices_title')}</span>
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Quản lý đa luồng (Multi-threading) RTSP & Webcam cho toàn bộ chi nhánh và cửa ra vào.
+            {t('devices_sub')}
           </p>
         </div>
 
@@ -232,82 +225,46 @@ const DeviceManagement = () => {
           <button
             onClick={fetchDevices}
             disabled={loading}
-            className="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-all flex items-center space-x-2 text-xs font-semibold"
+            className="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-all"
+            title={t('refresh')}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
-            <span className="hidden sm:inline">Làm mới</span>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
           </button>
-
           <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all flex items-center space-x-2"
+            onClick={() => {
+              setFormData({
+                device_name: '',
+                rtsp_url: '',
+                location: 'Main Office',
+                purpose: 'CHECK_IN',
+                is_active: true,
+              });
+              setShowAddModal(true);
+            }}
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/30 hover:scale-105 active:scale-95 transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Thêm Camera Mới</span>
+            <span>{t('add_camera_btn')}</span>
           </button>
         </div>
       </div>
 
-      {/* Status Summary Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Tổng Thiết Bị Đăng Ký</div>
-            <div className="text-2xl font-extrabold text-white font-mono mt-1">{devices.length}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            <Video className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Đang Hoạt Động (Active)</div>
-            <div className="text-2xl font-extrabold text-emerald-400 font-mono mt-1">{activeCount}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <Activity className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Tạm Dừng (Standby)</div>
-            <div className="text-2xl font-extrabold text-slate-400 font-mono mt-1">
-              {devices.length - activeCount}
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-800 text-slate-400 border border-slate-700">
-            <Power className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
-      {/* Camera Grid Cards */}
+      {/* Devices Grid Cards */}
       {loading && devices.length === 0 ? (
-        <div className="py-24 text-center text-slate-500 text-sm space-y-2">
-          <RefreshCw className="w-8 h-8 mx-auto animate-spin text-indigo-400" />
-          <p>Đang tải danh sách thiết bị camera...</p>
+        <div className="py-24 text-center text-slate-500 text-xs space-y-3">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-cyan-400" />
+          <p>{t('loading')}</p>
         </div>
       ) : devices.length === 0 ? (
-        <div className="py-24 text-center glass-panel rounded-3xl border border-slate-800 p-8 space-y-4">
+        <div className="py-24 glass-panel rounded-3xl border border-slate-800 text-center text-slate-500 text-xs space-y-3">
           <Camera className="w-12 h-12 mx-auto text-slate-600" />
-          <div className="text-slate-300 font-bold text-base">Chưa có thiết bị camera nào</div>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Bấm nút "Thêm Camera Mới" để cấu hình camera FaceTime trên máy tính hoặc địa chỉ luồng RTSP camera IP.
-          </p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all inline-flex items-center space-x-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Camera Đầu Tiên</span>
-          </button>
+          <p className="text-slate-300 font-semibold">{t('no_data')}</p>
+          <p className="text-slate-500">{t('devices_sub')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {devices.map((device) => {
-            const isWebcam = device.rtsp_url === '0' || device.rtsp_url.toLowerCase().includes('webcam');
+            const isWebcam = device.rtsp_url === '0' || device.rtsp_url === '1';
             const purposeInfo = PURPOSE_MAP[device.purpose] || PURPOSE_MAP.CHECK_IN;
             const PurposeIcon = purposeInfo.icon;
             const isToggling = togglingId === device.id;
@@ -315,113 +272,106 @@ const DeviceManagement = () => {
             return (
               <div
                 key={device.id}
-                className={`glass-panel p-6 rounded-3xl border transition-all duration-300 flex flex-col justify-between relative overflow-hidden ${
+                className={`glass-panel rounded-3xl p-6 border transition-all duration-300 relative flex flex-col justify-between space-y-5 ${
                   device.is_active
-                    ? 'border-indigo-500/40 shadow-xl shadow-indigo-500/5 hover:border-indigo-500/70'
-                    : 'border-slate-800 opacity-80 hover:opacity-100 hover:border-slate-700'
+                    ? 'border-slate-800 hover:border-cyan-500/50 shadow-xl'
+                    : 'border-slate-800/60 opacity-60 hover:opacity-100'
                 }`}
               >
+                {/* Card Top: Icon, Device Name, Location */}
                 <div className="space-y-4">
-                  {/* Top Bar: Icon + Live Toggle */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-3 min-w-0">
                       <div
-                        className={`p-3 rounded-2xl border ${
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-md flex-shrink-0 ${
                           device.is_active
-                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                            ? isWebcam
+                              ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30'
+                              : 'bg-cyan-600/20 text-cyan-400 border-cyan-500/30'
                             : 'bg-slate-800 text-slate-500 border-slate-700'
                         }`}
                       >
-                        {isWebcam ? <Laptop className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+                        {isWebcam ? <Laptop className="w-6 h-6" /> : <Camera className="w-6 h-6" />}
                       </div>
-                      <div>
-                        <h3 className="text-base font-bold text-white tracking-wide line-clamp-1">
+                      <div className="min-w-0">
+                        <h4 className="text-base font-bold text-white tracking-wide truncate">
                           {device.device_name}
-                        </h3>
-                        <div className="flex items-center space-x-1.5 text-xs text-slate-400 mt-0.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                          <span>{device.location}</span>
+                        </h4>
+                        <div className="flex items-center space-x-1 text-xs text-slate-400 truncate mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" />
+                          <span className="truncate">{device.location || 'Main Office'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Active/Inactive Live Switch Button */}
+                    {/* Live Switch Toggle */}
                     <button
                       onClick={() => handleToggle(device)}
                       disabled={isToggling}
-                      title={device.is_active ? 'Bấm để tắt luồng' : 'Bấm để bật luồng'}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                        device.is_active ? 'bg-emerald-500' : 'bg-slate-800'
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 focus:outline-none ${
+                        device.is_active ? 'bg-emerald-500' : 'bg-slate-700'
                       }`}
+                      title={device.is_active ? t('active') : t('standby')}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                           device.is_active ? 'translate-x-6' : 'translate-x-1'
-                        } ${isToggling ? 'opacity-50' : ''}`}
+                        } ${isToggling ? 'animate-pulse' : ''}`}
                       />
                     </button>
                   </div>
 
-                  {/* RTSP Stream URL Codeblock */}
-                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono text-slate-300 break-all space-y-1">
-                    <div className="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">
-                      {isWebcam ? 'Thiết bị Video Cục Bộ' : 'Địa chỉ RTSP Stream'}
+                  {/* RTSP Stream Details */}
+                  <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-slate-400">
+                      <span>Stream:</span>
+                      <span className="font-mono text-cyan-300 font-semibold truncate max-w-[170px]">
+                        {device.rtsp_url}
+                      </span>
                     </div>
-                    <div className="text-indigo-300 line-clamp-2">{device.rtsp_url}</div>
-                  </div>
-
-                  {/* Purpose & Status Badges */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {/* Purpose Badge */}
-                    <span
-                      className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${purposeInfo.color}`}
-                    >
-                      <PurposeIcon className="w-3.5 h-3.5" />
-                      <span>{purposeInfo.label}</span>
-                    </span>
-
-                    {/* Active Status Badge */}
-                    <span
-                      className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${
-                        device.is_active
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : 'bg-slate-800 text-slate-400 border-slate-700'
-                      }`}
-                    >
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">{t('purpose')}:</span>
                       <span
-                        className={`w-1.5 h-1.5 rounded-full mr-1 ${
-                          device.is_active ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'
-                        }`}
-                      />
-                      <span>{device.is_active ? 'Đang chạy' : 'Tạm dừng'}</span>
-                    </span>
+                        className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${purposeInfo.color}`}
+                      >
+                        <PurposeIcon className="w-3 h-3" />
+                        <span>{purposeInfo.label}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Footer Action Buttons */}
-                <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">
-                    Cập nhật: {new Date(device.updated_at).toLocaleDateString('vi-VN')}
-                  </span>
-
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => {
-                        setEditingDevice(device);
-                        setShowEditModal(true);
-                      }}
-                      className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
-                      title="Sửa cấu hình"
+                {/* Card Bottom Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-xs">
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        device.is_active ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'
+                      }`}
+                    />
+                    <span
+                      className={`font-semibold ${
+                        device.is_active ? 'text-emerald-400' : 'text-slate-500'
+                      }`}
                     >
-                      <Edit3 className="w-4 h-4" />
+                      {device.is_active ? t('active') : t('standby')}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => openEditModal(device)}
+                      className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors"
+                      title={t('edit')}
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
                     </button>
-
                     <button
-                      onClick={() => handleDelete(device)}
-                      className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-all"
-                      title="Xóa camera"
+                      onClick={() => handleDeleteDevice(device)}
+                      className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                      title={t('delete')}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -431,99 +381,118 @@ const DeviceManagement = () => {
         </div>
       )}
 
-      {/* Modal: Thêm Camera Mới */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="glass-panel w-full max-w-lg p-6 rounded-3xl border border-slate-700 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center space-x-2">
-                <Video className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-lg font-bold text-white">Thêm Thiết Bị Camera Mới</h3>
-              </div>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Modal Add / Edit Camera */}
+      {(showAddModal || showEditModal) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="glass-panel w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-700 relative space-y-5">
+            <button
+              onClick={() => {
+                setShowAddModal(false);
+                setShowEditModal(false);
+              }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            {/* Quick Presets */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-400">Chọn cấu hình mẫu nhanh:</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {RTSP_PRESETS.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => applyPreset(preset)}
-                    className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 text-left transition-all text-xs space-y-1 hover:bg-indigo-950/20"
-                  >
-                    <div className="font-bold text-slate-200 line-clamp-1">{preset.name}</div>
-                    <div className="text-[10px] text-indigo-400 font-mono truncate">{preset.url}</div>
-                  </button>
-                ))}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <Video className="w-5 h-5" />
               </div>
-            </div>
-
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Tên Camera / Thiết Bị *
+                <h3 className="text-lg font-bold text-white">
+                  {showAddModal ? t('add_camera_btn') : t('edit_camera')}
+                </h3>
+                <p className="text-xs text-slate-400">{t('devices_sub')}</p>
+              </div>
+            </div>
+
+            {/* Quick Presets for New Device */}
+            {showAddModal && (
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  {t('quick_presets')}
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {RTSP_PRESETS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          device_name: p.name,
+                          rtsp_url: p.url,
+                          location: p.location,
+                          purpose: p.purpose,
+                        })
+                      }
+                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-left text-[11px] text-slate-300 hover:text-white transition-all truncate"
+                    >
+                      <div className="font-semibold truncate">{p.name}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form
+              onSubmit={showAddModal ? handleCreateSubmit : handleEditSubmit}
+              className="space-y-4 text-xs"
+            >
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">
+                  {t('camera_name')} *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Camera Cửa Ra Vào Chính"
+                  placeholder="e.g. Tapo C200 Entrance Gate"
                   value={formData.device_name}
                   onChange={(e) => setFormData({ ...formData, device_name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm focus:outline-none transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Địa chỉ RTSP Stream hoặc Chỉ số Webcam (0, 1...) *
+                <label className="block text-slate-300 font-medium mb-1">
+                  {t('rtsp_or_index')} *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="rtsp://user:pass@192.168.1.100:554/stream1 hoặc 0"
+                  placeholder="rtsp://user:pass@192.168.1.100:554/stream1 or 0"
                   value={formData.rtsp_url}
                   onChange={(e) => setFormData({ ...formData, rtsp_url: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm font-mono focus:outline-none transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white font-mono"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Nhập số <strong>0</strong> nếu dùng webcam máy tính hoặc URL luồng RTSP của Tapo/Hikvision/Dahua.
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Vị Trí / Chi Nhánh
+                  <label className="block text-slate-300 font-medium mb-1">
+                    {t('location_branch')}
                   </label>
                   <input
                     type="text"
-                    placeholder="Ví dụ: Tầng 1 - Sảnh chính"
+                    placeholder="e.g. Main Lobby Gate A"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Mục Đích Điểm Danh
+                  <label className="block text-slate-300 font-medium mb-1">
+                    {t('purpose')}
                   </label>
                   <select
                     value={formData.purpose}
                     onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white bg-slate-900"
                   >
-                    <option value="CHECK_IN">Cổng Vào (CHECK_IN)</option>
-                    <option value="CHECK_OUT">Cổng Ra (CHECK_OUT)</option>
-                    <option value="BOTH">Hai Chiều (BOTH)</option>
+                    <option value="CHECK_IN">{t('purpose_checkin')}</option>
+                    <option value="CHECK_OUT">{t('purpose_checkout')}</option>
+                    <option value="BOTH">{t('purpose_both')}</option>
                   </select>
                 </div>
               </div>
@@ -531,136 +500,32 @@ const DeviceManagement = () => {
               <div className="flex items-center space-x-2 pt-2">
                 <input
                   type="checkbox"
-                  id="is_active_checkbox"
+                  id="device-is-active"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4 bg-slate-900"
+                  className="w-4 h-4 rounded text-cyan-600 bg-slate-900 border-slate-700"
                 />
-                <label htmlFor="is_active_checkbox" className="text-xs text-slate-300 cursor-pointer">
-                  Khởi chạy kết nối và phân tích khuôn mặt ngay sau khi lưu
+                <label htmlFor="device-is-active" className="text-slate-300 font-medium cursor-pointer">
+                  {t('active')}
                 </label>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20"
-                >
-                  Lưu & Khởi Chạy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Sửa Cấu Hình Camera */}
-      {showEditModal && editingDevice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="glass-panel w-full max-w-lg p-6 rounded-3xl border border-slate-700 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center space-x-2">
-                <Edit3 className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-lg font-bold text-white">Chỉnh Sửa Thiết Bị Camera</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingDevice(null);
-                }}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Tên Camera / Thiết Bị *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editingDevice.device_name}
-                  onChange={(e) =>
-                    setEditingDevice({ ...editingDevice, device_name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm focus:outline-none transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Địa chỉ RTSP Stream hoặc Chỉ số Webcam *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editingDevice.rtsp_url}
-                  onChange={(e) =>
-                    setEditingDevice({ ...editingDevice, rtsp_url: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm font-mono focus:outline-none transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Vị Trí / Chi Nhánh
-                  </label>
-                  <input
-                    type="text"
-                    value={editingDevice.location}
-                    onChange={(e) =>
-                      setEditingDevice({ ...editingDevice, location: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm focus:outline-none transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Mục Đích Điểm Danh
-                  </label>
-                  <select
-                    value={editingDevice.purpose}
-                    onChange={(e) =>
-                      setEditingDevice({ ...editingDevice, purpose: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-sm focus:outline-none transition-colors"
-                  >
-                    <option value="CHECK_IN">Cổng Vào (CHECK_IN)</option>
-                    <option value="CHECK_OUT">Cổng Ra (CHECK_OUT)</option>
-                    <option value="BOTH">Hai Chiều (BOTH)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
+                    setShowAddModal(false);
                     setShowEditModal(false);
-                    setEditingDevice(null);
                   }}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
                 >
-                  Hủy bỏ
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20"
+                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-lg shadow-cyan-600/30 transition-all"
                 >
-                  Lưu Thay Đổi
+                  {t('save')}
                 </button>
               </div>
             </form>

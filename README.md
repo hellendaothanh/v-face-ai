@@ -1,127 +1,210 @@
-# V-Face: Hệ thống Chấm công & Giám sát Thông minh bằng AI
+<div align="center">
 
-Hệ thống Full-stack (FastAPI Backend + React Frontend) cho giải pháp chấm công nhận diện khuôn mặt thời gian thực, tích hợp **PostgreSQL pgvector** (vector 512 chiều), thư viện AI **InsightFace** (ArcFace + RetinaFace) tối ưu cho **Apple Silicon M4**, **Module Luồng Camera RTSP (Tapo C200)** và **Giao diện Dashboard Realtime WebSocket**.
+# V-Face Pro: Enterprise AI Face Recognition Attendance & HRM System
 
----
-
-## 1. Kiến trúc Hệ thống Tổng quan
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│              React 18 + Vite + Tailwind CSS                 │
-│   (Dashboard Realtime WS, Quản lý Nhân viên, Lịch sử)      │
-└───────────────▲──────────────────────────────▲──────────────┘
-                │ REST API (Axios)             │ WebSocket (/ws/attendance)
-                ▼                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 FastAPI Async Web Framework                 │
-│ ─────────────────────────────────────────────────────────── │
-│ • Multi-threaded RTSP Stream Reader (Tapo C200, No-delay)   │
-│ • VideoStreamProcessor (Frame-skip 1/5f, Face Filter 80x80)│
-│ • InsightFace AI Engine (ArcFace 512D + CoreML/MPS/NEON)    │
-│ • Cooldown 5 phút (Debounce chống spam chấm công)           │
-└───────────────┬──────────────────────────────┬──────────────┘
-                │                              │
-                ▼                              ▼
-┌─────────────────────────────┐  ┌────────────────────────────┐
-│    PostgreSQL 16 + pgvector │  │    Local File Storage      │
-│  • HNSW Cosine Index (<=>)  │  │  • Uploaded Face Vectors   │
-│  • Latency < 5ms (512-dim)  │  │  • Camera Check-in Snaps   │
-└─────────────────────────────┘  └────────────────────────────┘
-```
+[🇬🇧 English](README.md) | [🇻🇳 Tiếng Việt](README_VI.md)
 
 ---
 
-## 2. Quản lý Dịch vụ với Script Tự động (Khuyên dùng)
+</div>
 
-Hệ thống cung cấp script quản lý tiện lợi `service.sh` và `Makefile` để bật/tắt, khởi động lại và xem logs các service mà không cần mở nhiều cửa sổ terminal.
+**V-Face Pro** is an enterprise-grade full-stack smart attendance and workforce intelligence solution. Built with **FastAPI** (Python 3.13) and **React 19 + Tailwind CSS**, powered by **PostgreSQL 16 with pgvector** (512-dimensional ArcFace embeddings), **InsightFace (buffalo_l)** optimized for **Apple Silicon M4 CoreML/MPS**, **MiniFASNetV2 Anti-Spoofing**, **Multi-Threaded Camera Manager**, **Stranger Threat Detection**, **Attendance Request / Exception Management**, and **Interactive HRM Analytics BI Dashboards (Recharts)**.
 
-### 2.1. Lệnh cơ bản
+---
 
-| Thao tác | Dùng `service.sh` | Dùng `make` | Ghi chú |
+## 1. 🏗️ High-Level System Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                   Frontend: React 19 + Vite + Tailwind CSS + Recharts                  │
+│  ┌───────────────────────┬──────────────────────┬───────────────────────────────────┐  │
+│  │  Realtime Dashboard   │   HRM & Attendance   │   Camera Devices & BI Analytics   │  │
+│  │ • 3 View Modes+Fullscr│ • 5-Photo Multi-Face │ • Multi-Device RTSP Switcher      │  │
+│  │ • Bounding Box HUD    │ • Leave & Exceptions │ • Weekly Line / Dept Bar / Hourly │  │
+│  └───────────────────────┴──────────────────────┴───────────────────────────────────┘  │
+└────────────────────────────▲──────────────────────────────────▲────────────────────────┘
+                             │ REST API (Axios)                 │ WebSocket (/ws/attendance)
+                             ▼                                  ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        FastAPI Async Backend Framework (Port 8000)                     │
+│ ────────────────────────────────────────────────────────────────────────────────────── │
+│ • CameraManager: Multi-threaded worker lifecycle for concurrent RTSP / Webcam streams  │
+│ • StreamProcessor: Multi-face parallel inference pipeline (asyncio.gather)             │
+│ • Anti-Spoofing Engine: MiniFASNetV2 ONNX + Fourier Moire texture analysis             │
+│ • Continuous Self-Learning (Auto Face Update): Embeds newest vector when confidence>95%│
+│ • Stranger Threat Detector: 3-frame counter trigger (<70% match) + Audio security siren│
+│ • Exception Calculator: Dynamic work-hour synthesis matching approved leave requests   │
+│ • TrueType Font Engine: In-canvas Unicode Vietnamese text & bounding box HUD renderer  │
+└────────────────────────────┬──────────────────────────────────┬────────────────────────┘
+                             │                                  │
+                             ▼                                  ▼
+┌────────────────────────────────────────┐   ┌───────────────────────────────────────────┐
+│     PostgreSQL 16 + pgvector Database  │   │            Local File Storage             │
+│ • HNSW Cosine Distance Index (<=>)     │   │ • 5-angle face enrollment photos (.jpg)   │
+│ • Employees, FaceFeatures, Devices     │   │ • Real-time cropped check-in snapshots    │
+│ • AttendanceRecords, LeaveRequests     │   │ • AI Weights: InsightFace & MiniFASNet    │
+└────────────────────────────────────────┘   └───────────────────────────────────────────┘
+```
+
+---
+
+## 2. 🚀 Quick Start & Service Orchestration (Recommended)
+
+V-Face provides an automated service management script ([service.sh](file:///Users/hautp/Documents/Projects/v-face/service.sh)) and `Makefile` to start, stop, restart, and monitor all processes without juggling multiple terminal tabs.
+
+### 2.1. Primary Commands
+
+| Action | `service.sh` Command | `make` Command | Description |
 | :--- | :--- | :--- | :--- |
-| **Khởi động toàn bộ** | `./service.sh start` | `make start` | Tự động bật DB, Backend & Frontend |
-| **Dừng toàn bộ** | `./service.sh stop` | `make stop` | Tắt an toàn Backend & Frontend |
-| **Khởi động lại** | `./service.sh restart` | `make restart` | Restart toàn bộ services |
-| **Kiểm tra trạng thái** | `./service.sh status` | `make status` | Hiển thị PID, port & tình trạng container |
-| **Xem realtime logs** | `./service.sh logs` | `make logs` | Stream log của cả Backend & Frontend |
+| **Start All** | `./service.sh start` | `make start` | Spawns PostgreSQL container, Backend & Frontend |
+| **Stop All** | `./service.sh stop` | `make stop` | Safely terminates all running services |
+| **Restart All** | `./service.sh restart` | `make restart` | Restarts all containers and workers |
+| **Check Status** | `./service.sh status` | `make status` | Displays PIDs, listening ports (8000, 5173, 5432) & health |
+| **Realtime Logs** | `./service.sh logs` | `make logs` | Streams consolidated backend & frontend logs |
 
-### 2.2. Điều khiển riêng lẻ từng thành phần
+### 2.2. Granular Service Control
 
 ```bash
-# Quản lý riêng Backend (Port 8000)
-./service.sh start backend     # hoặc: make start-backend
-./service.sh stop backend      # hoặc: make stop-backend
+# Manage Backend only (FastAPI on Port 8000)
 ./service.sh restart backend
-./service.sh logs backend      # Xem log file: logs/backend.log
+./service.sh logs backend      # Output file: logs/backend.log
 
-# Quản lý riêng Frontend (Port 5173)
-./service.sh start frontend    # hoặc: make start-frontend
-./service.sh stop frontend     # hoặc: make stop-frontend
+# Manage Frontend only (Vite/React on Port 5173)
 ./service.sh restart frontend
-./service.sh logs frontend     # Xem log file: logs/frontend.log
+./service.sh logs frontend     # Output file: logs/frontend.log
 
-# Quản lý Database (Postgres pgvector)
-./service.sh start db
-./service.sh stop db
+# Manage Database only (Postgres pgvector container)
+./service.sh restart db
 ```
 
 ---
 
-## 3. Khởi chạy Thủ công (Dành cho Development / Debug)
+## 3. 💻 Manual Setup & Local Development
 
-Nếu bạn muốn chạy từng dịch vụ trực tiếp trên terminal để debug:
-
-### Bước 1: Khởi động Cơ sở dữ liệu PostgreSQL + pgvector
+### Step 1: Start PostgreSQL + pgvector Docker Container
 ```bash
 docker compose up -d
 ```
 
-### Bước 2: Chạy Backend (FastAPI + AI Engine)
+### Step 2: Start FastAPI Backend
 ```bash
-# Kích hoạt môi trường ảo
+# Activate Python virtual environment
 source venv/bin/activate
 
-# Cài đặt thư viện nếu chưa cài
+# Install dependencies
 pip install -r requirements.txt
 
-# Khởi chạy Backend server
+# Run Uvicorn ASGI server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-- **Backend API**: `http://localhost:8000`
-- **Swagger Docs**: `http://localhost:8000/docs`
-- **WebSocket Endpoint**: `ws://localhost:8000/ws/attendance`
+- **Backend Base URL**: `http://localhost:8000`
+- **Interactive Swagger Docs**: `http://localhost:8000/docs`
+- **Live WebSocket Feed**: `ws://localhost:8000/ws/attendance`
 
-### Bước 3: Chạy Frontend (React + Vite + Tailwind CSS)
-Mở một Terminal mới:
+### Step 3: Start Vite + React Frontend
+In a new terminal window:
 ```bash
 cd frontend
-
-# Cài đặt packages
 npm install
-
-# Khởi chạy Frontend Dev Server
 npm run dev
 ```
-- **Frontend Web**: `http://localhost:5173`
+- **Frontend Web Dashboard**: `http://localhost:5173`
 
 ---
 
-## 4. Các Màn hình Chức năng trên Frontend
+## 4. 🌟 Key Enterprise Features
 
-1. **Dashboard Realtime (Màn hình 1)**:
-   - Tự động mở kết nối WebSocket `ws://localhost:8000/ws/attendance`.
-   - Nhận diện sự kiện điểm danh từ Camera Tapo C200 đẩy về tức thì kèm ảnh crop thumbnail Base64.
-   - Đẩy bản ghi mới nhất lên đầu danh sách mà không cần reload trang.
-   - Thẻ hiển thị nổi bật người điểm danh gần nhất kèm độ chính xác (Confidence Score %).
-   - Nút bật/tắt nhanh luồng Camera RTSP.
+### 4.1. 🖥️ Realtime AI Live Monitor (Multi-View System)
+- **4 Ergonomic View Modes**:
+  - **Standard (5/7 Grid)**: Balanced view between live video and attendance feed.
+  - **Wide (8/4 Grid)**: 2/3 wide camera view for large control rooms.
+  - **Cinema (12/12 Full-Width)**: Top ultra-wide video monitor + dual bottom telemetry cards.
+  - **Fullscreen Mode (`Maximize2`)**: Full-screen kiosk display for reception desks and security gates.
+- **Dynamic AI HUD Bounding Boxes**:
+  - 🟢 **Emerald Box**: Verified employee check-in + Employee code + Confidence %.
+  - ✨ **Gold Box**: Auto-Learned template update triggered ($\ge 95\%$).
+  - 🟡 **Amber Box**: Employee already checked in (5-minute cooldown debounce).
+  - 🔴 **Rose Box**: Unknown stranger detected ($< 70\%$ match).
+  - 🚨 **Flashing Crimson Box**: Anti-spoofing attack blocked.
 
-2. **Quản lý Nhân viên (Màn hình 2)**:
-   - Danh sách nhân viên phân trang kèm trạng thái số lượng vector khuôn mặt đã đăng ký.
-   - Modal thêm nhân viên mới (mã NV, họ tên, email, phòng ban, vị trí).
-   - Modal upload 1 hoặc nhiều ảnh chân dung (.jpg, .png, .webp) gửi `FormData` lên API `POST /api/v1/employees/{id}/register-face` để trích xuất vector 512 chiều.
+### 4.2. 🛡️ Face Anti-Spoofing & Stranger Threat Alert
+- **Liveness Detection (MiniFASNetV2 ONNX + Fourier Moire Analysis)**: Detects printed photos, smartphone screen replays, and tablet presentations.
+- **Stranger Alert Engine**: Consecutive 3-frame counter triggers real-time WebSocket security broadcasts, snapshots, and audio alarm sirens.
 
-3. **Lịch sử Chấm công (Màn hình 3)**:
-   - Bảng tra cứu lịch sử chấm công chi tiết.
-   - Bộ lọc theo ngày (Từ ngày - Đến ngày), lọc theo Mã nhân viên và Phòng ban.
-   - Hiển thị loại chấm công (`AUTO` / `CHECK_IN` / `CHECK_OUT`), độ tin cậy AI và thiết bị ghi nhận.
+### 4.3. 👥 Multi-Template Enrollment & Continuous Self-Learning (Auto Face Update)
+- **5-Angle Photo Registration**: Enrolls Portrait, Left Tilt, Right Tilt, Slight Downward, and Smile angles to maximize accuracy under angled camera views.
+- **Continuous Self-Learning**: When an employee checks in with high confidence ($\ge 95\%$), the backend seamlessly saves the new feature vector to PostgreSQL, allowing the system to self-adapt as employees change hairstyles or age over time.
+
+### 4.4. 📝 Attendance Requests & Leave Exception Management
+- **4 Supported Request Types**:
+  1. `HALF_DAY_LEAVE_AM`: Morning half-day leave (Credited 0.5 work-day).
+  2. `HALF_DAY_LEAVE_PM`: Afternoon half-day leave (Credited 0.5 work-day).
+  3. `BUSINESS_TRIP`: Offsite business trip (Credited 1.0 work-day).
+  4. `LATE_EXCUSE`: Late arrival / early departure justification (Credited 1.0 work-day, waives penalties).
+- **Approval Workflow & Daily Synthesis**: Manager review workflow automatically reconciles daily timecards against approved exemptions.
+
+### 4.5. 📹 Centralized Multi-Camera Manager (`CameraManager`)
+- **Multi-Threaded Architecture**: Manages multiple concurrent RTSP cameras (Tapo C200, Hikvision, Dahua) and built-in FaceTime HD webcams.
+- **Real-Time Remote Toggle Switch**: Instantly start or stop camera workers via `PUT /api/v1/devices/{id}/toggle`.
+- **Purpose Categorization**: Assigns cameras as `CHECK_IN` (Entrance), `CHECK_OUT` (Exit), or `BOTH` (Bi-directional gate).
+
+### 4.6. 📊 Interactive HRM Analytics & BI Dashboard (Recharts)
+- 📈 **LineChart**: 7/14/30-day weekly punctuality rate trend.
+- 📊 **BarChart**: Department lateness distribution across IT, Engineering, Sales, HR, etc.
+- 🌊 **AreaChart**: 30-minute hourly check-in arrival density curves with gradient fills.
+- 📌 **Executive KPI Cards**: Average punctuality rate, peak arrival time slot, most punctual department, and total daily throughput.
+
+---
+
+## 5. 📡 REST API & WebSocket Endpoint Reference
+
+| Module | Method | Endpoint | Description |
+| :--- | :---: | :--- | :--- |
+| **Employees** | `GET` | `/api/v1/employees` | List paginated employees |
+| | `POST` | `/api/v1/employees` | Create employee profile |
+| | `POST` | `/api/v1/employees/{id}/register-face` | Extract & register 512D face embeddings |
+| | `DELETE` | `/api/v1/employees/{id}` | Delete employee and associated face vectors |
+| **Attendance** | `GET` | `/api/v1/attendance` | Query historical attendance logs with filters |
+| | `POST` | `/api/v1/attendance/check-in` | Manual photo upload check-in |
+| **Requests** | `GET` | `/api/v1/requests` | List leave and exception requests |
+| | `POST` | `/api/v1/requests` | Submit new attendance request |
+| | `PUT` | `/api/v1/requests/{id}/approve` | Approve request |
+| | `PUT` | `/api/v1/requests/{id}/reject` | Reject request |
+| | `GET` | `/api/v1/requests/daily-summary` | Generate daily work-day synthesis report |
+| **Devices** | `GET` | `/api/v1/devices` | List camera devices with live FPS and telemetry |
+| | `POST` | `/api/v1/devices` | Add new RTSP / Webcam camera device |
+| | `PUT` | `/api/v1/devices/{id}/toggle` | Remote live toggle (start/stop worker thread) |
+| | `PUT` | `/api/v1/devices/{id}` | Update device configuration |
+| | `DELETE` | `/api/v1/devices/{id}` | Delete camera device |
+| **Analytics BI**| `GET` | `/api/v1/analytics/weekly-punctuality` | 7-day punctuality rate trend (LineChart) |
+| | `GET` | `/api/v1/analytics/department-lateness`| Department lateness statistics (BarChart) |
+| | `GET` | `/api/v1/analytics/hourly-density` | 30-min time slot check-in density (AreaChart) |
+| | `GET` | `/api/v1/analytics/summary` | Executive HRM KPI summary metrics |
+| **Camera & WS**| `GET` | `/api/v1/camera/status` | Video stream status & AI diagnostics |
+| | `GET` | `/api/v1/camera/video_feed` | Live MJPEG video stream with HUD overlays |
+| | `WS` | `/ws/attendance` | Real-time WebSocket event broadcaster |
+
+---
+
+## 6. ⚙️ Environment Configuration (`.env`)
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `POSTGRES_SERVER` | `127.0.0.1` | PostgreSQL database host address |
+| `POSTGRES_PORT` | `5432` | Database port |
+| `POSTGRES_USER` / `PASSWORD` | `postgres` / `postgres123` | Database credentials |
+| `POSTGRES_DB` | `vface_db` | PostgreSQL database name |
+| `FACE_MODEL_NAME` | `buffalo_l` | InsightFace model name (ArcFace 512D) |
+| `CAMERA_BLUR_THRESHOLD` | `15.0` | Motion blur Laplacian variance threshold |
+| `CAMERA_MIN_FACE_SIZE` | `60` | Minimum bounding box size in pixels |
+| `CAMERA_SIMILARITY_THRESHOLD`| `0.58` | Cosine similarity threshold for positive identification |
+| `LIVENESS_THRESHOLD` | `0.50` | Anti-Spoofing real-face confidence threshold |
+| `STRANGER_CONFIDENCE_THRESHOLD`| `0.70` | Similarity threshold below which a face is marked stranger |
+| `STRANGER_CONSECUTIVE_FRAMES` | `3` | Frame count required before firing stranger alert |
+| `STRANGER_COOLDOWN_SECONDS` | `60` | Cooldown period between stranger security alerts |
+
+---
+
+## 7. 📄 License & Attribution
+
+Developed with ❤️ for intelligent enterprise workforce automation. Powered by [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), and [React](https://react.dev/).

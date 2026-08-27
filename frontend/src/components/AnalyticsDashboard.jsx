@@ -33,8 +33,10 @@ import {
   Cell
 } from 'recharts';
 import api from '../services/api';
+import { useI18n } from '../i18n/I18nContext';
 
 const AnalyticsDashboard = () => {
+  const { t } = useI18n();
   const [weeklyData, setWeeklyData] = useState([]);
   const [deptData, setDeptData] = useState([]);
   const [densityData, setDensityData] = useState([]);
@@ -110,10 +112,10 @@ const AnalyticsDashboard = () => {
         <div>
           <h2 className="text-2xl font-black text-white tracking-wide flex items-center space-x-3">
             <TrendingUp className="w-7 h-7 text-indigo-400" />
-            <span>Dashboard Phân Tích & Báo Cáo Chuyên Sâu (HRM BI)</span>
+            <span>{t('analytics_title')}</span>
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Biểu đồ xu hướng đúng giờ, mật độ khung giờ check-in và tỷ lệ đi muộn của từng phòng ban.
+            {t('analytics_sub')}
           </p>
         </div>
 
@@ -128,7 +130,7 @@ const AnalyticsDashboard = () => {
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              7 Ngày
+              {t('range_7_days')}
             </button>
             <button
               onClick={() => setDateRangeDays(14)}
@@ -138,7 +140,7 @@ const AnalyticsDashboard = () => {
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              14 Ngày
+              {t('range_14_days')}
             </button>
             <button
               onClick={() => setDateRangeDays(30)}
@@ -148,7 +150,7 @@ const AnalyticsDashboard = () => {
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              30 Ngày
+              {t('range_30_days')}
             </button>
           </div>
 
@@ -158,7 +160,7 @@ const AnalyticsDashboard = () => {
             className="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-all flex items-center space-x-2 text-xs font-semibold"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
-            <span className="hidden sm:inline">Tải lại</span>
+            <span className="hidden sm:inline">{t('refresh')}</span>
           </button>
         </div>
       </div>
@@ -169,7 +171,7 @@ const AnalyticsDashboard = () => {
         <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Tỷ Lệ Đúng Giờ Tuần Này
+              {t('kpi_weekly_punctuality')}
             </span>
             <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <CheckCircle2 className="w-5 h-5" />
@@ -185,7 +187,7 @@ const AnalyticsDashboard = () => {
             </span>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Mục tiêu SLA:</span>
+            <span>{t('kpi_target_sla')}</span>
             <span className="text-emerald-400 font-mono font-bold">&gt; 95%</span>
           </div>
         </div>
@@ -194,7 +196,7 @@ const AnalyticsDashboard = () => {
         <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Tổng Check-in Hôm Nay
+              {t('kpi_today_checkins')}
             </span>
             <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <Users className="w-5 h-5" />
@@ -204,12 +206,11 @@ const AnalyticsDashboard = () => {
             <div className="text-3xl font-black text-white font-mono">
               {summaryData?.today_checkins ?? 0}
             </div>
-            <span className="text-xs text-slate-400">lượt quét</span>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Tổng nhân sự:</span>
+            <span>{t('kpi_active_employees')}</span>
             <span className="text-indigo-400 font-mono font-bold">
-              {summaryData?.total_active_employees ?? 0} người
+              {summaryData?.total_active_employees ?? 0}
             </span>
           </div>
         </div>
@@ -218,7 +219,7 @@ const AnalyticsDashboard = () => {
         <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Khung Giờ Cao Điểm Nhất
+              {t('kpi_peak_hours')}
             </span>
             <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Clock className="w-5 h-5" />
@@ -230,8 +231,8 @@ const AnalyticsDashboard = () => {
             </div>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Lưu lượng:</span>
-            <span className="text-cyan-400 font-mono font-bold">Chiếm 65% lượt đến</span>
+            <span>{t('kpi_peak_traffic')}</span>
+            <span className="text-cyan-400 font-mono font-bold">65%</span>
           </div>
         </div>
 
@@ -239,7 +240,7 @@ const AnalyticsDashboard = () => {
         <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Phòng Ban Chuyên Cần Nhất
+              {t('kpi_top_dept')}
             </span>
             <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Award className="w-5 h-5" />
@@ -247,11 +248,11 @@ const AnalyticsDashboard = () => {
           </div>
           <div className="flex items-baseline space-x-2">
             <div className="text-2xl font-black text-amber-300 tracking-wide">
-              {summaryData?.top_punctual_department ?? 'Kỹ thuật'}
+              {summaryData?.top_punctual_department ?? 'Engineering'}
             </div>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Tỷ lệ đúng giờ:</span>
+            <span>{t('on_time_rate_name')}:</span>
             <span className="text-amber-400 font-mono font-bold">100%</span>
           </div>
         </div>
@@ -264,15 +265,15 @@ const AnalyticsDashboard = () => {
             <TrendingUp className="w-5 h-5 text-indigo-400" />
             <div>
               <h3 className="text-base font-bold text-white tracking-wide">
-                Biểu đồ 1: Xu Hướng Đúng Giờ Theo Ngày ({dateRangeDays} Ngày Gần Nhất)
+                {t('chart_1_title')} ({dateRangeDays} {t('range_7_days').includes('Days') ? 'Days' : 'Ngày'})
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Theo dõi tỷ lệ (%) nhân viên đi làm đúng giờ (trước 08:30 hoặc có đơn công tác/ngoại lệ được duyệt).
+                {t('chart_1_sub')}
               </p>
             </div>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            LineChart Analytics
+            LineChart
           </span>
         </div>
 
@@ -306,7 +307,7 @@ const AnalyticsDashboard = () => {
               <Line
                 type="monotone"
                 dataKey="punctuality_rate"
-                name="Tỷ lệ đúng giờ"
+                name={t('on_time_rate_name')}
                 unit="%"
                 stroke="#6366f1"
                 strokeWidth={3}
@@ -327,10 +328,10 @@ const AnalyticsDashboard = () => {
               <Building2 className="w-5 h-5 text-purple-400" />
               <div>
                 <h3 className="text-base font-bold text-white tracking-wide">
-                  Biểu đồ 2: Tỷ Lệ Đi Muộn Theo Phòng Ban
+                  {t('chart_2_title')}
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Thống kê số lượt đi muộn và tỷ lệ đi muộn của từng phòng ban trong 30 ngày qua.
+                  {t('chart_2_sub')}
                 </p>
               </div>
             </div>
@@ -359,8 +360,7 @@ const AnalyticsDashboard = () => {
                 />
                 <Bar
                   dataKey="late_count"
-                  name="Số lượt đi muộn"
-                  unit=" lượt"
+                  name={t('late_count_name')}
                   fill="#f43f5e"
                   radius={[8, 8, 0, 0]}
                 >
@@ -373,8 +373,7 @@ const AnalyticsDashboard = () => {
                 </Bar>
                 <Bar
                   dataKey="on_time_count"
-                  name="Số lượt đúng giờ"
-                  unit=" lượt"
+                  name={t('on_time_count_name')}
                   fill="#10b981"
                   radius={[8, 8, 0, 0]}
                 />
@@ -390,10 +389,10 @@ const AnalyticsDashboard = () => {
               <Clock className="w-5 h-5 text-cyan-400" />
               <div>
                 <h3 className="text-base font-bold text-white tracking-wide">
-                  Biểu đồ 3: Mật Độ Check-in Theo Khung Giờ
+                  {t('chart_3_title')}
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Phân bố số lượng nhân viên chấm công theo các khung giờ 30 phút trong ngày.
+                  {t('chart_3_sub')}
                 </p>
               </div>
             </div>
@@ -429,8 +428,7 @@ const AnalyticsDashboard = () => {
                 <Area
                   type="monotone"
                   dataKey="checkin_count"
-                  name="Số người check-in"
-                  unit=" người"
+                  name={t('checkin_count_name')}
                   stroke="#06b6d4"
                   strokeWidth={3}
                   fillOpacity={1}

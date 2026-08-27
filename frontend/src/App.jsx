@@ -8,8 +8,10 @@ import RequestManagement from './components/RequestManagement';
 import DeviceManagement from './components/DeviceManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import api from './services/api';
+import { useI18n } from './i18n/I18nContext';
 
 function App() {
+  const { t } = useI18n();
   const [currentTab, setCurrentTab] = useState(NAV_TABS.DASHBOARD);
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [isApiConnected, setIsApiConnected] = useState(null); // null = checking, true = online, false = offline
@@ -28,7 +30,7 @@ function App() {
     } catch (err) {
       console.warn('Could not connect to backend API:', err.message);
       setIsApiConnected(false);
-      setApiError(err.message || 'Không thể kết nối đến Backend API');
+      setApiError(err.message || 'Cannot connect to Backend API');
     }
   }, []);
 
@@ -42,36 +44,36 @@ function App() {
     switch (currentTab) {
       case NAV_TABS.DASHBOARD:
         return {
-          title: 'Dashboard Giám Sát Realtime',
-          subtitle: 'Luồng camera kết hợp nhận diện khuôn mặt AI và bắn sự kiện WebSocket trực tiếp',
+          title: t('header_dashboard_title'),
+          subtitle: t('header_dashboard_sub'),
         };
       case NAV_TABS.EMPLOYEES:
         return {
-          title: 'Quản Lý Hồ Sơ Nhân Viên',
-          subtitle: 'Thêm mới nhân viên và đăng ký trích xuất vector khuôn mặt 512 chiều vào PostgreSQL pgvector',
+          title: t('header_employees_title'),
+          subtitle: t('header_employees_sub'),
         };
       case NAV_TABS.REQUESTS:
         return {
-          title: 'Quản Lý Đơn Từ & Xử Lý Ngoại Lệ Chấm Công',
-          subtitle: 'Duyệt đơn nghỉ nửa ngày sáng/chiều, đi công tác, giải trình đi trễ về sớm và tự động tính công',
+          title: t('header_requests_title'),
+          subtitle: t('header_requests_sub'),
         };
       case NAV_TABS.ATTENDANCE:
         return {
-          title: 'Báo Cáo & Lịch Sử Chấm Công',
-          subtitle: 'Tra cứu, lọc dữ liệu chấm công chi tiết theo ngày và mã nhân viên',
+          title: t('header_attendance_title'),
+          subtitle: t('header_attendance_sub'),
         };
       case NAV_TABS.DEVICES:
         return {
-          title: 'Quản Lý Thiết Bị Camera Tập Trung',
-          subtitle: 'Cấu hình đa luồng RTSP / Webcam, bật/tắt thiết bị thời gian thực và phân quyền Cổng Vào/Ra',
+          title: t('header_devices_title'),
+          subtitle: t('header_devices_sub'),
         };
       case NAV_TABS.ANALYTICS:
         return {
-          title: 'Dashboard Phân Tích & Báo Cáo Chuyên Sâu (HRM BI)',
-          subtitle: 'Biểu đồ trực quan xu hướng đúng giờ, mật độ check-in theo khung giờ và thống kê đi muộn theo phòng ban',
+          title: t('header_analytics_title'),
+          subtitle: t('header_analytics_sub'),
         };
       default:
-        return { title: 'V-Face System', subtitle: 'Hệ thống Chấm công AI' };
+        return { title: 'V-Face System', subtitle: 'AI Attendance & HRM System' };
     }
   };
 

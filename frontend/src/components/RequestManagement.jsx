@@ -26,57 +26,10 @@ import {
   Timer
 } from 'lucide-react';
 import api from '../services/api';
-
-const REQUEST_TYPE_CONFIG = {
-  HALF_DAY_LEAVE_AM: {
-    label: 'Nghỉ nửa ngày sáng',
-    desc: 'Ca chiều làm việc từ 13:00 (Hệ thống tính đúng giờ nếu check-in trước 13:15)',
-    badge: 'Nghỉ ca sáng (0.5 công)',
-    color: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
-    icon: Timer,
-  },
-  HALF_DAY_LEAVE_PM: {
-    label: 'Nghỉ nửa ngày chiều',
-    desc: 'Ca sáng kết thúc lúc 12:00 (Hệ thống tính đúng giờ nếu check-out sau 12:00)',
-    badge: 'Nghỉ ca chiều (0.5 công)',
-    color: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25',
-    icon: CalendarCheck,
-  },
-  BUSINESS_TRIP: {
-    label: 'Đi công tác ngoài giờ',
-    desc: 'Ghi nhận đủ 1.0 công và miễn trừ các quy định đi muộn / về sớm trong ngày',
-    badge: 'Công tác (1.0 công)',
-    color: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25',
-    icon: Building2,
-  },
-  LATE_EXCUSE: {
-    label: 'Giải trình đi muộn / về sớm',
-    desc: 'Bổ sung lý do công việc hoặc cá nhân hợp lệ để điều chỉnh bản ghi chấm công',
-    badge: 'Giải trình hợp lệ',
-    color: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
-    icon: FileSignature,
-  },
-};
-
-const STATUS_CONFIG = {
-  PENDING: {
-    label: 'Chờ phê duyệt',
-    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    icon: Clock,
-  },
-  APPROVED: {
-    label: 'Đã phê duyệt',
-    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-    icon: CheckCircle2,
-  },
-  REJECTED: {
-    label: 'Từ chối',
-    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-    icon: XCircle,
-  },
-};
+import { useI18n } from '../i18n/I18nContext';
 
 const RequestManagement = () => {
+  const { t, language } = useI18n();
   const [activeSubTab, setActiveSubTab] = useState('requests'); // 'requests' | 'daily_summary'
 
   // Data States
@@ -110,11 +63,56 @@ const RequestManagement = () => {
     target_date: new Date().toISOString().split('T')[0],
     reason: '',
   });
-  const [approvalNote, setApprovalNote] = useState('Đã đối chiếu thông tin và phê duyệt');
-  const [approverName, setApproverName] = useState('Quản lý Phòng Ban');
+  const [approvalNote, setApprovalNote] = useState('Reviewed and approved');
+  const [approverName, setApproverName] = useState('HR Manager');
   const [rejectReason, setRejectReason] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [actionFeedback, setActionFeedback] = useState(null);
+
+  const REQUEST_TYPE_CONFIG = {
+    HALF_DAY_LEAVE_AM: {
+      label: t('req_half_day_am'),
+      badge: 'Morning Leave (0.5d)',
+      color: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
+      icon: Timer,
+    },
+    HALF_DAY_LEAVE_PM: {
+      label: t('req_half_day_pm'),
+      badge: 'Afternoon Leave (0.5d)',
+      color: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25',
+      icon: CalendarCheck,
+    },
+    BUSINESS_TRIP: {
+      label: t('req_business_trip'),
+      badge: 'Business Trip (1.0d)',
+      color: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25',
+      icon: Building2,
+    },
+    LATE_EXCUSE: {
+      label: t('req_late_excuse'),
+      badge: 'Late Excuse (1.0d)',
+      color: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+      icon: FileSignature,
+    },
+  };
+
+  const STATUS_CONFIG = {
+    PENDING: {
+      label: t('status_pending'),
+      badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      icon: Clock,
+    },
+    APPROVED: {
+      label: t('status_approved'),
+      badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      icon: CheckCircle2,
+    },
+    REJECTED: {
+      label: t('status_rejected'),
+      badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+      icon: XCircle,
+    },
+  };
 
   // Fetch Employees for dropdown
   const fetchEmployeesList = async () => {
@@ -186,7 +184,7 @@ const RequestManagement = () => {
   const handleCreateRequest = async (e) => {
     e.preventDefault();
     if (!createForm.employee_id || !createForm.reason.trim()) {
-      alert('Vui lòng chọn nhân viên và nhập nội dung giải trình');
+      alert('Please select employee and provide a reason');
       return;
     }
     setFormSubmitting(true);
@@ -202,7 +200,7 @@ const RequestManagement = () => {
       fetchRequests();
       setActionFeedback({
         type: 'success',
-        message: 'Tạo đơn ngoại lệ chấm công thành công.',
+        message: 'Submitted attendance exception request successfully.',
       });
     } catch (err) {
       alert(err.message);
@@ -225,7 +223,7 @@ const RequestManagement = () => {
       fetchRequests();
       setActionFeedback({
         type: 'success',
-        message: res.message || 'Phê duyệt đơn thành công và đã tự động tính toán lại dữ liệu công nhật.',
+        message: res.message || 'Request approved successfully.',
       });
     } catch (err) {
       alert(err.message);
@@ -237,7 +235,7 @@ const RequestManagement = () => {
   // Handle Reject Request
   const handleReject = async () => {
     if (!selectedRequest || !rejectReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối đơn');
+      alert('Please provide rejection reason');
       return;
     }
     setFormSubmitting(true);
@@ -251,7 +249,7 @@ const RequestManagement = () => {
       fetchRequests();
       setActionFeedback({
         type: 'info',
-        message: 'Đã từ chối đơn theo quy định.',
+        message: 'Request rejected.',
       });
     } catch (err) {
       alert(err.message);
@@ -260,13 +258,13 @@ const RequestManagement = () => {
     }
   };
 
-  // Summary Metrics
   const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
   const approvedCount = requests.filter((r) => r.status === 'APPROVED').length;
   const rejectedCount = requests.filter((r) => r.status === 'REJECTED').length;
+  const localeCode = language === 'vi' ? 'vi-VN' : 'en-US';
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto animate-fade-in text-slate-200">
+    <div className="space-y-6 animate-fade-in text-slate-200">
       {/* Action Notification */}
       {actionFeedback && (
         <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center justify-between animate-fade-in shadow-lg">
@@ -296,7 +294,7 @@ const RequestManagement = () => {
             }`}
           >
             <ClipboardCheck className="w-4 h-4" />
-            <span>Danh Sách Đơn Từ & Phê Duyệt</span>
+            <span>{t('requests_list_title')}</span>
             {pendingCount > 0 && (
               <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500 text-slate-950 font-mono">
                 {pendingCount}
@@ -313,7 +311,7 @@ const RequestManagement = () => {
             }`}
           >
             <CalendarDays className="w-4 h-4" />
-            <span>Báo Cáo Công Tổng Hợp Cuối Ngày</span>
+            <span>{t('daily_summary_title')}</span>
           </button>
         </div>
 
@@ -324,7 +322,7 @@ const RequestManagement = () => {
               <button
                 onClick={fetchRequests}
                 className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50"
-                title="Làm mới"
+                title={t('refresh')}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </button>
@@ -333,7 +331,7 @@ const RequestManagement = () => {
                 className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/25 transition-all hover:scale-105"
               >
                 <Plus className="w-4 h-4" />
-                <span>Tạo Đơn Ngoại Lệ Mới</span>
+                <span>{t('create_request_btn')}</span>
               </button>
             </>
           ) : (
@@ -350,7 +348,7 @@ const RequestManagement = () => {
               <button
                 onClick={fetchDailySummary}
                 className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50"
-                title="Tính lại bảng công"
+                title={t('refresh')}
               >
                 <RefreshCw className={`w-4 h-4 ${loadingSummary ? 'animate-spin' : ''}`} />
               </button>
@@ -366,7 +364,7 @@ const RequestManagement = () => {
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
               <div className="text-xs text-slate-400 flex items-center justify-between">
-                <span>Tổng đơn đăng ký</span>
+                <span>{t('total')}</span>
                 <FileText className="w-4 h-4 text-indigo-400" />
               </div>
               <div className="text-2xl font-bold text-white font-mono">{total}</div>
@@ -374,7 +372,7 @@ const RequestManagement = () => {
 
             <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
               <div className="text-xs text-slate-400 flex items-center justify-between">
-                <span>Đang chờ duyệt</span>
+                <span>{t('status_pending')}</span>
                 <Clock className="w-4 h-4 text-amber-400" />
               </div>
               <div className="text-2xl font-bold text-amber-400 font-mono">{pendingCount}</div>
@@ -382,7 +380,7 @@ const RequestManagement = () => {
 
             <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
               <div className="text-xs text-slate-400 flex items-center justify-between">
-                <span>Đã phê duyệt</span>
+                <span>{t('status_approved')}</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="text-2xl font-bold text-emerald-400 font-mono">{approvedCount}</div>
@@ -390,7 +388,7 @@ const RequestManagement = () => {
 
             <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
               <div className="text-xs text-slate-400 flex items-center justify-between">
-                <span>Đã từ chối</span>
+                <span>{t('status_rejected')}</span>
                 <XCircle className="w-4 h-4 text-rose-400" />
               </div>
               <div className="text-2xl font-bold text-rose-400 font-mono">{rejectedCount}</div>
@@ -408,7 +406,7 @@ const RequestManagement = () => {
                   setSearchEmployee(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Tìm kiếm theo mã nhân viên..."
+                placeholder={t('search_employee_placeholder')}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs text-white placeholder-slate-400 focus:outline-none"
               />
             </div>
@@ -421,10 +419,10 @@ const RequestManagement = () => {
               }}
               className="px-3.5 py-2.5 rounded-xl glass-input text-xs text-slate-200 bg-slate-900 border border-slate-800"
             >
-              <option value="">Tất cả trạng thái</option>
-              <option value="PENDING">Chờ phê duyệt (PENDING)</option>
-              <option value="APPROVED">Đã phê duyệt (APPROVED)</option>
-              <option value="REJECTED">Từ chối (REJECTED)</option>
+              <option value="">{t('filter_status_all')}</option>
+              <option value="PENDING">{t('status_pending')}</option>
+              <option value="APPROVED">{t('status_approved')}</option>
+              <option value="REJECTED">{t('status_rejected')}</option>
             </select>
 
             <select
@@ -435,11 +433,11 @@ const RequestManagement = () => {
               }}
               className="px-3.5 py-2.5 rounded-xl glass-input text-xs text-slate-200 bg-slate-900 border border-slate-800"
             >
-              <option value="">Tất cả danh mục đơn</option>
-              <option value="HALF_DAY_LEAVE_AM">Nghỉ nửa ngày sáng (Ca chiều từ 13:00)</option>
-              <option value="HALF_DAY_LEAVE_PM">Nghỉ nửa ngày chiều (Ca sáng đến 12:00)</option>
-              <option value="BUSINESS_TRIP">Đi công tác ngoài giờ</option>
-              <option value="LATE_EXCUSE">Giải trình đi muộn / về sớm</option>
+              <option value="">{t('all')}</option>
+              <option value="HALF_DAY_LEAVE_AM">{t('req_half_day_am')}</option>
+              <option value="HALF_DAY_LEAVE_PM">{t('req_half_day_pm')}</option>
+              <option value="BUSINESS_TRIP">{t('req_business_trip')}</option>
+              <option value="LATE_EXCUSE">{t('req_late_excuse')}</option>
             </select>
           </div>
 
@@ -449,12 +447,12 @@ const RequestManagement = () => {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-900/90 text-[11px] uppercase font-semibold text-slate-400 border-b border-slate-800">
                   <tr>
-                    <th className="py-4 px-6">Nhân viên</th>
-                    <th className="py-4 px-6">Loại đơn & Chế độ tính công</th>
-                    <th className="py-4 px-6">Ngày áp dụng</th>
-                    <th className="py-4 px-6">Nội dung giải trình</th>
-                    <th className="py-4 px-6 text-center">Trạng thái</th>
-                    <th className="py-4 px-6 text-right">Thao tác</th>
+                    <th className="py-4 px-6">{t('table_header_employee')}</th>
+                    <th className="py-4 px-6">{t('request_type')}</th>
+                    <th className="py-4 px-6">{t('target_date')}</th>
+                    <th className="py-4 px-6">{t('reason_label')}</th>
+                    <th className="py-4 px-6 text-center">{t('status')}</th>
+                    <th className="py-4 px-6 text-right">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -462,13 +460,13 @@ const RequestManagement = () => {
                     <tr>
                       <td colSpan="6" className="py-16 text-center text-slate-400">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
-                        <span>Đang tải danh sách đơn từ...</span>
+                        <span>{t('loading')}</span>
                       </td>
                     </tr>
                   ) : requests.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="py-16 text-center text-slate-400">
-                        Không tìm thấy đơn từ nào phù hợp với bộ lọc.
+                        {t('no_data')}
                       </td>
                     </tr>
                   ) : (
@@ -482,7 +480,7 @@ const RequestManagement = () => {
                         <tr key={req.id} className="hover:bg-slate-800/40 transition-colors">
                           <td className="py-4 px-6">
                             <div className="font-semibold text-white">
-                              {req.employee?.full_name || 'Nhân viên'}
+                              {req.employee?.full_name || t('unknown')}
                             </div>
                             <div className="text-[11px] text-slate-400 font-mono">
                               {req.employee?.employee_code} • {req.employee?.department}
@@ -492,13 +490,12 @@ const RequestManagement = () => {
                           <td className="py-4 px-6">
                             <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg font-semibold border text-[11px] ${typeConfig.color}`}>
                               <TypeIcon className="w-3.5 h-3.5" />
-                              <span>{typeConfig.badge}</span>
+                              <span>{typeConfig.label}</span>
                             </span>
-                            <div className="text-[10px] text-slate-400 mt-1 max-w-xs">{typeConfig.desc}</div>
                           </td>
 
                           <td className="py-4 px-6 font-mono font-semibold text-slate-200">
-                            {new Date(req.target_date).toLocaleDateString('vi-VN')}
+                            {new Date(req.target_date).toLocaleDateString(localeCode)}
                           </td>
 
                           <td className="py-4 px-6 max-w-xs">
@@ -529,7 +526,7 @@ const RequestManagement = () => {
                                   className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-semibold transition-all hover:scale-105"
                                 >
                                   <Check className="w-3.5 h-3.5" />
-                                  <span>Phê Duyệt</span>
+                                  <span>{t('approve')}</span>
                                 </button>
                                 <button
                                   onClick={() => {
@@ -539,12 +536,12 @@ const RequestManagement = () => {
                                   className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-semibold transition-all"
                                 >
                                   <X className="w-3.5 h-3.5" />
-                                  <span>Từ Chối</span>
+                                  <span>{t('reject')}</span>
                                 </button>
                               </div>
                             ) : (
                               <span className="text-[11px] text-slate-500 font-mono">
-                                Đã lưu hồ sơ
+                                {t('status')} {statusConfig.label}
                               </span>
                             )}
                           </td>
@@ -558,22 +555,22 @@ const RequestManagement = () => {
 
             {/* Pagination */}
             <div className="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-              <span>Tổng số đơn: <strong className="text-white font-mono">{total}</strong></span>
+              <span>{t('total')}: <strong className="text-white font-mono">{total}</strong></span>
               <div className="flex items-center space-x-2">
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                   className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white transition-colors"
                 >
-                  Trước
+                  {t('previous_page')}
                 </button>
-                <span>Trang {page} / {Math.max(1, Math.ceil(total / pageSize))}</span>
+                <span>{t('page')} {page} {t('of')} {Math.max(1, Math.ceil(total / pageSize))}</span>
                 <button
                   disabled={page >= Math.ceil(total / pageSize)}
                   onClick={() => setPage((p) => p + 1)}
                   className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white transition-colors"
                 >
-                  Sau
+                  {t('next_page')}
                 </button>
               </div>
             </div>
@@ -588,11 +585,11 @@ const RequestManagement = () => {
             <div className="flex items-center space-x-2.5">
               <CalendarCheck className="w-5 h-5 text-indigo-400 flex-shrink-0" />
               <span>
-                Bảng tính công ngày <strong>{new Date(summaryDate).toLocaleDateString('vi-VN')}</strong> đã tự động đồng bộ các đơn <strong>ĐÃ DUYỆT</strong> để chuẩn hóa giờ công và xóa số phút vi phạm.
+                {t('daily_summary_title')} (<strong>{new Date(summaryDate).toLocaleDateString(localeCode)}</strong>)
               </span>
             </div>
             <span className="font-semibold text-slate-200 bg-slate-800 px-3 py-1 rounded-xl border border-slate-700">
-              Tổng số nhân sự: {summaryReports.length}
+              {t('total')}: {summaryReports.length}
             </span>
           </div>
 
@@ -601,27 +598,26 @@ const RequestManagement = () => {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-900/90 text-[11px] uppercase font-semibold text-slate-400 border-b border-slate-800">
                   <tr>
-                    <th className="py-4 px-6">Mã NV</th>
-                    <th className="py-4 px-6">Họ và Tên</th>
-                    <th className="py-4 px-6">Giờ Vào Đầu / Ra Cuối</th>
-                    <th className="py-4 px-6">Đơn Ngoại Lệ Áp Dụng</th>
-                    <th className="py-4 px-6 text-center">Phút Trễ / Sớm</th>
-                    <th className="py-4 px-6 text-center">Số Công Tính Được</th>
-                    <th className="py-4 px-6 text-right">Kết Quả Đánh Giá</th>
+                    <th className="py-4 px-6">{t('employee_code')}</th>
+                    <th className="py-4 px-6">{t('full_name')}</th>
+                    <th className="py-4 px-6">{t('time')} (IN / OUT)</th>
+                    <th className="py-4 px-6">{t('request_type')}</th>
+                    <th className="py-4 px-6 text-center">{t('calculated_workdays')}</th>
+                    <th className="py-4 px-6 text-right">{t('status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {loadingSummary ? (
                     <tr>
-                      <td colSpan="7" className="py-16 text-center text-slate-400">
+                      <td colSpan="6" className="py-16 text-center text-slate-400">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
-                        <span>Đang tổng hợp bảng công...</span>
+                        <span>{t('loading')}</span>
                       </td>
                     </tr>
                   ) : summaryReports.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="py-16 text-center text-slate-400">
-                        Không có dữ liệu nhân viên trong ngày.
+                      <td colSpan="6" className="py-16 text-center text-slate-400">
+                        {t('no_data')}
                       </td>
                     </tr>
                   ) : (
@@ -636,10 +632,10 @@ const RequestManagement = () => {
                         </td>
                         <td className="py-4 px-6 font-mono">
                           <div className="text-emerald-400">
-                            Vào: {report.first_check_in ? new Date(report.first_check_in).toLocaleTimeString('vi-VN') : '---'}
+                            IN: {report.first_check_in ? new Date(report.first_check_in).toLocaleTimeString(localeCode) : '---'}
                           </div>
                           <div className="text-cyan-400">
-                            Ra: {report.last_check_out ? new Date(report.last_check_out).toLocaleTimeString('vi-VN') : '---'}
+                            OUT: {report.last_check_out ? new Date(report.last_check_out).toLocaleTimeString(localeCode) : '---'}
                           </div>
                         </td>
                         <td className="py-4 px-6">
@@ -648,18 +644,7 @@ const RequestManagement = () => {
                               <span>{REQUEST_TYPE_CONFIG[report.approved_request_type]?.badge || report.approved_request_type}</span>
                             </span>
                           ) : (
-                            <span className="text-slate-500 text-[10px]">Chấm công tiêu chuẩn</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-6 text-center font-mono">
-                          {report.minutes_late > 0 && (
-                            <div className="text-rose-400">Trễ: {report.minutes_late}p</div>
-                          )}
-                          {report.minutes_early > 0 && (
-                            <div className="text-amber-400">Sớm: {report.minutes_early}p</div>
-                          )}
-                          {report.minutes_late === 0 && report.minutes_early === 0 && (
-                            <div className="text-emerald-400">0p</div>
+                            <span className="text-slate-500 text-[10px]">Standard</span>
                           )}
                         </td>
                         <td className="py-4 px-6 text-center">
@@ -670,7 +655,7 @@ const RequestManagement = () => {
                               ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/25'
                               : 'bg-rose-500/15 text-rose-300 border border-rose-500/25'
                           }`}>
-                            {report.work_units.toFixed(1)} Công
+                            {report.work_units.toFixed(1)} {t('work_units_credited')}
                           </span>
                         </td>
                         <td className="py-4 px-6 text-right font-medium text-slate-200">
@@ -702,14 +687,14 @@ const RequestManagement = () => {
                 <FileSignature className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Tạo Đơn Ngoại Lệ Chấm Công</h3>
-                <p className="text-xs text-slate-400">Đăng ký nghỉ nửa ngày, công tác hoặc giải trình</p>
+                <h3 className="text-base font-bold text-white">{t('create_request_modal_title')}</h3>
+                <p className="text-xs text-slate-400">{t('header_requests_sub')}</p>
               </div>
             </div>
 
             <form onSubmit={handleCreateRequest} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Nhân viên áp dụng *</label>
+                <label className="block text-slate-300 font-medium mb-1">{t('select_employee')} *</label>
                 <select
                   required
                   value={createForm.employee_id}
@@ -725,21 +710,21 @@ const RequestManagement = () => {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Hình thức ngoại lệ *</label>
+                <label className="block text-slate-300 font-medium mb-1">{t('request_type')} *</label>
                 <select
                   value={createForm.request_type}
                   onChange={(e) => setCreateForm({ ...createForm, request_type: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white bg-slate-900 border border-slate-800 focus:outline-none"
                 >
-                  <option value="HALF_DAY_LEAVE_AM">Nghỉ nửa ngày sáng (Ca chiều từ 13:00 - 0.5 công)</option>
-                  <option value="HALF_DAY_LEAVE_PM">Nghỉ nửa ngày chiều (Ca sáng kết thúc 12:00 - 0.5 công)</option>
-                  <option value="BUSINESS_TRIP">Đi công tác ngoài giờ (Tính đủ 1.0 công)</option>
-                  <option value="LATE_EXCUSE">Giải trình đi muộn / về sớm có lý do</option>
+                  <option value="HALF_DAY_LEAVE_AM">{t('req_half_day_am')}</option>
+                  <option value="HALF_DAY_LEAVE_PM">{t('req_half_day_pm')}</option>
+                  <option value="BUSINESS_TRIP">{t('req_business_trip')}</option>
+                  <option value="LATE_EXCUSE">{t('req_late_excuse')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Ngày áp dụng *</label>
+                <label className="block text-slate-300 font-medium mb-1">{t('target_date')} *</label>
                 <input
                   type="date"
                   required
@@ -750,13 +735,13 @@ const RequestManagement = () => {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Nội dung giải trình / Lý do *</label>
+                <label className="block text-slate-300 font-medium mb-1">{t('reason_label')} *</label>
                 <textarea
                   required
                   rows={3}
                   value={createForm.reason}
                   onChange={(e) => setCreateForm({ ...createForm, reason: e.target.value })}
-                  placeholder="Ghi rõ lý do xin nghỉ hoặc địa điểm, mục đích công tác..."
+                  placeholder="Provide reason or justification..."
                   className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white border border-slate-800 focus:outline-none"
                 />
               </div>
@@ -767,7 +752,7 @@ const RequestManagement = () => {
                   onClick={() => setIsCreateModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
                 >
-                  Hủy Bỏ
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -775,7 +760,7 @@ const RequestManagement = () => {
                   className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition-colors"
                 >
                   {formSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Gửi Đơn Đăng Ký</span>
+                  <span>{t('save')}</span>
                 </button>
               </div>
             </form>
@@ -799,21 +784,21 @@ const RequestManagement = () => {
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Xác Nhận Phê Duyệt Đơn</h3>
-                <p className="text-[11px] text-slate-400">Dữ liệu chấm công của ngày sẽ tự động được điều chỉnh</p>
+                <h3 className="text-base font-bold text-white">{t('approve')}</h3>
+                <p className="text-[11px] text-slate-400">{t('header_requests_sub')}</p>
               </div>
             </div>
 
             <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2 mb-4">
-              <div>Nhân viên: <strong className="text-white">{selectedRequest.employee?.full_name}</strong></div>
-              <div>Hạng mục: <strong className="text-indigo-400">{REQUEST_TYPE_CONFIG[selectedRequest.request_type]?.label}</strong></div>
-              <div>Ngày áp dụng: <strong className="text-white font-mono">{new Date(selectedRequest.target_date).toLocaleDateString('vi-VN')}</strong></div>
-              <div>Lý do: <span className="text-slate-300">{selectedRequest.reason}</span></div>
+              <div>{t('table_header_employee')}: <strong className="text-white">{selectedRequest.employee?.full_name}</strong></div>
+              <div>{t('request_type')}: <strong className="text-indigo-400">{REQUEST_TYPE_CONFIG[selectedRequest.request_type]?.label}</strong></div>
+              <div>{t('target_date')}: <strong className="text-white font-mono">{new Date(selectedRequest.target_date).toLocaleDateString(localeCode)}</strong></div>
+              <div>{t('reason_label')}: <span className="text-slate-300">{selectedRequest.reason}</span></div>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Người phê duyệt</label>
+                <label className="block text-slate-300 font-medium mb-1">{t('approved_by')}</label>
                 <input
                   type="text"
                   value={approverName}
@@ -823,7 +808,7 @@ const RequestManagement = () => {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Ghi chú xác nhận</label>
+                <label className="block text-slate-300 font-medium mb-1">Notes</label>
                 <input
                   type="text"
                   value={approvalNote}
@@ -839,7 +824,7 @@ const RequestManagement = () => {
                 onClick={() => setIsApproveModalOpen(false)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
               >
-                Hủy
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -848,7 +833,7 @@ const RequestManagement = () => {
                 className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/30 transition-colors"
               >
                 {formSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                <span>Xác Nhận Phê Duyệt</span>
+                <span>{t('approve')}</span>
               </button>
             </div>
           </div>
@@ -871,20 +856,20 @@ const RequestManagement = () => {
                 <XCircle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Từ Chối Đơn Đăng Ký</h3>
-                <p className="text-[11px] text-slate-400">Ghi rõ lý do không chấp thuận đơn này</p>
+                <h3 className="text-base font-bold text-white">{t('reject')}</h3>
+                <p className="text-[11px] text-slate-400">{t('reason_label')}</p>
               </div>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Lý do từ chối *</label>
+                <label className="block text-slate-300 font-medium mb-1">{t('reason_label')} *</label>
                 <textarea
                   required
                   rows={3}
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Ghi rõ lý do (VD: Không đúng quy chế công tác, thiếu minh chứng hợp lệ)..."
+                  placeholder="Provide reason for rejection..."
                   className="w-full px-3 py-2 rounded-xl glass-input text-white border border-slate-800"
                 />
               </div>
@@ -896,7 +881,7 @@ const RequestManagement = () => {
                 onClick={() => setIsRejectModalOpen(false)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
               >
-                Hủy
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -905,7 +890,7 @@ const RequestManagement = () => {
                 className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-lg shadow-rose-600/30 transition-colors"
               >
                 {formSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                <span>Xác Nhận Từ Chối</span>
+                <span>{t('reject')}</span>
               </button>
             </div>
           </div>

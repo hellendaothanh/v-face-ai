@@ -8,13 +8,16 @@ import {
   Video, 
   Server, 
   Wifi, 
-  WifiOff,
+  WifiOff, 
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from 'lucide-react';
 import api from '../services/api';
+import { useI18n } from '../i18n/I18nContext';
 
 const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, onRefreshCamera }) => {
+  const { language, setLanguage, t } = useI18n();
   const [timeStr, setTimeStr] = useState('');
   const [isTogglingCamera, setIsTogglingCamera] = useState(false);
   const [selectedSource, setSelectedSource] = useState('WEBCAM'); // 'WEBCAM' or 'RTSP'
@@ -30,13 +33,14 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
+      const localeCode = language === 'vi' ? 'vi-VN' : 'en-US';
       setTimeStr(
-        now.toLocaleTimeString('vi-VN', {
+        now.toLocaleTimeString(localeCode, {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
           hour12: false,
-        }) + ' | ' + now.toLocaleDateString('vi-VN', {
+        }) + ' | ' + now.toLocaleDateString(localeCode, {
           weekday: 'short',
           day: '2-digit',
           month: '2-digit',
@@ -47,7 +51,7 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [language]);
 
   const handleToggleCamera = async () => {
     setIsTogglingCamera(true);
@@ -59,7 +63,7 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
       }
       if (onRefreshCamera) onRefreshCamera();
     } catch (err) {
-      alert(`Không thể điều khiển camera: ${err.message}`);
+      alert(`Camera control error: ${err.message}`);
     } finally {
       setIsTogglingCamera(false);
     }
@@ -74,26 +78,54 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
         await api.startCamera({ source_type: newSource });
         if (onRefreshCamera) onRefreshCamera();
       } catch (err) {
-        alert(`Lỗi chuyển nguồn camera: ${err.message}`);
+        alert(`Camera switch error: ${err.message}`);
       } finally {
         setIsTogglingCamera(false);
       }
     }
   };
 
-  const sourceName = selectedSource === 'RTSP' ? 'Tapo C200' : 'MacBook M4';
   const isCamRunning = !!cameraStatus?.is_running;
   const isCamConnected = !!cameraStatus?.camera?.is_connected;
+  const sourceName = cameraStatus?.camera?.device_id || (selectedSource === 'RTSP' ? 'Tapo C200' : 'MacBook M4');
 
   return (
     <header className="h-20 bg-[#0E1322]/80 backdrop-blur-md border-b border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20">
-      <div>
-        <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">{title}</h1>
-        <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">{subtitle}</p>
+      <div className="min-w-0 pr-4">
+        <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate">{title}</h1>
+        <p className="text-xs text-slate-400 mt-0.5 hidden sm:block truncate">{subtitle}</p>
       </div>
 
-      <div className="flex items-center space-x-3">
-        {/* 1. API Connection Status Badge */}
+      <div className="flex items-center space-x-3 flex-shrink-0">
+        {/* 1. Language Switcher (EN / VI) */}
+        <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs shadow-sm">
+          <button
+            onClick={() => setLanguage('en')}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-lg font-bold text-xs transition-all ${
+              language === 'en'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="English (Default)"
+          >
+            <span>🇬🇧</span>
+            <span>EN</span>
+          </button>
+          <button
+            onClick={() => setLanguage('vi')}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-lg font-bold text-xs transition-all ${
+              language === 'vi'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="Tiếng Việt"
+          >
+            <span>🇻🇳</span>
+            <span>VI</span>
+          </button>
+        </div>
+
+        {/* 2. API Connection Status Badge */}
         <div
           className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition-all ${
             isApiConnected === true
@@ -102,14 +134,14 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
               ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 animate-pulse'
               : 'bg-slate-800/80 border-slate-700 text-slate-400'
           }`}
-          title={isApiConnected === true ? 'Backend API đang hoạt động (http://localhost:8000)' : 'Không thể kết nối tới Backend API'}
+          title={isApiConnected === true ? 'Backend API is active' : 'Cannot connect to Backend API'}
         >
           <Server className={`w-3.5 h-3.5 ${isApiConnected === true ? 'text-emerald-400' : 'text-rose-400'}`} />
           <span className="hidden md:inline">API:</span>
-          <span>{isApiConnected === true ? 'Online' : isApiConnected === false ? 'Offline (Mất kết nối)' : 'Đang kiểm tra...'}</span>
+          <span>{isApiConnected === true ? t('online') : isApiConnected === false ? t('offline') : t('connecting')}</span>
         </div>
 
-        {/* 2. Camera Connection Status Badge */}
+        {/* 3. Camera Connection Status Badge */}
         <div
           className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
             isCamRunning && isCamConnected
@@ -118,13 +150,6 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
               ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse'
               : 'bg-slate-900/90 border-slate-800 text-slate-400'
           }`}
-          title={
-            isCamRunning
-              ? isCamConnected
-                ? `Camera ${sourceName} đang phát trực tiếp (${cameraStatus?.camera?.fps || 0} FPS)`
-                : `Camera ${sourceName} đang chạy nhưng mất kết nối luồng!`
-              : 'Camera đang tắt'
-          }
         >
           {isCamRunning && isCamConnected ? (
             <Wifi className="w-3.5 h-3.5 text-cyan-400" />
@@ -133,17 +158,17 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
           ) : (
             <CameraOff className="w-3.5 h-3.5 text-slate-500" />
           )}
-          <span>{sourceName}:</span>
+          <span className="truncate max-w-[120px]">{sourceName}:</span>
           <span className="font-bold">
             {isCamRunning
               ? isCamConnected
                 ? `${cameraStatus?.camera?.fps || 0} FPS`
-                : 'Mất kết nối'
-              : 'Đang tắt'}
+                : t('no_signal')
+              : t('camera_stopped')}
           </span>
         </div>
 
-        {/* 3. Camera Source Selector */}
+        {/* 4. Camera Source Selector */}
         <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs">
           <button
             onClick={() => handleSwitchSource('WEBCAM')}
@@ -152,7 +177,7 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            title="Sử dụng Camera FaceTime HD tích hợp trên MacBook"
+            title={t('switch_to_webcam')}
           >
             <Laptop className="w-3.5 h-3.5" />
             <span className="hidden lg:inline">MacBook M4</span>
@@ -165,14 +190,14 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
                 ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            title="Sử dụng Luồng RTSP Camera IP Tapo C200"
+            title={t('switch_to_rtsp')}
           >
             <Video className="w-3.5 h-3.5" />
             <span className="hidden lg:inline">Tapo C200</span>
           </button>
         </div>
 
-        {/* 4. Camera Quick Toggle Button */}
+        {/* 5. Camera Quick Toggle Button */}
         <button
           onClick={handleToggleCamera}
           disabled={isTogglingCamera || isApiConnected === false}
@@ -187,12 +212,12 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
           ) : cameraStatus?.is_running ? (
             <>
               <CameraOff className="w-4 h-4 text-rose-400" />
-              <span>Dừng Camera</span>
+              <span>{t('turn_off_camera')}</span>
             </>
           ) : (
             <>
               <Camera className="w-4 h-4 text-white" />
-              <span>Bật Camera</span>
+              <span>{t('turn_on_camera')}</span>
             </>
           )}
         </button>

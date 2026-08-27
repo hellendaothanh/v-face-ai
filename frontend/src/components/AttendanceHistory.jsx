@@ -12,8 +12,10 @@ import {
   Camera
 } from 'lucide-react';
 import api from '../services/api';
+import { useI18n } from '../i18n/I18nContext';
 
 const AttendanceHistory = () => {
+  const { t, language } = useI18n();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -65,26 +67,28 @@ const AttendanceHistory = () => {
     setPage(1);
   };
 
+  const localeCode = language === 'vi' ? 'vi-VN' : 'en-US';
+
   return (
-    <div className="p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
+    <div className="space-y-6 animate-fade-in">
       {/* Filter Panel */}
       <div className="glass-panel p-6 rounded-2xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-sm font-bold text-white">
             <Filter className="w-4 h-4 text-indigo-400" />
-            <span>Bộ Lọc Lịch Sử Chấm Công</span>
+            <span>{t('att_history_title')}</span>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={handleResetFilters}
               className="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors"
             >
-              Đặt lại bộ lọc
+              {t('reset_filters')}
             </button>
             <button
               onClick={fetchAttendance}
               className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-colors"
-              title="Tìm kiếm"
+              title={t('search')}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -93,145 +97,174 @@ const AttendanceHistory = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Mã Nhân Viên</label>
+            <label className="block text-slate-400 font-medium mb-1">{t('att_filter_code')}</label>
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                placeholder={t('att_filter_code_placeholder')}
                 value={filters.employee_code}
-                onChange={(e) => {
-                  setFilters({ ...filters, employee_code: e.target.value });
-                  setPage(1);
-                }}
-                placeholder="VD: EMP001"
-                className="w-full pl-9 pr-3 py-2 rounded-xl glass-input text-white font-mono"
+                onChange={(e) => setFilters({ ...filters, employee_code: e.target.value })}
+                className="w-full pl-9 pr-3 py-2 rounded-xl glass-input text-white focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Phòng Ban</label>
+            <label className="block text-slate-400 font-medium mb-1">{t('att_filter_dept')}</label>
             <div className="relative">
               <Building className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                placeholder={t('att_filter_dept_placeholder')}
                 value={filters.department}
-                onChange={(e) => {
-                  setFilters({ ...filters, department: e.target.value });
-                  setPage(1);
-                }}
-                placeholder="VD: Kỹ Thuật"
-                className="w-full pl-9 pr-3 py-2 rounded-xl glass-input text-white"
+                onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                className="w-full pl-9 pr-3 py-2 rounded-xl glass-input text-white focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Từ Ngày</label>
+            <label className="block text-slate-400 font-medium mb-1">{t('att_filter_start')}</label>
             <div className="relative">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="date"
                 value={filters.start_date}
-                onChange={(e) => {
-                  setFilters({ ...filters, start_date: e.target.value });
-                  setPage(1);
-                }}
-                className="w-full pl-9 pr-3 py-2 rounded-xl glass-input text-white"
+                onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Đến Ngày</label>
+            <label className="block text-slate-400 font-medium mb-1">{t('att_filter_end')}</label>
             <div className="relative">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="date"
                 value={filters.end_date}
-                onChange={(e) => {
-                  setFilters({ ...filters, end_date: e.target.value });
-                  setPage(1);
-                }}
-                className="w-full pl-9 pr-3 py-2 rounded-xl glass-input text-white"
+                onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Attendance Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      {/* Attendance Records Table */}
+      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-900/90 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
               <tr>
-                <th className="py-4 px-6">Thời Gian Điểm Danh</th>
-                <th className="py-4 px-6">Mã NV</th>
-                <th className="py-4 px-6">Họ và Tên</th>
-                <th className="py-4 px-6">Phòng Ban</th>
-                <th className="py-4 px-6">Loại Chấm Công</th>
-                <th className="py-4 px-6 text-center">Độ Tin Cậy AI</th>
-                <th className="py-4 px-6 text-right">Thiết Bị Ghi Nhận</th>
+                <th className="py-4 px-6">{t('table_header_employee')}</th>
+                <th className="py-4 px-6">{t('table_header_code')}</th>
+                <th className="py-4 px-6">{t('table_header_dept')}</th>
+                <th className="py-4 px-6">{t('table_header_time')}</th>
+                <th className="py-4 px-6">{t('table_header_type')}</th>
+                <th className="py-4 px-6">{t('table_header_confidence')}</th>
+                <th className="py-4 px-6">{t('table_header_device')}</th>
+                <th className="py-4 px-6 text-center">{t('table_header_photo')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="py-16 text-center text-slate-400">
+                  <td colSpan="8" className="py-16 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
-                    <span>Đang tải lịch sử chấm công...</span>
+                    <span>{t('loading')}</span>
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-16 text-center text-slate-400">
-                    Không tìm thấy bản ghi chấm công nào phù hợp.
+                  <td colSpan="8" className="py-16 text-center text-slate-400">
+                    {t('no_attendance_found')}
                   </td>
                 </tr>
               ) : (
-                records.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-4 px-6 font-mono text-xs">
-                      <div className="text-white font-semibold">
-                        {new Date(r.check_time).toLocaleTimeString('vi-VN')}
-                      </div>
-                      <div className="text-slate-400">
-                        {new Date(r.check_time).toLocaleDateString('vi-VN')}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 font-mono font-bold text-white">
-                      {r.employee?.employee_code || '---'}
-                    </td>
-                    <td className="py-4 px-6 font-semibold text-white">
-                      {r.employee?.full_name || 'Nhân viên'}
-                    </td>
-                    <td className="py-4 px-6 text-xs text-slate-300">
-                      <div>{r.employee?.department || '---'}</div>
-                      <div className="text-slate-400">{r.employee?.position || '---'}</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        r.attendance_type === 'AUTO'
-                          ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
-                          : r.attendance_type === 'CHECK_IN'
-                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                      }`}>
-                        <span>{r.attendance_type}</span>
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>{(r.confidence_score * 100).toFixed(1)}%</span>
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right font-mono text-xs text-slate-400">
-                      {r.device_id || 'Tapo C200'}
-                    </td>
-                  </tr>
-                ))
+                records.map((r) => {
+                  const empName = r.employee?.full_name || t('unknown');
+                  const empCode = r.employee?.employee_code || '---';
+                  const dept = r.employee?.department || '---';
+                  const pos = r.employee?.position || '';
+                  const initialChar = empName ? empName.charAt(0).toUpperCase() : 'N';
+
+                  return (
+                    <tr key={r.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-300 font-bold flex items-center justify-center text-xs">
+                            {initialChar}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white">{empName}</div>
+                            {pos && <div className="text-[11px] text-slate-400">{pos}</div>}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6 font-mono font-bold text-indigo-300">
+                        {empCode}
+                      </td>
+
+                      <td className="py-4 px-6 text-slate-300 text-xs">
+                        {dept}
+                      </td>
+
+                      <td className="py-4 px-6 text-xs text-slate-300">
+                        <div className="font-mono text-white">
+                          {new Date(r.check_time).toLocaleTimeString(localeCode, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false,
+                          })}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {new Date(r.check_time).toLocaleDateString(localeCode)}
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          r.attendance_type === 'CHECK_IN'
+                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                            : r.attendance_type === 'CHECK_OUT'
+                            ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                            : 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
+                        }`}>
+                          <span>{r.attendance_type || 'AUTO'}</span>
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-1 text-emerald-400 font-bold text-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>{r.confidence_score ? `${(r.confidence_score * 100).toFixed(1)}%` : '---'}</span>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6 text-xs text-slate-400">
+                        <span className="font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                          {r.device_id || 'Camera Gate'}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6 text-center">
+                        {r.snapshot_url ? (
+                          <div className="w-9 h-9 rounded-lg overflow-hidden border border-slate-700 mx-auto shadow">
+                            <img
+                              src={`http://localhost:8000${r.snapshot_url}`}
+                              alt={empName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-600">---</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -239,22 +272,22 @@ const AttendanceHistory = () => {
 
         {/* Pagination Bar */}
         <div className="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Tổng số lượt chấm công: <strong className="text-white">{total}</strong></span>
+          <span>{t('total')}: <strong className="text-white">{total}</strong></span>
           <div className="flex items-center space-x-2">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
               className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white"
             >
-              Trước
+              {t('previous_page')}
             </button>
-            <span>Trang {page} / {Math.max(1, Math.ceil(total / pageSize))}</span>
+            <span>{t('page')} {page} {t('of')} {Math.max(1, Math.ceil(total / pageSize))}</span>
             <button
               disabled={page >= Math.ceil(total / pageSize)}
               onClick={() => setPage((p) => p + 1)}
               className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white"
             >
-              Sau
+              {t('next_page')}
             </button>
           </div>
         </div>

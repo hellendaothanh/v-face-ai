@@ -17,7 +17,7 @@ import {
   ScanFace,
   Server,
   Wifi,
-  WifiOff,
+  WifiOff, 
   AlertTriangle,
   HelpCircle,
   UserX,
@@ -33,6 +33,7 @@ import {
   History
 } from 'lucide-react';
 import api from '../services/api';
+import { useI18n } from '../i18n/I18nContext';
 
 const RealtimeDashboard = ({ 
   isWsConnected, 
@@ -43,6 +44,7 @@ const RealtimeDashboard = ({
   onRefreshCamera, 
   onNavigateToEmployees 
 }) => {
+  const { t, language } = useI18n();
   const [liveLogs, setLiveLogs] = useState([]);
   const [strangerLogs, setStrangerLogs] = useState([]);
   const [employeeCount, setEmployeeCount] = useState(null);
@@ -101,36 +103,42 @@ const RealtimeDashboard = ({
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.25);
-    } catch (e) {
-      // Audio autoplay restrictions
-    }
-  }, []);
-
-  // Audio siren / alarm on stranger alert
-  const playSecuritySiren = useCallback(() => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.25);
-      gain.gain.setValueAtTime(0.18, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.35);
     } catch (e) {
-      // Audio autoplay restrictions
+      // Audio autoplay policy fallback
+    }
+  }, []);
+
+  // Audio alarm siren for Stranger Alert
+  const playStrangerSiren = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      
+      const now = ctx.currentTime;
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.linearRampToValueAtTime(880, now + 0.2);
+      osc.frequency.linearRampToValueAtTime(440, now + 0.4);
+      osc.frequency.linearRampToValueAtTime(880, now + 0.6);
+      
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(now + 0.8);
+    } catch (e) {
+      // Audio context might be restricted
     }
   }, []);
 
@@ -142,9 +150,9 @@ const RealtimeDashboard = ({
 
     const wsUrl = 'ws://localhost:8000/ws/attendance';
     const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log('✅ WebSocket Connected to Attendance Channel');
       setIsWsConnected(true);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -154,89 +162,116 @@ const RealtimeDashboard = ({
 
     ws.onmessage = (event) => {
       try {
-        const payload = JSON.parse(event.data);
-        if (payload.event === 'ATTENDANCE_CHECKIN' && payload.data) {
-          const item = payload.data;
-          setLiveLogs((prev) => [item, ...prev.slice(0, 49)]);
-          setLastCheckin(item);
-          setStats((prev) => ({ ...prev, todayCount: prev.todayCount + 1 }));
+        const message = JSON.parse(event.data);
+        
+        // Handle Welcome or Info messages
+        if (message.type === 'WELCOME' || message.type === 'PONG') {
+          return;
+        }
 
-          setHighlightLatest(true);
-          setTimeout(() => setHighlightLatest(false), 2000);
+        // 1. Handle Anti-Spoofing / Liveness Rejection Event
+        if (message.type === 'SPOOF_ALERT') {
+          console.warn('🚨 Received SPOOF_ALERT:', message.data);
+          setSpoofAlert(message.data);
+          setTimeout(() => setSpoofAlert(null), 8000);
+          return;
+        }
+
+        // 2. Handle Stranger Alert (Người lạ xuất hiện)
+        if (message.type === 'STRANGER_ALERT') {
+          console.warn('🚨 Received STRANGER_ALERT:', message.data);
+          playStrangerSiren();
+          setStrangerAlert(message.data);
+          setStrangerLogs((prev) => [message.data, ...prev.slice(0, 49)]);
+          setTimeout(() => setStrangerAlert(null), 10000);
+          return;
+        }
+
+        // 3. Handle Normal or Batch Verified Attendance
+        const logsToAdd = [];
+        if (message.type === 'MULTI_ATTENDANCE' && Array.isArray(message.data)) {
+          logsToAdd.push(...message.data);
+        } else if (message.type === 'ATTENDANCE' && message.data) {
+          logsToAdd.push(message.data);
+        }
+
+        if (logsToAdd.length > 0) {
           playChime();
-        } else if (payload.event === 'spoofing_alert') {
-          setSpoofAlert(payload);
-          setTimeout(() => {
-            setSpoofAlert((current) => (current === payload ? null : current));
-          }, 6000);
-        } else if (payload.event === 'stranger_alert') {
-          setStrangerAlert(payload);
-          setStrangerLogs((prev) => [payload, ...prev.slice(0, 49)]);
-          playSecuritySiren();
-          setTimeout(() => {
-            setStrangerAlert((current) => (current === payload ? null : current));
-          }, 12000);
+          const newest = logsToAdd[0];
+          setLastCheckin(newest);
+
+          // Flash highlight
+          setHighlightLatest(true);
+          setTimeout(() => setHighlightLatest(false), 2500);
+
+          // Prepend new attendance events
+          setLiveLogs((prev) => [...logsToAdd, ...prev.slice(0, 50 - logsToAdd.length)]);
+          setStats((prev) => ({
+            ...prev,
+            todayCount: prev.todayCount + logsToAdd.length,
+          }));
         }
       } catch (err) {
-        console.error('Error parsing WS message:', err);
+        console.error('Error parsing WebSocket message:', err);
       }
     };
 
     ws.onerror = (err) => {
-      console.warn('WebSocket error:', err);
+      console.warn('WebSocket connection error:', err);
+      setIsWsConnected(false);
     };
 
     ws.onclose = () => {
+      console.log('❌ WebSocket Disconnected. Retrying in 3 seconds...');
       setIsWsConnected(false);
       wsRef.current = null;
-      if (!reconnectTimeoutRef.current) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          reconnectTimeoutRef.current = null;
-          connectWebSocket();
-        }, 3000);
-      }
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connectWebSocket();
+      }, 3000);
     };
-  }, [setIsWsConnected, playChime, playSecuritySiren]);
+
+    wsRef.current = ws;
+  }, [setIsWsConnected, playChime, playStrangerSiren]);
 
   useEffect(() => {
     connectWebSocket();
-
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
       if (wsRef.current) {
         wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
       }
     };
   }, [connectWebSocket]);
 
-  // Initial fetch of recent attendance & employees count
+  // Fetch initial data: today attendance and employees
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const res = await api.getAttendanceHistory({ page: 1, page_size: 20 });
-        if (res.data?.items) {
-          setLiveLogs(res.data.items);
+        const today = new Date().toISOString().split('T')[0];
+        const [attRes, empRes] = await Promise.allSettled([
+          api.getAttendanceLogs({ start_date: today, limit: 30 }),
+          api.getEmployees({ limit: 100 }),
+        ]);
+
+        if (attRes.status === 'fulfilled' && attRes.value?.data) {
+          const items = attRes.value.data.items || [];
+          setLiveLogs(items);
           setStats((prev) => ({
             ...prev,
-            todayCount: res.data.total || res.data.items.length,
+            todayCount: attRes.value.data.total || items.length,
           }));
-          if (res.data.items.length > 0) {
-            setLastCheckin(res.data.items[0]);
+          if (items.length > 0) {
+            setLastCheckin(items[0]);
           }
         }
-      } catch (err) {
-        console.warn('Could not fetch initial attendance history:', err.message);
-      }
 
-      try {
-        const empRes = await api.getEmployees({ page: 1, page_size: 1 });
-        if (empRes.data) {
-          setEmployeeCount(empRes.data.total ?? 0);
+        if (empRes.status === 'fulfilled' && empRes.value?.data) {
+          setEmployeeCount(empRes.value.data.total || 0);
         }
       } catch (err) {
-        console.warn('Could not fetch employee count:', err.message);
+        console.error('Error fetching initial dashboard data:', err);
       }
     };
 
@@ -255,7 +290,7 @@ const RealtimeDashboard = ({
         <div className="flex items-center space-x-2">
           <ScanFace className="w-4 h-4 text-indigo-400 animate-pulse" />
           <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-            Live Camera Monitor (Màn hình giám sát)
+            {t('live_camera_monitor')}
           </span>
         </div>
 
@@ -264,7 +299,7 @@ const RealtimeDashboard = ({
           <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
             <button
               onClick={() => handleViewModeChange('standard')}
-              title="Chế độ Tiêu chuẩn (Cân đối)"
+              title={t('view_mode_standard_title')}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all ${
                 cameraViewMode === 'standard'
                   ? 'bg-indigo-600 text-white shadow'
@@ -272,12 +307,12 @@ const RealtimeDashboard = ({
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Tiêu chuẩn</span>
+              <span className="hidden sm:inline text-[11px]">{t('view_mode_standard')}</span>
             </button>
 
             <button
               onClick={() => handleViewModeChange('wide')}
-              title="Chế độ Mở rộng (Rộng 2/3)"
+              title={t('view_mode_wide_title')}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all ${
                 cameraViewMode === 'wide'
                   ? 'bg-indigo-600 text-white shadow'
@@ -285,12 +320,12 @@ const RealtimeDashboard = ({
               }`}
             >
               <Columns className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Mở rộng</span>
+              <span className="hidden sm:inline text-[11px]">{t('view_mode_wide')}</span>
             </button>
 
             <button
               onClick={() => handleViewModeChange('cinema')}
-              title="Chế độ Toàn cảnh (Rạp chiếu Full-Width)"
+              title={t('view_mode_cinema_title')}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all ${
                 cameraViewMode === 'cinema'
                   ? 'bg-indigo-600 text-white shadow'
@@ -298,14 +333,14 @@ const RealtimeDashboard = ({
               }`}
             >
               <Monitor className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Toàn cảnh</span>
+              <span className="hidden sm:inline text-[11px]">{t('view_mode_cinema')}</span>
             </button>
 
             <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
 
             <button
               onClick={toggleFullscreen}
-              title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình (Fullscreen)'}
+              title={isFullscreen ? t('exit_fullscreen') : t('fullscreen')}
               className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-all"
             >
               {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -319,7 +354,7 @@ const RealtimeDashboard = ({
               ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
               : 'bg-slate-800 text-slate-400 border-slate-700'
           }`}>
-            {isCamRunning ? (isCamConnected ? 'LIVE STREAM' : 'NO SIGNAL') : 'STANDBY'}
+            {isCamRunning ? (isCamConnected ? t('live') : t('no_signal')) : t('standby')}
           </span>
         </div>
       </div>
@@ -340,9 +375,9 @@ const RealtimeDashboard = ({
         ) : (
           <div className="text-center space-y-2 p-6">
             <Camera className="w-10 h-10 text-slate-600 mx-auto" />
-            <div className="text-xs font-semibold text-slate-400">Camera đang tạm dừng</div>
+            <div className="text-xs font-semibold text-slate-400">{t('camera_paused_title')}</div>
             <p className="text-[11px] text-slate-400 max-w-xs">
-              Bấm nút <strong>"Bật Camera"</strong> ở góc trên bên phải để bắt đầu luồng nhận diện trực tiếp.
+              {t('camera_paused_sub')}
             </p>
           </div>
         )}
@@ -371,7 +406,7 @@ const RealtimeDashboard = ({
       <div className="flex items-center justify-between pb-4 border-b border-slate-800">
         <div className="flex items-center space-x-2">
           <Radio className={`w-4 h-4 ${isWsConnected ? 'text-emerald-400 animate-pulse' : 'text-rose-400'}`} />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Nhận diện Gần Nhất</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{t('latest_checkin_title')}</span>
         </div>
         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
           LIVE
@@ -380,10 +415,11 @@ const RealtimeDashboard = ({
 
       {lastCheckin ? (
         (() => {
-          const lastFullName = lastCheckin.full_name || lastCheckin.employee?.full_name || 'Nhân viên';
+          const lastFullName = lastCheckin.full_name || lastCheckin.employee?.full_name || t('unknown');
           const lastEmpCode = lastCheckin.employee_code || lastCheckin.employee?.employee_code || '';
           const lastDept = lastCheckin.department || lastCheckin.employee?.department || '';
           const lastPos = lastCheckin.position || lastCheckin.employee?.position || '';
+          const localeCode = language === 'vi' ? 'vi-VN' : 'en-US';
 
           return (
             <div className="mt-6 text-center space-y-4">
@@ -398,7 +434,7 @@ const RealtimeDashboard = ({
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-950 to-slate-900 text-indigo-400">
                       <UserCheck className="w-10 h-10 mb-1" />
-                      <span className="text-[10px] text-slate-400">Ảnh khớp khuôn mặt</span>
+                      <span className="text-[10px] text-slate-400">{t('verified_face_photo')}</span>
                     </div>
                   )}
                 </div>
@@ -419,7 +455,7 @@ const RealtimeDashboard = ({
               <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
                 <Clock className="w-3.5 h-3.5 text-indigo-400" />
                 <span>
-                  {new Date(lastCheckin.check_time).toLocaleTimeString('vi-VN', {
+                  {new Date(lastCheckin.check_time).toLocaleTimeString(localeCode, {
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
@@ -433,8 +469,8 @@ const RealtimeDashboard = ({
       ) : (
         <div className="py-12 text-center text-slate-500 text-xs space-y-2">
           <Clock className="w-8 h-8 mx-auto text-slate-600" />
-          <p>Chưa có sự kiện điểm danh nào gần đây</p>
-          <p className="text-[10px] text-slate-400">Đứng trước camera để hệ thống tự động nhận diện</p>
+          <p>{t('no_checkins_yet')}</p>
+          <p className="text-[10px] text-slate-400">{t('stand_in_front_prompt')}</p>
         </div>
       )}
     </div>
@@ -455,7 +491,7 @@ const RealtimeDashboard = ({
             }`}
           >
             <Activity className="w-4 h-4" />
-            <span>Điểm Danh Trực Tiếp</span>
+            <span>{t('live_attendance_feed')}</span>
             <span className="px-1.5 py-0.5 rounded-md bg-indigo-950 text-[10px] font-mono">
               {liveLogs.length}
             </span>
@@ -470,7 +506,7 @@ const RealtimeDashboard = ({
             }`}
           >
             <UserX className="w-4 h-4" />
-            <span>Cảnh Báo Người Lạ</span>
+            <span>{t('stranger_alerts_feed')}</span>
             {strangerLogs.length > 0 && (
               <span className="px-1.5 py-0.5 rounded-md bg-red-950 text-red-200 text-[10px] font-mono font-bold animate-pulse">
                 {strangerLogs.length}
@@ -480,7 +516,7 @@ const RealtimeDashboard = ({
         </div>
 
         <span className="text-xs text-slate-400">
-          {activeFeedTab === 'attendance' ? 'Bản ghi hợp lệ' : 'Lịch sử phát hiện'}
+          {activeFeedTab === 'attendance' ? t('live') : t('stranger_counter_metric')}
         </span>
       </div>
 
@@ -490,15 +526,16 @@ const RealtimeDashboard = ({
           {liveLogs.length === 0 ? (
             <div className="py-24 text-center text-slate-500 text-xs space-y-2">
               <ScanFace className="w-10 h-10 mx-auto text-slate-600 animate-pulse" />
-              <p className="text-slate-400">Đang chờ sự kiện điểm danh từ Camera AI...</p>
+              <p className="text-slate-400">{t('waiting_for_camera')}</p>
             </div>
           ) : (
             liveLogs.map((log, index) => {
-              const fullName = log.full_name || log.employee?.full_name || 'Nhân viên';
+              const fullName = log.full_name || log.employee?.full_name || t('unknown');
               const empCode = log.employee_code || log.employee?.employee_code || '';
               const department = log.department || log.employee?.department || '';
               const position = log.position || log.employee?.position || '';
               const initialChar = fullName ? fullName.charAt(0).toUpperCase() : 'N';
+              const localeCode = language === 'vi' ? 'vi-VN' : 'en-US';
 
               return (
                 <div
@@ -544,7 +581,7 @@ const RealtimeDashboard = ({
                   {/* Metadata: Time & Confidence */}
                   <div className="text-right flex-shrink-0 ml-3 space-y-1">
                     <div className="text-xs font-mono font-bold text-white">
-                      {new Date(log.check_time).toLocaleTimeString('vi-VN', {
+                      {new Date(log.check_time).toLocaleTimeString(localeCode, {
                         hour: '2-digit',
                         minute: '2-digit',
                         second: '2-digit',
@@ -555,7 +592,7 @@ const RealtimeDashboard = ({
                       {log.auto_learned && (
                         <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                           <Sparkles className="w-2.5 h-2.5" />
-                          <span>Tự học mẫu</span>
+                          <span>{t('auto_learned_badge')}</span>
                         </span>
                       )}
                       <div className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -577,8 +614,8 @@ const RealtimeDashboard = ({
           {strangerLogs.length === 0 ? (
             <div className="py-24 text-center text-slate-500 text-xs space-y-2">
               <ShieldCheck className="w-10 h-10 mx-auto text-emerald-500/60" />
-              <p className="text-slate-300 font-semibold">Khu vực an ninh đảm bảo</p>
-              <p className="text-slate-500 text-[11px]">Chưa phát hiện người lạ nào đi qua khu vực cửa vào trong phiên làm việc.</p>
+              <p className="text-slate-300 font-semibold">{t('security_area_safe')}</p>
+              <p className="text-slate-500 text-[11px]">{t('no_stranger_detected')}</p>
             </div>
           ) : (
             strangerLogs.map((item, index) => (
@@ -604,10 +641,10 @@ const RealtimeDashboard = ({
                   <div className="min-w-0">
                     <div className="flex items-center space-x-2">
                       <span className="text-xs font-extrabold text-red-300 uppercase tracking-wide">
-                        Người Lạ Chưa Đăng Ký
+                        {t('stranger_detected_title')}
                       </span>
                       <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-mono font-bold">
-                        Khớp &lt; 70%
+                        &lt; 70%
                       </span>
                     </div>
                     <div className="text-xs text-slate-300 truncate mt-0.5">
@@ -622,7 +659,7 @@ const RealtimeDashboard = ({
                     {item.timestamp}
                   </div>
                   <span className="text-[10px] font-mono text-slate-400">
-                    Độ khớp: {item.confidence?.toFixed(1) ?? '0.0'}%
+                    {t('similarity_label')} {item.confidence?.toFixed(1) ?? '0.0'}%
                   </span>
                 </div>
               </div>
@@ -644,14 +681,14 @@ const RealtimeDashboard = ({
             </div>
             <div>
               <div className="font-extrabold text-sm tracking-wide text-red-200 uppercase">
-                🚨 CẢNH BÁO AN NINH: PHÁT HIỆN HÀNH VI GIẢ MẠO (ANTI-SPOOFING)
+                {t('spoof_alert_title')}
               </div>
               <div className="text-xs text-slate-200 mt-0.5">
-                {spoofAlert.message} (Độ tự tin thực thể sống:{' '}
+                {spoofAlert.message} (Liveness:{' '}
                 <span className="font-mono font-bold text-red-300">
                   {((spoofAlert.liveness_score || 0) * 100).toFixed(1)}%
                 </span>{' '}
-                &lt; Ngưỡng an toàn {((spoofAlert.threshold || 0.6) * 100).toFixed(0)}%)
+                &lt; {((spoofAlert.threshold || 0.6) * 100).toFixed(0)}%)
               </div>
             </div>
           </div>
@@ -659,12 +696,12 @@ const RealtimeDashboard = ({
             onClick={() => setSpoofAlert(null)}
             className="px-3 py-1.5 rounded-xl bg-red-800/60 hover:bg-red-700 text-xs font-bold transition-all"
           >
-            Đã xử lý
+            {t('dismiss_alert')}
           </button>
         </div>
       )}
 
-      {/* Top Banner Alert 2: Stranger Alert (Phát hiện người lạ xuất hiện) */}
+      {/* Top Banner Alert 2: Stranger Alert */}
       {strangerAlert && (
         <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950 via-red-900 to-amber-950/80 border-2 border-red-500 text-white shadow-2xl flex items-center justify-between animate-bounce">
           <div className="flex items-center space-x-4">
@@ -683,13 +720,13 @@ const RealtimeDashboard = ({
             )}
             <div>
               <div className="font-extrabold text-sm tracking-wide text-red-200 uppercase flex items-center space-x-2">
-                <span>🚨 CẢNH BÁO: PHÁT HIỆN NGƯỜI LẠ (STRANGER ALERT)</span>
+                <span>{t('stranger_alert_title')}</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/40 text-red-300">
                   {strangerAlert.timestamp}
                 </span>
               </div>
               <div className="text-xs text-slate-200 mt-0.5">
-                {strangerAlert.message} — Khuôn mặt chưa có trong hệ thống dữ liệu nhân sự.
+                {strangerAlert.message}
               </div>
             </div>
           </div>
@@ -698,7 +735,7 @@ const RealtimeDashboard = ({
             className="px-3 py-1.5 rounded-xl bg-red-800/80 hover:bg-red-700 text-xs font-bold transition-all flex items-center space-x-1"
           >
             <X className="w-4 h-4" />
-            <span>Đóng cảnh báo</span>
+            <span>{t('dismiss_alert')}</span>
           </button>
         </div>
       )}
@@ -708,7 +745,7 @@ const RealtimeDashboard = ({
         {/* Card 1: API & Server Status */}
         <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-medium">Hạ Tầng API & WebSocket</span>
+            <span className="font-medium">{t('api_infra')}</span>
             <Server className="w-4 h-4 text-indigo-400" />
           </div>
           <div className="flex items-baseline justify-between">
@@ -717,14 +754,14 @@ const RealtimeDashboard = ({
                 isApiConnected ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50' : 'bg-rose-500'
               }`} />
               <span className="text-sm font-bold text-white truncate">
-                {isApiConnected ? 'FastAPI & PostgreSQL' : 'Mất kết nối API'}
+                {isApiConnected ? 'FastAPI & PostgreSQL' : t('disconnected')}
               </span>
             </div>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
             <span>WebSocket:</span>
             <span className={isWsConnected ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-              {isWsConnected ? 'Đang truyền tin' : 'Đang kết nối lại'}
+              {isWsConnected ? t('streaming_live') : t('reconnecting')}
             </span>
           </div>
         </div>
@@ -732,7 +769,7 @@ const RealtimeDashboard = ({
         {/* Card 2: Camera Stream Engine */}
         <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-medium">Camera Source (Nguồn)</span>
+            <span className="font-medium">{t('camera_source')}</span>
             {isWebcam ? (
               <Laptop className="w-4 h-4 text-cyan-400" />
             ) : (
@@ -754,7 +791,7 @@ const RealtimeDashboard = ({
             </div>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Trạng thái luồng:</span>
+            <span>{t('stream_status')}:</span>
             <span className={`font-semibold ${
               isCamRunning && isCamConnected
                 ? 'text-emerald-400'
@@ -762,7 +799,7 @@ const RealtimeDashboard = ({
                 ? 'text-amber-400'
                 : 'text-slate-500'
             }`}>
-              {isCamRunning ? (isCamConnected ? 'Đang hoạt động' : 'Mất tín hiệu') : 'Đang tạm dừng'}
+              {isCamRunning ? (isCamConnected ? t('active') : t('no_signal')) : t('standby')}
             </span>
           </div>
         </div>
@@ -770,7 +807,7 @@ const RealtimeDashboard = ({
         {/* Card 3: Stranger Security Metrics */}
         <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-medium">Cảnh Báo Người Lạ</span>
+            <span className="font-medium">{t('stranger_counter_metric')}</span>
             <UserX className="w-4 h-4 text-red-400" />
           </div>
           <div className="flex items-baseline justify-between">
@@ -778,19 +815,19 @@ const RealtimeDashboard = ({
               {cameraStatus?.stranger_alerts_count ?? strangerLogs.length}
             </div>
             <span className="text-[10px] font-mono text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">
-              Ngưỡng &lt; 70%
+              {t('stranger_counter_sub')}
             </span>
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
             <span>Cooldown:</span>
-            <span className="text-slate-300 font-mono">60s chống spam</span>
+            <span className="text-slate-300 font-mono">{t('stranger_cooldown_sub')}</span>
           </div>
         </div>
 
         {/* Card 4: Today Attendance Count */}
         <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-medium">Lượt Chấm Công Hôm Nay</span>
+            <span className="font-medium">{t('today_checkins_metric')}</span>
             <UserCheck className="w-4 h-4 text-indigo-400" />
           </div>
           <div className="flex items-baseline justify-between">
@@ -803,7 +840,7 @@ const RealtimeDashboard = ({
           </div>
           <div className="text-[11px] text-emerald-400 flex items-center space-x-1">
             <CheckCircle2 className="w-3 h-3" />
-            <span>pgvector Multi-Template matching</span>
+            <span>{t('today_checkins_sub')}</span>
           </div>
         </div>
       </div>

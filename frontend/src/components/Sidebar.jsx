@@ -17,6 +17,7 @@ import {
   Video,
   BarChart3
 } from 'lucide-react';
+import { useI18n } from '../i18n/I18nContext';
 
 export const NAV_TABS = {
   DASHBOARD: 'DASHBOARD',
@@ -28,52 +29,54 @@ export const NAV_TABS = {
 };
 
 const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cameraStatus }) => {
+  const { t } = useI18n();
+
   const menuItems = [
     {
       id: NAV_TABS.DASHBOARD,
-      label: 'Dashboard Realtime',
-      subLabel: 'Giám sát trực tiếp & AI HUD',
+      label: t('nav_dashboard'),
+      subLabel: t('nav_dashboard_sub'),
       icon: Activity,
       badge: isWsConnected ? 'LIVE' : 'OFFLINE',
       badgeColor: isWsConnected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30',
     },
     {
       id: NAV_TABS.EMPLOYEES,
-      label: 'Quản lý Nhân viên',
-      subLabel: 'Hồ sơ & Đăng ký khuôn mặt',
+      label: t('nav_employees'),
+      subLabel: t('nav_employees_sub'),
       icon: Users,
     },
     {
       id: NAV_TABS.REQUESTS,
-      label: 'Đơn từ & Ngoại lệ',
-      subLabel: 'Nghỉ nửa ngày, công tác, trễ/sớm',
+      label: t('nav_requests'),
+      subLabel: t('nav_requests_sub'),
       icon: FileCheck,
     },
     {
       id: NAV_TABS.ATTENDANCE,
-      label: 'Lịch sử Chấm công',
-      subLabel: 'Báo cáo & Bộ lọc dữ liệu',
+      label: t('nav_attendance'),
+      subLabel: t('nav_attendance_sub'),
       icon: Clock,
     },
     {
       id: NAV_TABS.DEVICES,
-      label: 'Quản lý Thiết bị',
-      subLabel: 'Camera RTSP & Multi-Threading',
+      label: t('nav_devices'),
+      subLabel: t('nav_devices_sub'),
       icon: Video,
       badge: 'HRM',
       badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     },
     {
       id: NAV_TABS.ANALYTICS,
-      label: 'Phân tích & Thống kê',
-      subLabel: 'Biểu đồ xu hướng & BI Charts',
+      label: t('nav_analytics'),
+      subLabel: t('nav_analytics_sub'),
       icon: TrendingUp,
       badge: 'BI',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
     },
   ];
 
-  const sourceName = cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : 'MacBook M4';
+  const sourceName = cameraStatus?.camera?.device_id || (cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : 'MacBook M4');
   const isCamRunning = !!cameraStatus?.is_running;
   const isCamConnected = !!cameraStatus?.camera?.is_connected;
 
@@ -88,10 +91,10 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
             </div>
             <div>
               <div className="flex items-center space-x-1.5">
-                <span className="font-bold text-lg text-white tracking-wide">V-FACE</span>
-                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">HRM Pro</span>
+                <span className="font-bold text-lg text-white tracking-wide">{t('brand_title')}</span>
+                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">{t('brand_badge')}</span>
               </div>
-              <p className="text-xs text-slate-400">Chấm công & Phân tích AI</p>
+              <p className="text-xs text-slate-400">{t('brand_subtitle')}</p>
             </div>
           </div>
         </div>
@@ -99,7 +102,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
         {/* Navigation Links */}
         <nav className="p-4 space-y-1.5">
           <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Menu Quản Trị
+            {t('nav_menu')}
           </div>
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -137,9 +140,9 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1.5 text-xs text-slate-300 font-bold uppercase tracking-wider">
             <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-            <span>Trạng Thái Hệ Thống</span>
+            <span>{t('stream_status')}</span>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 truncate max-w-[100px]">
             {sourceName}
           </span>
         </div>
@@ -149,7 +152,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
           <div className="flex items-center justify-between text-slate-400">
             <span className="flex items-center space-x-1.5">
               <Server className="w-3.5 h-3.5 text-slate-400" />
-              <span>API Backend:</span>
+              <span>{t('api_backend')}:</span>
             </span>
             <span className={`flex items-center space-x-1.5 font-semibold ${
               isApiConnected === true ? 'text-emerald-400' : isApiConnected === false ? 'text-rose-400' : 'text-slate-400'
@@ -157,7 +160,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
               <span className={`w-2 h-2 rounded-full ${
                 isApiConnected === true ? 'bg-emerald-400' : isApiConnected === false ? 'bg-rose-400 animate-ping' : 'bg-slate-400'
               }`} />
-              <span>{isApiConnected === true ? 'Online (8000)' : isApiConnected === false ? 'Mất kết nối' : 'Đang thử...'}</span>
+              <span>{isApiConnected === true ? `${t('online')} (8000)` : isApiConnected === false ? t('disconnected') : t('connecting')}</span>
             </span>
           </div>
 
@@ -165,11 +168,11 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
           <div className="flex items-center justify-between text-slate-400">
             <span className="flex items-center space-x-1.5">
               <Activity className="w-3.5 h-3.5 text-slate-400" />
-              <span>WebSocket Live:</span>
+              <span>{t('websocket_live')}:</span>
             </span>
             <span className={`flex items-center space-x-1.5 font-semibold ${isWsConnected ? 'text-emerald-400' : 'text-rose-400'}`}>
               <span className={`w-2 h-2 rounded-full ${isWsConnected ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-              <span>{isWsConnected ? 'Đã kết nối' : 'Mất kết nối'}</span>
+              <span>{isWsConnected ? t('connected') : t('disconnected')}</span>
             </span>
           </div>
 
@@ -177,7 +180,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
           <div className="flex items-center justify-between text-slate-400">
             <span className="flex items-center space-x-1.5">
               <Camera className="w-3.5 h-3.5 text-slate-400" />
-              <span>Luồng Camera:</span>
+              <span>{t('camera_source')}:</span>
             </span>
             <span className={`font-semibold ${
               isCamRunning
@@ -188,9 +191,9 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
             }`}>
               {isCamRunning
                 ? isCamConnected
-                  ? `Đang chạy (${cameraStatus?.camera?.fps || 0} FPS)`
-                  : 'Mất tín hiệu luồng'
-                : 'Đang tắt'}
+                  ? `${t('camera_running')} (${cameraStatus?.camera?.fps || 0} FPS)`
+                  : t('no_signal')
+                : t('camera_stopped')}
             </span>
           </div>
         </div>
@@ -200,7 +203,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>Apple Silicon M4</span>
           </span>
-          <span>v1.3.0</span>
+          <span>v1.4.0</span>
         </div>
       </div>
     </aside>
