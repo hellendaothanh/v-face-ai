@@ -207,8 +207,8 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 
 ## 6. Bộ Kiểm Thử Tự Động (Testing Suites)
 
-### 6.1. Kiểm Thử Toàn Diện 8 Module Hệ Thống Microservices & Sinh Trắc Học (`tests/test_e2e_full_system.py`)
-Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật, RBAC, cơ cấu tổ chức, đồng bộ danh tính, đăng ký 5 góc mặt, xác minh realtime, Helpdesk và Đăng nhập Face ID:
+### 6.1. Kiểm Thử Toàn Diện 10 Module Hệ Thống Microservices & Sinh Trắc Học (`tests/test_e2e_full_system.py`)
+Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-Trust, RBAC, ABAC Data Scoping, chống leo thang đặc quyền, cơ cấu tổ chức, đồng bộ danh tính, đăng ký 5 góc mặt, xác minh realtime, Helpdesk, Đăng nhập Face ID và Đổi mật khẩu:
 
 ```powershell
 # Windows
@@ -218,7 +218,7 @@ Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật, RBAC,
 ./venv/bin/python tests/test_e2e_full_system.py
 ```
 
-**Kết quả kiểm thử (31/31 Tests PASS - 100%)**:
+**Kết quả kiểm thử (44/44 Tests PASS - 100%)**:
 - **Module 1**: Authentication & JWT (`/auth/login`, `/auth/me`, xác thực token)
 - **Module 2**: RBAC Roles & Authorization (Danh sách vai trò, vai trò admin, 14 atomic permissions)
 - **Module 3**: Organization Structure (CRUD Phòng ban & Chức vụ)
@@ -227,6 +227,8 @@ Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật, RBAC,
 - **Module 6**: Live Face Verification & Attendance (`/verify-face`, `/attendance/check-in`)
 - **Module 7**: ITIL Helpdesk & Service Tickets (Tạo ticket, AI phản hồi tự động giải pháp)
 - **Module 8**: 1-Click Biometric Face ID Login (`POST /auth/face-login`, cấp JWT, xác minh `/auth/me`)
+- **Module 9**: My Account Profile Update & Password Change (`PUT /users/{id}/profile`, `POST /auth/change-password`)
+- **Module 10**: Zero-Trust Security, ABAC Data Scoping & Anti-Privilege Escalation (Chống leo thang đặc quyền, bảo vệ vai trò `superadmin` bất biến, kiểm soát truy cập phạm vi phòng ban ABAC, chống tự xóa tài khoản)
 
 ### 6.2. Kiểm Thử Giao Diện Frontend (Playwright)
 - **Kiểm thử luồng giao diện (Navigation & CRUD)**: Đảm bảo chuyển đổi mượt mà qua các Tab mà không phát sinh lỗi JavaScript (`ReferenceError`, `TypeError`).

@@ -40,6 +40,7 @@ const UserProfileManager = () => {
   // --------------------------------------------------------------------------
   // 1. PROFILE STATE
   // --------------------------------------------------------------------------
+  const [loadedUser, setLoadedUser] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -76,6 +77,7 @@ const UserProfileManager = () => {
       const user = meRes?.data || meRes || currentUser;
       
       if (user) {
+        setLoadedUser(user);
         const fullName = user.profile?.full_name || user.full_name || user.username || '';
         const phone = user.profile?.phone_number || user.phone_number || '';
         const email = user.email || '';
@@ -106,6 +108,14 @@ const UserProfileManager = () => {
       }
     } catch (err) {
       console.error('Error loading profile:', err);
+      if (currentUser) {
+        setLoadedUser(currentUser);
+        setProfileForm({
+          full_name: currentUser.profile?.full_name || currentUser.full_name || currentUser.username || '',
+          phone_number: currentUser.profile?.phone_number || currentUser.phone_number || '',
+          email: currentUser.email || '',
+        });
+      }
     } finally {
       setProfileLoading(false);
     }
@@ -120,7 +130,11 @@ const UserProfileManager = () => {
   // --------------------------------------------------------------------------
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    if (!currentUser?.id) return;
+    const targetUserId = loadedUser?.id || currentUser?.id;
+    if (!targetUserId) {
+      showToast('Không tìm thấy mã định danh người dùng', 'error');
+      return;
+    }
     setIsSavingProfile(true);
 
     try {
@@ -129,7 +143,7 @@ const UserProfileManager = () => {
         full_name: profileForm.full_name.trim(),
         phone_number: profileForm.phone_number.trim() || null,
       };
-      await api.updateMyProfile(currentUser.id, payload);
+      await api.updateMyProfile(targetUserId, payload);
 
       // 2. Sync to Face AI Employee if linked
       if (linkedEmployee?.id) {
@@ -140,14 +154,16 @@ const UserProfileManager = () => {
             email: profileForm.email.trim() || linkedEmployee.email,
           });
         } catch (syncErr) {
-          console.warn('Face AI sync warning:', syncErr);
+          console.warn('Face AI sync notice:', syncErr);
         }
       }
 
       await refreshProfile();
+      await loadUserData();
       showToast(t('profile_save_success', 'Cập nhật thông tin cá nhân thành công!'));
     } catch (err) {
-      showToast(err.message || 'Lỗi khi lưu thông tin cá nhân', 'error');
+      const msg = err.response?.data?.detail || err.message || 'Lỗi khi lưu thông tin cá nhân';
+      showToast(msg, 'error');
     } finally {
       setIsSavingProfile(false);
     }

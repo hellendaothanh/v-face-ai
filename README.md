@@ -207,8 +207,8 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 
 ## 6. Automated Testing Suites
 
-### 6.1. Comprehensive 8-Module Microservices & Biometrics E2E Suite (`tests/test_e2e_full_system.py`)
-Run the all-inclusive microservices E2E test suite covering security, RBAC, organizations, unified identity sync, 5-angle biometrics, live verification, ITIL helpdesk, and 1-Click Face ID login:
+### 6.1. Comprehensive 10-Module Microservices & Biometrics E2E Suite (`tests/test_e2e_full_system.py`)
+Run the all-inclusive microservices E2E test suite covering Zero-Trust security, RBAC, ABAC Data Scoping, anti-privilege escalation, organizations, unified identity sync, 5-angle biometrics, live verification, ITIL helpdesk, 1-Click Face ID login, and password self-service:
 
 ```powershell
 # Windows
@@ -218,7 +218,7 @@ Run the all-inclusive microservices E2E test suite covering security, RBAC, orga
 ./venv/bin/python tests/test_e2e_full_system.py
 ```
 
-**Results (31/31 Tests PASS - 100%)**:
+**Results (44/44 Tests PASS - 100%)**:
 - **Module 1**: Authentication & JWT (`/auth/login`, `/auth/me`, token verification)
 - **Module 2**: RBAC Roles & Authorization (Role listing, admin existence, 14 atomic permissions)
 - **Module 3**: Organization Structure (Departments, Positions CRUD)
@@ -227,6 +227,8 @@ Run the all-inclusive microservices E2E test suite covering security, RBAC, orga
 - **Module 6**: Live Face Verification & Attendance (`/verify-face`, `/attendance/check-in`)
 - **Module 7**: ITIL Helpdesk & Service Tickets (Ticket creation, AI auto-resolution response)
 - **Module 8**: 1-Click Biometric Face ID Login (`POST /auth/face-login`, JWT issuance, `/auth/me` verification)
+- **Module 9**: My Account Profile Update & Password Change (`PUT /users/{id}/profile`, `POST /auth/change-password`)
+- **Module 10**: Zero-Trust Security, ABAC Data Scoping & Anti-Privilege Escalation (Immutable `superadmin` role protection, privilege escalation prevention, departmental data scoping, self-deletion prevention)
 
 ### 6.2. Playwright Frontend & UI Testing
 - **UI & Flow Verification (`e2e/dashboard.spec.js`)**: Tests seamless tab switching, live dashboards, and ensures zero runtime errors.

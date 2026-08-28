@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_permissions
+from app.api.deps import get_current_user, require_permissions
 from app.core.exceptions import DuplicateException, NotFoundException
 from app.database.session import get_db
 from app.models.organization import Department, Position
@@ -28,7 +28,7 @@ router = APIRouter()
 async def list_departments(
     is_active: Optional[bool] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_permissions(["org:manage"]))
+    _: User = Depends(get_current_user)
 ):
     """List organizational departments."""
     stmt = select(Department)
@@ -105,7 +105,7 @@ async def delete_department(
 async def list_positions(
     is_active: Optional[bool] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_permissions(["org:manage"]))
+    _: User = Depends(get_current_user)
 ):
     """List job positions and ranks."""
     stmt = select(Position)

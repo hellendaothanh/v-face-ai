@@ -366,6 +366,136 @@ class E2ETestRunner:
         self.assert_true(relogin_res.status_code == 200, "Re-login verified with New Password")
 
     # ------------------------------------------------------------------------
+    # Module 10: Zero-Trust Security, ABAC Data Scoping & Anti-Privilege Escalation
+    # ------------------------------------------------------------------------
+    def test_zero_trust_and_anti_privilege_escalation(self):
+        print(f"\n{INFO_ICON}--- Module 10: Zero-Trust Security, ABAC & Anti-Privilege Escalation ---")
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+
+        # 1. Fetch Superadmin System Role ID
+        roles_res = requests.get(f"{CORE_USER_URL}/rbac/roles", headers=headers)
+        self.assert_true(roles_res.status_code == 200, "List Roles for Zero-Trust Auditing")
+        roles = roles_res.json() if isinstance(roles_res.json(), list) else roles_res.json().get("data", [])
+        superadmin_role = next((r for r in roles if r.get("name") == "superadmin"), None)
+        self.assert_true(superadmin_role is not None, "Identify 'superadmin' system role")
+        superadmin_role_id = superadmin_role.get("id")
+
+        # 2. Immutable System Role Protection: Attempt to delete 'superadmin' role
+        del_role_res = requests.delete(f"{CORE_USER_URL}/rbac/roles/{superadmin_role_id}", headers=headers)
+        self.assert_true(
+            del_role_res.status_code == 403,
+            "Immutable System Role: Chặn xóa vai trò 'superadmin' (403 Forbidden)",
+            f"{del_role_res.status_code} {del_role_res.text}"
+        )
+
+        # 3. Create a Department Manager User for ABAC & Privilege testing
+        dept_b_code = f"DEPT_B_{uuid.uuid4().hex[:4].upper()}"
+        dept_b_res = requests.post(
+            f"{CORE_USER_URL}/organization/departments",
+            json={"code": dept_b_code, "name": f"Department B {dept_b_code}"},
+            headers=headers
+        )
+        dept_b_data = dept_b_res.json() if isinstance(dept_b_res.json(), dict) else {}
+        dept_b_id = dept_b_data.get("id") or dept_b_data.get("data", {}).get("id")
+
+        # Create Dept Manager role ID lookup
+        dept_mgr_role = next((r for r in roles if r.get("name") == "dept_manager"), None)
+        dept_mgr_role_id = dept_mgr_role.get("id") if dept_mgr_role else None
+
+        manager_username = f"manager_{uuid.uuid4().hex[:4]}"
+        manager_res = requests.post(
+            f"{CORE_USER_URL}/users",
+            json={
+                "username": manager_username,
+                "email": f"{manager_username}@vface.ai",
+                "password": "ManagerPass123!",
+                "full_name": "Test Dept Manager",
+                "user_code": f"MGR_{uuid.uuid4().hex[:4].upper()}",
+                "department_id": self.test_dept_id,  # Assigned to Dept A
+                "role_ids": [dept_mgr_role_id] if dept_mgr_role_id else []
+            },
+            headers=headers
+        )
+        mgr_data = manager_res.json() if isinstance(manager_res.json(), dict) else {}
+        manager_id = mgr_data.get("id") or mgr_data.get("data", {}).get("id")
+        
+        # User in Dept B
+        user_b_username = f"userb_{uuid.uuid4().hex[:4]}"
+        user_b_res = requests.post(
+            f"{CORE_USER_URL}/users",
+            json={
+                "username": user_b_username,
+                "email": f"{user_b_username}@vface.ai",
+                "password": "UserBPass123!",
+                "full_name": "Employee Dept B",
+                "user_code": f"EMP_B_{uuid.uuid4().hex[:4].upper()}",
+                "department_id": dept_b_id,  # Assigned to Dept B
+                "role_ids": []
+            },
+            headers=headers
+        )
+        ub_data = user_b_res.json() if isinstance(user_b_res.json(), dict) else {}
+        user_b_id = ub_data.get("id") or ub_data.get("data", {}).get("id")
+
+        try:
+            # Login as Manager A
+            mgr_login = requests.post(
+                f"{CORE_USER_URL}/auth/login",
+                json={"username": manager_username, "password": "ManagerPass123!"}
+            )
+            mgr_token = mgr_login.json().get("access_token")
+            mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
+
+            # 4. Anti-Privilege Escalation: Non-superadmin attempting to assign 'superadmin' role
+            escalate_res = requests.put(
+                f"{CORE_USER_URL}/users/{user_b_id}",
+                json={"role_ids": [superadmin_role_id]},
+                headers=mgr_headers
+            )
+            self.assert_true(
+                escalate_res.status_code == 403,
+                "Anti-Privilege Escalation: Chặn Manager tự ý gán quyền 'superadmin' (403 Forbidden)",
+                f"{escalate_res.status_code} {escalate_res.text}"
+            )
+
+            # 5. Account Self-Deletion Protection: Manager attempting to delete self
+            self_del_res = requests.delete(f"{CORE_USER_URL}/users/{manager_id}", headers=mgr_headers)
+            self.assert_true(
+                self_del_res.status_code == 403,
+                "Self-Deletion Protection: Chặn người dùng tự xóa tài khoản của chính mình (403 Forbidden)",
+                f"{self_del_res.status_code} {self_del_res.text}"
+            )
+
+            # 6. ABAC Data-Level Scope Check: Manager A should only see users in Dept A
+            mgr_users_res = requests.get(f"{CORE_USER_URL}/users", headers=mgr_headers)
+            self.assert_true(mgr_users_res.status_code == 200, "ABAC Scope: Manager A gọi danh sách Users")
+            mgr_users = mgr_users_res.json() if isinstance(mgr_users_res.json(), list) else mgr_users_res.json().get("data", [])
+            
+            # Verify no users from Dept B are returned
+            has_dept_b_user = any(u.get("department_id") == dept_b_id for u in mgr_users)
+            self.assert_true(
+                not has_dept_b_user,
+                "ABAC Scope Check: Manager chỉ xem được nhân sự phòng ban của mình (Không thấy Dept B)"
+            )
+
+            # 7. ABAC Single User Scope Check: Manager A attempting to GET user in Dept B
+            user_b_detail_res = requests.get(f"{CORE_USER_URL}/users/{user_b_id}", headers=mgr_headers)
+            self.assert_true(
+                user_b_detail_res.status_code == 403,
+                "ABAC Detail Boundary: Chặn xem chi tiết nhân sự phòng ban khác (403 Forbidden)",
+                f"{user_b_detail_res.status_code} {user_b_detail_res.text}"
+            )
+
+        finally:
+            # Clean up temp test resources
+            if user_b_id:
+                requests.delete(f"{CORE_USER_URL}/users/{user_b_id}", headers=headers)
+            if manager_id:
+                requests.delete(f"{CORE_USER_URL}/users/{manager_id}", headers=headers)
+            if dept_b_id:
+                requests.delete(f"{CORE_USER_URL}/organization/departments/{dept_b_id}", headers=headers)
+
+    # ------------------------------------------------------------------------
     # Teardown / Cleanup
     # ------------------------------------------------------------------------
     def cleanup(self):
@@ -414,6 +544,7 @@ class E2ETestRunner:
             self.test_face_verification_and_checkin()
             self.test_face_id_login()
             self.test_my_account_profile_and_password()
+            self.test_zero_trust_and_anti_privilege_escalation()
             self.test_helpdesk()
         finally:
             self.cleanup()
