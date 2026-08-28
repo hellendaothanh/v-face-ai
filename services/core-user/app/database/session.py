@@ -114,52 +114,174 @@ async def seed_initial_data(session: AsyncSession) -> None:
         if role_name == "superadmin":
             admin_role = role
 
-    # 3. Seed Default Department & Position
-    stmt = select(Department).where(Department.code == "BOD")
-    result = await session.execute(stmt)
-    bod_dept = result.scalar_one_or_none()
-    if not bod_dept:
-        bod_dept = Department(code="BOD", name="Board of Directors", description="Executive Management")
-        session.add(bod_dept)
-        await session.flush()
+    # 3. Seed Enterprise Departments
+    departments_data = [
+        ("BOD", "Ban Giám Đốc", "Điều hành và hoạch định chiến lược phát triển toàn diện"),
+        ("TECH_AI", "Khối Công Nghệ & AI", "Nghiên cứu thị giác máy tính, phát triển Face AI và hệ thống Cloud"),
+        ("HR_OPS", "Phòng Nhân Sự & Vận Hành", "Quản lý nhân sự, chấm công, đào tạo và chính sách phúc lợi"),
+        ("SALES_MKT", "Phòng Kinh Doanh & Marketing", "Mở rộng thị trường, giải pháp đối tác và thương mại hóa sản phẩm"),
+        ("FIN_ACC", "Phòng Tài Chính - Kế Toán", "Quản trị dòng tiền, ngân sách và hạch toán tài chính doanh nghiệp"),
+    ]
+    dept_map = {}
+    for code, name, desc in departments_data:
+        stmt = select(Department).where(Department.code == code)
+        result = await session.execute(stmt)
+        dept = result.scalar_one_or_none()
+        if not dept:
+            dept = Department(code=code, name=name, description=desc)
+            session.add(dept)
+            await session.flush()
+        dept_map[code] = dept
 
-    stmt = select(Position).where(Position.code == "EXEC_ADMIN")
-    result = await session.execute(stmt)
-    exec_pos = result.scalar_one_or_none()
-    if not exec_pos:
-        exec_pos = Position(code="EXEC_ADMIN", name="Executive Administrator", level=5, description="Full administrative rank")
-        session.add(exec_pos)
-        await session.flush()
+    # 4. Seed Enterprise Positions
+    positions_data = [
+        ("CEO", "Tổng Giám Đốc (CEO)", 10, "Lãnh đạo cao nhất điều hành toàn bộ hoạt động doanh nghiệp"),
+        ("CTO", "Giám Đốc Công Nghệ (CTO)", 9, "Quản trị kiến trúc công nghệ, AI và hạ tầng kỹ thuật số"),
+        ("HR_DIRECTOR", "Giám Đốc Nhân Sự (HR Director)", 8, "Hoạch định chiến lược nhân tài và vận hành văn hóa tổ chức"),
+        ("AI_LEAD", "Trưởng Nhóm AI & Computer Vision", 6, "Chịu trách nhiệm kiến trúc mô hình Deep Learning và luồng Camera"),
+        ("SR_DEV", "Kỹ Sư Phần Mềm Cao Cấp (Senior Dev)", 5, "Phát triển hệ thống microservices và giao diện điều hành"),
+        ("HR_EXECUTIVE", "Chuyên Viên Nhân Sự (HR Executive)", 3, "Thực thi quy trình tuyển dụng, chấm công và quan hệ lao động"),
+        ("SALES_LEAD", "Trưởng Phòng Kinh Doanh (Sales Lead)", 6, "Phát triển khách hàng doanh nghiệp và triển khai hợp đồng"),
+        ("EXEC_ADMIN", "Quản Trị Viên Hệ Thống (System Admin)", 5, "Quản trị phân quyền IAM, an ninh mạng và hạ tầng vận hành"),
+    ]
+    pos_map = {}
+    for code, name, level, desc in positions_data:
+        stmt = select(Position).where(Position.code == code)
+        result = await session.execute(stmt)
+        pos = result.scalar_one_or_none()
+        if not pos:
+            pos = Position(code=code, name=name, level=level, description=desc)
+            session.add(pos)
+            await session.flush()
+        pos_map[code] = pos
 
-    # 4. Seed First Super Admin User
-    stmt = select(User).where(User.username == settings.FIRST_SUPERUSER_USERNAME)
-    result = await session.execute(stmt)
-    admin_user = result.scalar_one_or_none()
-    if not admin_user:
-        logger.info(f"Seeding first super admin user: {settings.FIRST_SUPERUSER_USERNAME}")
-        admin_user = User(
-            user_code="EMP000",
-            username=settings.FIRST_SUPERUSER_USERNAME,
-            email=settings.FIRST_SUPERUSER_EMAIL,
-            hashed_password=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
-            is_active=True,
-            is_superuser=True,
-            department_id=bod_dept.id,
-            position_id=exec_pos.id,
-            roles=[admin_role] if admin_role else []
-        )
-        session.add(admin_user)
-        await session.flush()
+    # 5. Seed Enterprise Sample Users & Profiles
+    # Map roles
+    role_map = {}
+    for r_name in ["superadmin", "hr_manager", "dept_manager", "it_support", "employee"]:
+        stmt = select(Role).where(Role.name == r_name)
+        res = await session.execute(stmt)
+        r_obj = res.scalar_one_or_none()
+        if r_obj:
+            role_map[r_name] = r_obj
 
-        admin_profile = UserProfile(
-            user_id=admin_user.id,
-            full_name=settings.FIRST_SUPERUSER_FULLNAME,
-            phone_number="0901234567"
-        )
-        session.add(admin_profile)
-        await session.flush()
+    sample_users_data = [
+        (
+            settings.FIRST_SUPERUSER_USERNAME,
+            "EMP000",
+            settings.FIRST_SUPERUSER_FULLNAME,
+            settings.FIRST_SUPERUSER_EMAIL,
+            "0901234567",
+            settings.FIRST_SUPERUSER_PASSWORD,
+            "BOD",
+            "CEO",
+            ["superadmin"],
+            True
+        ),
+        (
+            "cto_hai",
+            "EMP001",
+            "Trần Quang Hải",
+            "hai.tq@vface.ai",
+            "0912345678",
+            "Password@123",
+            "TECH_AI",
+            "CTO",
+            ["superadmin"],
+            True
+        ),
+        (
+            "hr_mai",
+            "EMP002",
+            "Lê Tuyết Mai",
+            "mai.lt@vface.ai",
+            "0923456789",
+            "Password@123",
+            "HR_OPS",
+            "HR_DIRECTOR",
+            ["hr_manager"],
+            False
+        ),
+        (
+            "ai_hung",
+            "EMP003",
+            "Phạm Quốc Hùng",
+            "hung.pq@vface.ai",
+            "0934567890",
+            "Password@123",
+            "TECH_AI",
+            "AI_LEAD",
+            ["dept_manager"],
+            False
+        ),
+        (
+            "dev_nam",
+            "EMP004",
+            "Đỗ Hoàng Nam",
+            "nam.dh@vface.ai",
+            "0945678901",
+            "Password@123",
+            "TECH_AI",
+            "SR_DEV",
+            ["employee"],
+            False
+        ),
+        (
+            "sale_linh",
+            "EMP005",
+            "Hoàng Mỹ Linh",
+            "linh.hm@vface.ai",
+            "0956789012",
+            "Password@123",
+            "SALES_MKT",
+            "SALES_LEAD",
+            ["employee"],
+            False
+        ),
+        (
+            "hr_nga",
+            "EMP006",
+            "Vũ Thúy Nga",
+            "nga.vt@vface.ai",
+            "0967890123",
+            "Password@123",
+            "HR_OPS",
+            "HR_EXECUTIVE",
+            ["hr_manager"],
+            False
+        ),
+    ]
 
-    # 5. Seed Default Knowledge Base (KB) Categories & Articles
+    for uname, ucode, fname, uemail, uphone, upass, d_code, p_code, uroles, is_super in sample_users_data:
+        stmt = select(User).where(User.username == uname)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+        if not user:
+            logger.info(f"Seeding enterprise user: {uname} ({fname})")
+            user_roles = [role_map[rn] for rn in uroles if rn in role_map]
+            user = User(
+                user_code=ucode,
+                username=uname,
+                email=uemail,
+                hashed_password=get_password_hash(upass),
+                is_active=True,
+                is_superuser=is_super,
+                department_id=dept_map.get(d_code).id if d_code in dept_map else None,
+                position_id=pos_map.get(p_code).id if p_code in pos_map else None,
+                roles=user_roles
+            )
+            session.add(user)
+            await session.flush()
+
+            profile = UserProfile(
+                user_id=user.id,
+                full_name=fname,
+                phone_number=uphone
+            )
+            session.add(profile)
+            await session.flush()
+
+    # 6. Seed Default Knowledge Base (KB) Categories & Articles
     from app.models.helpdesk import (
         KBCategory,
         KBArticle,

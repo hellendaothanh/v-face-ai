@@ -101,6 +101,12 @@ class User(Base, TimestampMixin):
         lazy="selectin"
     )
 
+    @property
+    def full_name(self) -> str:
+        if self.profile and self.profile.full_name:
+            return self.profile.full_name
+        return self.username
+
     def __repr__(self) -> str:
         return f"<User(code={self.user_code}, username={self.username})>"
 

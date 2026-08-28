@@ -25,6 +25,14 @@ from app.services.helpdesk_service import HelpdeskService
 router = APIRouter(prefix="/helpdesk", tags=["Helpdesk & Service Desk (ITIL)"])
 
 
+def _get_user_display_name(user) -> Optional[str]:
+    if not user:
+        return None
+    if getattr(user, "profile", None) and getattr(user.profile, "full_name", None):
+        return user.profile.full_name
+    return getattr(user, "full_name", user.username)
+
+
 def _format_ticket(t) -> dict:
     return {
         "id": t.id,
@@ -48,9 +56,9 @@ def _format_ticket(t) -> dict:
         "resolution_summary": t.resolution_summary,
         "satisfaction_rating": t.satisfaction_rating,
         "satisfaction_feedback": t.satisfaction_feedback,
-        "requester_name": t.requester.full_name if t.requester else None,
+        "requester_name": _get_user_display_name(t.requester),
         "requester_code": t.requester.user_code if t.requester else None,
-        "assignee_name": t.assignee.full_name if t.assignee else None,
+        "assignee_name": _get_user_display_name(t.assignee),
         "category_name": t.category.name if t.category else None,
         "linked_kb_title": t.linked_kb.title if t.linked_kb else None,
         "created_at": t.created_at,
@@ -63,7 +71,7 @@ def _format_ticket(t) -> dict:
                 "content": c.content,
                 "is_internal": c.is_internal,
                 "created_at": c.created_at,
-                "author_name": c.author.full_name if c.author else "User",
+                "author_name": _get_user_display_name(c.author) or "User",
             }
             for c in getattr(t, "comments", [])
         ],

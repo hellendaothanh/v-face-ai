@@ -177,6 +177,9 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    password: Optional[str] = None
     is_active: Optional[bool] = None
     department_id: Optional[uuid.UUID] = None
     position_id: Optional[uuid.UUID] = None

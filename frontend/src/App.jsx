@@ -2,13 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar, { NAV_TABS } from './components/Sidebar';
 import Header from './components/Header';
 import RealtimeDashboard from './components/RealtimeDashboard';
-import EmployeeManagement from './components/EmployeeManagement';
+import UnifiedHRHub from './components/UnifiedHRHub';
 import AttendanceHistory from './components/AttendanceHistory';
 import RequestManagement from './components/RequestManagement';
 import DeviceManagement from './components/DeviceManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SystemHealth from './components/SystemHealth';
-import CoreUserManager from './components/CoreUserManager';
 import HelpdeskManager from './components/HelpdeskManager';
 import Login from './components/Login';
 import api from './services/api';
@@ -53,10 +52,12 @@ function App() {
           title: t('header_dashboard_title'),
           subtitle: t('header_dashboard_sub'),
         };
-      case NAV_TABS.EMPLOYEES:
+      case NAV_TABS.HR_HUB:
+      case 'EMPLOYEES':
+      case 'CORE_USER':
         return {
-          title: t('header_employees_title'),
-          subtitle: t('header_employees_sub'),
+          title: t('header_hr_hub_title', 'Trung Tâm Quản Trị Nhân Sự & Sinh Trắc Học'),
+          subtitle: t('header_hr_hub_sub', 'Quản lý tập trung hồ sơ nhân viên, trích xuất vector khuôn mặt 512D và danh tính bảo mật IAM'),
         };
       case NAV_TABS.REQUESTS:
         return {
@@ -82,11 +83,6 @@ function App() {
         return {
           title: t('header_helpdesk_title') || 'Cổng Dịch Vụ Helpdesk & Service Desk Chuẩn ITIL',
           subtitle: t('header_helpdesk_sub') || 'Quản lý yêu cầu hỗ trợ (Incident / Service Request), theo dõi SLA tự động và tra cứu cơ sở tri thức KB',
-        };
-      case NAV_TABS.CORE_USER:
-        return {
-          title: t('header_core_user_title') || 'Quản Lý Core User & Hệ Thống IAM',
-          subtitle: t('header_core_user_sub') || 'Quản lý tài khoản người dùng, phân quyền RBAC đa phân hệ và cơ cấu tổ chức',
         };
       case NAV_TABS.HEALTH:
         return {
@@ -150,15 +146,15 @@ function App() {
               apiError={apiError}
               cameraStatus={cameraStatus}
               onRefreshCamera={fetchCameraStatus}
-              onNavigateToEmployees={() => setCurrentTab(NAV_TABS.EMPLOYEES)}
+              onNavigateToEmployees={() => setCurrentTab(NAV_TABS.HR_HUB)}
             />
           )}
 
           {currentTab === NAV_TABS.HELPDESK && <HelpdeskManager />}
 
-          {currentTab === NAV_TABS.CORE_USER && <CoreUserManager />}
-
-          {currentTab === NAV_TABS.EMPLOYEES && <EmployeeManagement />}
+          {(currentTab === NAV_TABS.HR_HUB || currentTab === 'EMPLOYEES' || currentTab === 'CORE_USER') && (
+            <UnifiedHRHub />
+          )}
 
           {currentTab === NAV_TABS.REQUESTS && <RequestManagement />}
 

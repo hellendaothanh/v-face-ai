@@ -88,7 +88,7 @@ async def create_employee(
 )
 async def list_employees(
     page: int = Query(1, ge=1, description="Số trang (bắt đầu từ 1)"),
-    page_size: int = Query(20, ge=1, le=100, description="Số bản ghi mỗi trang"),
+    page_size: int = Query(20, ge=1, le=500, description="Số bản ghi mỗi trang"),
     search: Optional[str] = Query(None, description="Tìm kiếm theo mã NV, tên, email"),
     department: Optional[str] = Query(None, description="Lọc theo phòng ban"),
     is_active: Optional[bool] = Query(None, description="Lọc theo trạng thái hoạt động"),
@@ -252,6 +252,51 @@ async def register_face(
             else "Không thể đăng ký khuôn mặt từ các ảnh đã tải lên. Vui lòng kiểm tra lại chất lượng ảnh."
         ),
         data=response_data
+    )
+
+
+@router.put(
+    "/{id}",
+    response_model=ResponseBase[EmployeeRead],
+    summary="Cập nhật thông tin nhân viên"
+)
+async def update_employee(
+    id: uuid.UUID,
+    payload: EmployeeUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Cập nhật thông tin nhân viên: Họ tên, Email, SĐT, Phòng ban, Chức vụ, Trạng thái.
+    """
+    query = select(Employee).where(Employee.id == id)
+    result = await db.execute(query)
+    employee = result.scalar_one_or_none()
+
+    if not employee:
+        raise EmployeeNotFoundException(id)
+
+    if payload.email and payload.email != employee.email:
+        existing_email = await db.execute(
+            select(Employee).where(Employee.email == payload.email, Employee.id != id)
+        )
+        if existing_email.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Email '{payload.email}' is already in use by another employee."
+            )
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(employee, field, value)
+
+    await db.commit()
+    await db.refresh(employee)
+
+    employee_data = EmployeeRead.model_validate(employee)
+    return ResponseBase(
+        success=True,
+        message="Cập nhật thông tin nhân viên thành công",
+        data=employee_data
     )
 
 

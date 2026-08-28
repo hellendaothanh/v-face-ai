@@ -80,6 +80,24 @@ async def update_department(
     return dept
 
 
+@router.delete("/departments/{department_id}", summary="Delete Department")
+async def delete_department(
+    department_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permissions(["org:manage"]))
+):
+    """Delete a department."""
+    stmt = select(Department).where(Department.id == department_id)
+    result = await db.execute(stmt)
+    dept = result.scalar_one_or_none()
+    if not dept:
+        raise NotFoundException("Department not found")
+
+    await db.delete(dept)
+    await db.commit()
+    return {"success": True, "message": f"Department '{dept.name}' deleted"}
+
+
 # ------------------------------------------------------------------------------
 # Positions
 # ------------------------------------------------------------------------------
@@ -137,3 +155,21 @@ async def update_position(
     await db.commit()
     await db.refresh(pos)
     return pos
+
+
+@router.delete("/positions/{position_id}", summary="Delete Position")
+async def delete_position(
+    position_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permissions(["org:manage"]))
+):
+    """Delete a position."""
+    stmt = select(Position).where(Position.id == position_id)
+    result = await db.execute(stmt)
+    pos = result.scalar_one_or_none()
+    if not pos:
+        raise NotFoundException("Position not found")
+
+    await db.delete(pos)
+    await db.commit()
+    return {"success": True, "message": f"Position '{pos.name}' deleted"}

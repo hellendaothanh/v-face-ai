@@ -118,6 +118,12 @@ const EmployeeManagement = () => {
   const [isSubmittingEmployee, setIsSubmittingEmployee] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Centralized Organization & IAM States
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [iamUsers, setIamUsers] = useState([]);
+  const [selectedIamUserId, setSelectedIamUserId] = useState('');
+
   // 5-Angle Multi-Template Registration State
   const [angleFiles, setAngleFiles] = useState({});
   const [anglePreviews, setAnglePreviews] = useState({});
@@ -156,6 +162,56 @@ const EmployeeManagement = () => {
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
+
+  // Fetch Organization & IAM Users Metadata
+  useEffect(() => {
+    const fetchOrgMetadata = async () => {
+      try {
+        const [deptRes, posRes, userRes] = await Promise.allSettled([
+          api.getDepartments(),
+          api.getPositions(),
+          api.getCoreUsers({ limit: 100 }),
+        ]);
+
+        if (deptRes.status === 'fulfilled' && deptRes.value) {
+          const list = Array.isArray(deptRes.value) ? deptRes.value : (deptRes.value?.data || []);
+          setDepartments(list);
+        }
+        if (posRes.status === 'fulfilled' && posRes.value) {
+          const list = Array.isArray(posRes.value) ? posRes.value : (posRes.value?.data || []);
+          setPositions(list);
+        }
+        if (userRes.status === 'fulfilled' && userRes.value) {
+          const list = Array.isArray(userRes.value) ? userRes.value : (userRes.value?.items || userRes.value?.data?.items || userRes.value?.data || []);
+          setIamUsers(list);
+        }
+      } catch (err) {
+        console.warn('Could not load IAM metadata:', err);
+      }
+    };
+    fetchOrgMetadata();
+  }, []);
+
+  const handleSelectIamUser = (userId) => {
+    setSelectedIamUserId(userId);
+    if (!userId) return;
+    const found = iamUsers.find((u) => u.id === userId);
+    if (found) {
+      const fullName = found.profile?.full_name || found.full_name || found.username;
+      const phone = found.profile?.phone_number || found.phone || '';
+      const dept = found.department?.name || found.department_name || '';
+      const pos = found.position?.name || found.position_name || '';
+      setNewEmployee((prev) => ({
+        ...prev,
+        employee_code: found.user_code || `EMP_${found.username.toUpperCase()}`,
+        full_name: fullName,
+        email: found.email || '',
+        phone_number: phone,
+        department: dept || prev.department,
+        position: pos || prev.position,
+      }));
+    }
+  };
 
   // Start Browser WebRTC Camera
   const startWebcam = async () => {
@@ -356,6 +412,7 @@ const EmployeeManagement = () => {
     try {
       await api.createEmployee(newEmployee);
       setIsAddModalOpen(false);
+      setSelectedIamUserId('');
       setNewEmployee({
         employee_code: '',
         full_name: '',
@@ -562,6 +619,38 @@ const EmployeeManagement = () => {
             )}
 
             <form onSubmit={handleCreateEmployee} className="space-y-4 text-xs">
+              {/* IAM Quick Autofill Selector */}
+              {iamUsers.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-indigo-300 flex items-center space-x-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>{t('link_iam_user_title', 'Liên Kết Dữ Liệu Từ Core User & IAM')}</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {iamUsers.length} tài khoản IAM
+                    </span>
+                  </div>
+                  <select
+                    value={selectedIamUserId}
+                    onChange={(e) => handleSelectIamUser(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white"
+                  >
+                    <option value="">{t('link_iam_user_placeholder', '-- Chọn nhân sự từ hệ thống IAM để tự động điền --')}</option>
+                    {iamUsers.map((u) => {
+                      const name = u.profile?.full_name || u.full_name || u.username;
+                      const dept = u.department?.name || u.department_name || '';
+                      const pos = u.position?.name || u.position_name || '';
+                      return (
+                        <option key={u.id} value={u.id}>
+                          {name} ({u.user_code || u.username}) {dept ? `• ${dept}` : ''} {pos ? `• ${pos}` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">{t('employee_code_label')} *</label>
@@ -581,7 +670,7 @@ const EmployeeManagement = () => {
                     required
                     value={newEmployee.full_name}
                     onChange={(e) => setNewEmployee({ ...newEmployee, full_name: e.target.value })}
-                    placeholder="John Doe"
+                    placeholder="Nguyễn Văn A"
                     className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
                   />
                 </div>
@@ -614,25 +703,57 @@ const EmployeeManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">{t('department_label')} *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newEmployee.department}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-                    placeholder="Engineering / IT"
-                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
-                  />
+                  {departments.length > 0 ? (
+                    <select
+                      required
+                      value={newEmployee.department}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white text-xs"
+                    >
+                      <option value="">{t('select_dept', '-- Chọn phòng ban từ IAM --')}</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.name}>
+                          {d.name} ({d.code})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={newEmployee.department}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                      placeholder="Engineering / IT"
+                      className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">{t('position_label')} *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newEmployee.position}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
-                    placeholder="Senior AI Engineer"
-                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
-                  />
+                  {positions.length > 0 ? (
+                    <select
+                      required
+                      value={newEmployee.position}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white text-xs"
+                    >
+                      <option value="">{t('select_pos', '-- Chọn chức vụ từ IAM --')}</option>
+                      {positions.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name} (Cấp {p.level})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={newEmployee.position}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
+                      placeholder="Senior AI Engineer"
+                      className="w-full px-3.5 py-2.5 rounded-xl glass-input text-white"
+                    />
+                  )}
                 </div>
               </div>
 

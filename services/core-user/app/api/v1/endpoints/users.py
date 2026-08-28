@@ -19,7 +19,7 @@ router = APIRouter()
 @router.get("", response_model=List[UserResponse], summary="List All Users")
 async def list_users(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=500),
     search: Optional[str] = None,
     department_id: Optional[uuid.UUID] = None,
     is_active: Optional[bool] = None,
@@ -117,14 +117,15 @@ async def get_user_by_id(
     return user
 
 
-@router.patch("/{user_id}", response_model=UserResponse, summary="Update User Settings / Roles")
+@router.put("/{user_id}", response_model=UserResponse, summary="Update User (PUT)")
+@router.patch("/{user_id}", response_model=UserResponse, summary="Update User Settings / Roles (PATCH)")
 async def update_user(
     user_id: uuid.UUID,
     req: UserUpdate,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_permissions(["user:update"]))
 ):
-    """Update user active status, department, position or assigned roles."""
+    """Update user active status, department, position, assigned roles, profile and password."""
     stmt = select(User).where(User.id == user_id)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -139,11 +140,23 @@ async def update_user(
         user.department_id = req.department_id
     if req.position_id is not None:
         user.position_id = req.position_id
+    if req.password and req.password.strip():
+        user.hashed_password = get_password_hash(req.password.strip())
 
     if req.role_ids is not None:
         roles_stmt = select(Role).where(Role.id.in_(req.role_ids))
         roles_res = await db.execute(roles_stmt)
         user.roles = list(roles_res.scalars().all())
+
+    # Update profile fields if provided
+    if req.full_name is not None or req.phone_number is not None:
+        if not user.profile:
+            user.profile = UserProfile(user_id=user.id, full_name=user.username)
+            db.add(user.profile)
+        if req.full_name is not None:
+            user.profile.full_name = req.full_name
+        if req.phone_number is not None:
+            user.profile.phone_number = req.phone_number
 
     await db.commit()
     await db.refresh(user)

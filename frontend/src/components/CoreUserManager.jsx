@@ -55,6 +55,13 @@ const CoreUserManager = () => {
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+  const [newRoleForm, setNewRoleForm] = useState({
+    name: '',
+    display_name: '',
+    description: '',
+    permission_ids: [],
+  });
 
   // Organization State (Departments & Positions)
   const [departments, setDepartments] = useState([]);
@@ -77,9 +84,8 @@ const CoreUserManager = () => {
     setUsersLoading(true);
     try {
       const res = await api.getCoreUsers({ search: userSearch || undefined, limit: 100 });
-      if (res && res.data) {
-        setUsers(res.data.items || []);
-      }
+      const userList = Array.isArray(res) ? res : (res?.items || res?.data?.items || res?.data || []);
+      setUsers(userList);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -95,8 +101,10 @@ const CoreUserManager = () => {
         api.getRoles(),
         api.getPermissions(),
       ]);
-      if (roleRes && roleRes.data) setRoles(roleRes.data);
-      if (permRes && permRes.data) setPermissions(permRes.data);
+      const roleList = Array.isArray(roleRes) ? roleRes : (roleRes?.data || []);
+      const permList = Array.isArray(permRes) ? permRes : (permRes?.data || []);
+      setRoles(roleList);
+      setPermissions(permList);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -112,8 +120,10 @@ const CoreUserManager = () => {
         api.getDepartments(),
         api.getPositions(),
       ]);
-      if (deptRes && deptRes.data) setDepartments(deptRes.data);
-      if (posRes && posRes.data) setPositions(posRes.data);
+      const deptList = Array.isArray(deptRes) ? deptRes : (deptRes?.data || []);
+      const posList = Array.isArray(posRes) ? posRes : (posRes?.data || []);
+      setDepartments(deptList);
+      setPositions(posList);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -166,7 +176,12 @@ const CoreUserManager = () => {
   const handleCreateDept = async (e) => {
     e.preventDefault();
     try {
-      await api.createDepartment(newDeptForm);
+      const payload = {
+        code: newDeptForm.code.trim().toUpperCase(),
+        name: newDeptForm.name.trim(),
+        description: newDeptForm.description?.trim() || null,
+      };
+      await api.createDepartment(payload);
       showToast(`Đã tạo phòng ban "${newDeptForm.name}" thành công!`);
       setShowAddDeptModal(false);
       setNewDeptForm({ code: '', name: '', description: '' });
@@ -180,13 +195,57 @@ const CoreUserManager = () => {
   const handleCreatePos = async (e) => {
     e.preventDefault();
     try {
-      await api.createPosition(newPosForm);
+      const payload = {
+        code: newPosForm.code.trim().toUpperCase(),
+        name: newPosForm.name.trim(),
+        level: parseInt(newPosForm.level) || 1,
+        description: newPosForm.description?.trim() || null,
+      };
+      await api.createPosition(payload);
       showToast(`Đã tạo chức vụ "${newPosForm.name}" thành công!`);
       setShowAddPosModal(false);
       setNewPosForm({ code: '', name: '', level: 1, description: '' });
       fetchOrg();
     } catch (err) {
       showToast(err.message, 'error');
+    }
+  };
+
+  // Create Custom Role
+  const handleCreateRole = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: newRoleForm.name.trim().toLowerCase().replace(/\s+/g, '_'),
+        display_name: newRoleForm.display_name.trim(),
+        description: newRoleForm.description?.trim() || null,
+        permission_ids: newRoleForm.permission_ids,
+      };
+      await api.createRole(payload);
+      showToast(`Đã tạo vai trò "${payload.display_name}" thành công!`);
+      setShowAddRoleModal(false);
+      setNewRoleForm({ name: '', display_name: '', description: '', permission_ids: [] });
+      fetchRbac();
+    } catch (err) {
+      showToast(err.message || 'Lỗi khi tạo vai trò', 'error');
+    }
+  };
+
+  // Delete Custom Role
+  const handleDeleteRole = async (role) => {
+    if (role.is_system) {
+      showToast('Không thể xóa vai trò mặc định của hệ thống!', 'error');
+      return;
+    }
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vai trò "${role.display_name}" không?`)) {
+      return;
+    }
+    try {
+      await api.deleteRole(role.id);
+      showToast(`Đã xóa vai trò "${role.display_name}" thành công!`);
+      fetchRbac();
+    } catch (err) {
+      showToast(err.message || 'Lỗi khi xóa vai trò', 'error');
     }
   };
 
@@ -234,7 +293,11 @@ const CoreUserManager = () => {
             <div className="text-left">
               <div className="text-xs font-bold text-white">{currentUser?.full_name || currentUser?.username || 'User'}</div>
               <div className="text-[10px] text-indigo-400 flex items-center space-x-1">
-                <span>{(currentUser?.roles || [])[0] || 'superadmin'}</span>
+                <span>
+                  {typeof (currentUser?.roles || [])[0] === 'string'
+                    ? (currentUser?.roles || [])[0]
+                    : ((currentUser?.roles || [])[0]?.display_name || (currentUser?.roles || [])[0]?.name || 'superadmin')}
+                </span>
                 <span>•</span>
                 <span className="font-mono text-slate-400">{currentUser?.user_code || 'EMP000'}</span>
               </div>
@@ -332,72 +395,82 @@ const CoreUserManager = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-900/40 transition-all">
-                      <td className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-white text-xs">
-                            {u.full_name ? u.full_name.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
+                  {users.map((u) => {
+                    const fullName = u.profile?.full_name || u.full_name || u.username;
+                    const phone = u.profile?.phone_number || u.phone;
+                    const deptName = u.department?.name || u.department_name || t('unassigned');
+                    const posName = u.position?.name || u.position_name || '--';
+                    const userRoles = (u.roles || []).map((r) =>
+                      typeof r === 'string' ? r : (r?.display_name || r?.name || '')
+                    );
+
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-900/40 transition-all">
+                        <td className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-white text-xs">
+                              {fullName ? fullName.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-white text-sm">{fullName}</div>
+                              <div className="text-[11px] font-mono text-indigo-400">{u.user_code || '@' + u.username}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-bold text-white text-sm">{u.full_name || u.username}</div>
-                            <div className="text-[11px] font-mono text-indigo-400">{u.user_code || '@' + u.username}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-slate-300 flex items-center space-x-1.5">
+                            <Mail className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{u.email || '--'}</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-slate-300 flex items-center space-x-1.5">
-                          <Mail className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{u.email || '--'}</span>
-                        </div>
-                        {u.phone && (
-                          <div className="text-[11px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            <span>{u.phone}</span>
+                          {phone && (
+                            <div className="text-[11px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
+                              <Phone className="w-3 h-3 text-slate-400" />
+                              <span>{phone}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="text-slate-200 font-medium">{deptName}</div>
+                          <div className="text-[11px] text-slate-400">{posName}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-1">
+                            {userRoles.map((roleText, idx) => (
+                              <span key={idx} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                {roleText}
+                              </span>
+                            ))}
                           </div>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <div className="text-slate-200 font-medium">{u.department_name || t('unassigned')}</div>
-                        <div className="text-[11px] text-slate-400">{u.position_name || '--'}</div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex flex-wrap gap-1">
-                          {(u.roles || []).map((r) => (
-                            <span key={r} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                              {r}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          u.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                        }`}>
-                          {u.is_active ? t('status_active') : t('status_locked')}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={async () => {
-                            if (window.confirm(`${t('delete')} "${u.username}"?`)) {
-                              try {
-                                await api.deleteCoreUser(u.id);
-                                showToast(`${t('delete')} "${u.username}"`);
-                                fetchUsers();
-                              } catch (err) {
-                                showToast(err.message, 'error');
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                            u.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                          }`}>
+                            {u.is_active ? t('status_active') : t('status_locked')}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`${t('delete')} "${u.username}"?`)) {
+                                try {
+                                  await api.deleteCoreUser(u.id);
+                                  showToast(`${t('delete')} "${u.username}"`);
+                                  fetchUsers();
+                                } catch (err) {
+                                  showToast(err.message, 'error');
+                                }
                               }
-                            }
-                          }}
-                          className="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all"
-                          title={t('delete')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                            }}
+                            className="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all"
+                            title={t('delete')}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {users.length === 0 && (
                     <tr>
                       <td colSpan="6" className="p-8 text-center text-slate-400">
@@ -419,19 +492,39 @@ const CoreUserManager = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Roles List */}
           <div className="lg:col-span-1 space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-              <Shield className="w-4 h-4 text-purple-400" />
-              <span>{t('roles_list_title')} ({roles.length})</span>
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <Shield className="w-4 h-4 text-purple-400" />
+                <span>{t('roles_list_title')} ({roles.length})</span>
+              </h3>
+              <button
+                onClick={() => setShowAddRoleModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition-all shadow-md shadow-purple-600/20"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('btn_add_role', 'Thêm Vai Trò')}</span>
+              </button>
+            </div>
 
             <div className="space-y-3">
               {roles.map((r) => (
                 <div key={r.id} className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-purple-500/40 transition-all">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-white text-sm">{r.display_name}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300">
-                      {r.name}
-                    </span>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300">
+                        {r.name}
+                      </span>
+                      {!r.is_system && (
+                        <button
+                          onClick={() => handleDeleteRole(r)}
+                          className="p-1 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all"
+                          title={t('delete')}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">{r.description || t('no_desc')}</p>
                   <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2">
@@ -614,6 +707,7 @@ const CoreUserManager = () => {
                   <label className="block text-slate-300 mb-1">{t('lbl_email')}</label>
                   <input
                     type="email"
+                    required
                     placeholder="a@company.com"
                     value={newUserForm.email}
                     onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
@@ -844,6 +938,155 @@ const CoreUserManager = () => {
                   className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold"
                 >
                   {t('btn_save_pos')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------------ */}
+      {/* MODAL: ADD CUSTOM ROLE */}
+      {/* ------------------------------------------------------------------------ */}
+      {showAddRoleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-800 p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <Shield className="w-5 h-5 text-purple-400" />
+              <span>{t('modal_add_role_title', 'Tạo Vai Trò (RBAC Role) Mới')}</span>
+            </h3>
+
+            <form onSubmit={handleCreateRole} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 mb-1">{t('lbl_role_code', 'Mã vai trò (e.g. auditor) *')}</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. lead_auditor, shift_supervisor"
+                    value={newRoleForm.name}
+                    onChange={(e) => setNewRoleForm({ ...newRoleForm, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl glass-input text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 mb-1">{t('lbl_role_name', 'Tên hiển thị vai trò *')}</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Trưởng Nhóm Kiểm Toán"
+                    value={newRoleForm.display_name}
+                    onChange={(e) => setNewRoleForm({ ...newRoleForm, display_name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl glass-input text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1">{t('lbl_role_desc', 'Mô tả vai trò')}</label>
+                <input
+                  type="text"
+                  placeholder="Mô tả phạm vi trách nhiệm và quyền hạn..."
+                  value={newRoleForm.description}
+                  onChange={(e) => setNewRoleForm({ ...newRoleForm, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl glass-input text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-2 font-semibold flex items-center justify-between">
+                  <span>{t('lbl_assign_permissions', 'Chọn các quyền hạn hệ thống (Permissions)')}</span>
+                  <span className="text-purple-400 font-mono">
+                    {newRoleForm.permission_ids.length} / {permissions.length} đã chọn
+                  </span>
+                </label>
+
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                  {['core_user', 'attendance', 'hrm', 'helpdesk'].map((mod) => {
+                    const modPerms = permissions.filter((p) => p.module === mod);
+                    if (modPerms.length === 0) return null;
+                    return (
+                      <div key={mod} className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 border-b border-slate-800 pb-1 flex items-center justify-between">
+                          <span>{t('module_label', 'Phân hệ:')} {mod.toUpperCase()}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const modPermIds = modPerms.map((p) => p.id);
+                              const allSelected = modPermIds.every((id) => newRoleForm.permission_ids.includes(id));
+                              if (allSelected) {
+                                setNewRoleForm({
+                                  ...newRoleForm,
+                                  permission_ids: newRoleForm.permission_ids.filter((id) => !modPermIds.includes(id)),
+                                });
+                              } else {
+                                const newIds = Array.from(new Set([...newRoleForm.permission_ids, ...modPermIds]));
+                                setNewRoleForm({ ...newRoleForm, permission_ids: newIds });
+                              }
+                            }}
+                            className="text-[10px] text-purple-400 hover:text-purple-300 lowercase"
+                          >
+                            chọn tất cả / bỏ chọn
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {modPerms.map((p) => {
+                            const isChecked = newRoleForm.permission_ids.includes(p.id);
+                            return (
+                              <label
+                                key={p.id}
+                                className={`p-2 rounded-xl border flex items-start space-x-2 cursor-pointer transition-all ${
+                                  isChecked
+                                    ? 'bg-purple-950/40 border-purple-500/50 text-white'
+                                    : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setNewRoleForm({
+                                        ...newRoleForm,
+                                        permission_ids: newRoleForm.permission_ids.filter((id) => id !== p.id),
+                                      });
+                                    } else {
+                                      setNewRoleForm({
+                                        ...newRoleForm,
+                                        permission_ids: [...newRoleForm.permission_ids, p.id],
+                                      });
+                                    }
+                                  }}
+                                  className="mt-0.5 rounded border-slate-700 text-purple-600 focus:ring-0"
+                                />
+                                <div className="leading-tight">
+                                  <div className="font-semibold text-xs text-white">{p.name}</div>
+                                  <div className="font-mono text-[9px] text-slate-400">{p.code}</div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRoleModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold shadow-lg shadow-purple-600/30"
+                >
+                  {t('btn_save_role', 'Lưu Vai Trò')}
                 </button>
               </div>
             </form>

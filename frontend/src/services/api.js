@@ -66,6 +66,7 @@ export const api = {
   getEmployees: (params = {}) => apiClient.get('/employees', { params }),
   getEmployeeDetail: (id) => apiClient.get(`/employees/${id}`),
   createEmployee: (data) => apiClient.post('/employees', data),
+  updateEmployee: (id, data) => apiClient.put(`/employees/${id}`, data),
   deleteEmployee: (id) => apiClient.delete(`/employees/${id}`),
   registerFace: (employeeId, formData) =>
     apiClient.post(`/employees/${employeeId}/register-face`, formData, {
@@ -135,13 +136,19 @@ export const api = {
   // RBAC Roles & Permissions
   getRoles: () => coreUserClient.get('/rbac/roles'),
   createRole: (data) => coreUserClient.post('/rbac/roles', data),
+  updateRole: (id, data) => coreUserClient.patch(`/rbac/roles/${id}`, data),
+  deleteRole: (id) => coreUserClient.delete(`/rbac/roles/${id}`),
   getPermissions: () => coreUserClient.get('/rbac/permissions'),
 
   // Organization (Departments & Positions)
   getDepartments: () => coreUserClient.get('/organization/departments'),
   createDepartment: (data) => coreUserClient.post('/organization/departments', data),
+  updateDepartment: (id, data) => coreUserClient.patch(`/organization/departments/${id}`, data),
+  deleteDepartment: (id) => coreUserClient.delete(`/organization/departments/${id}`),
   getPositions: () => coreUserClient.get('/organization/positions'),
   createPosition: (data) => coreUserClient.post('/organization/positions', data),
+  updatePosition: (id, data) => coreUserClient.patch(`/organization/positions/${id}`, data),
+  deletePosition: (id) => coreUserClient.delete(`/organization/positions/${id}`),
 
   // ITIL Helpdesk & Service Desk
   getTickets: (params = {}) => coreUserClient.get('/helpdesk/tickets', { params }),

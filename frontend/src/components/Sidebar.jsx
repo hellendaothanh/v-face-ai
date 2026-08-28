@@ -26,13 +26,14 @@ import { useAuth } from '../context/AuthContext';
 
 export const NAV_TABS = {
   DASHBOARD: 'DASHBOARD',
-  EMPLOYEES: 'EMPLOYEES',
+  HR_HUB: 'HR_HUB',
+  EMPLOYEES: 'HR_HUB',
+  CORE_USER: 'HR_HUB',
+  HELPDESK: 'HELPDESK',
   REQUESTS: 'REQUESTS',
   ATTENDANCE: 'ATTENDANCE',
   DEVICES: 'DEVICES',
   ANALYTICS: 'ANALYTICS',
-  HELPDESK: 'HELPDESK',
-  CORE_USER: 'CORE_USER',
   HEALTH: 'HEALTH',
 };
 
@@ -50,26 +51,20 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       badgeColor: isWsConnected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30',
     },
     {
+      id: NAV_TABS.HR_HUB,
+      label: t('nav_hr_hub', 'Quản Trị Nhân Sự & Sinh Trắc'),
+      subLabel: t('nav_hr_hub_sub', 'Hồ sơ, Face AI 512D & IAM'),
+      icon: Users,
+      badge: 'HR & IAM',
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    },
+    {
       id: NAV_TABS.HELPDESK,
       label: t('nav_helpdesk') || 'Helpdesk & Service Desk',
       subLabel: t('nav_helpdesk_sub') || 'ITIL Tickets & Knowledge Base',
       icon: LifeBuoy,
       badge: 'ITIL',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    },
-    {
-      id: NAV_TABS.CORE_USER,
-      label: t('nav_core_user', 'Core User & IAM'),
-      subLabel: t('nav_core_user_sub', 'Users, RBAC & Organization'),
-      icon: ShieldCheck,
-      badge: 'IAM',
-      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-    },
-    {
-      id: NAV_TABS.EMPLOYEES,
-      label: t('nav_employees'),
-      subLabel: t('nav_employees_sub'),
-      icon: Users,
     },
     {
       id: NAV_TABS.REQUESTS,
@@ -240,7 +235,11 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
             </div>
             <div className="truncate text-left">
               <div className="font-bold text-white text-xs truncate">{currentUser?.full_name || currentUser?.username || 'Super Admin'}</div>
-              <div className="text-[10px] text-indigo-400 font-mono">{(currentUser?.roles || [])[0] || 'superadmin'}</div>
+              <div className="text-[10px] text-indigo-400 font-mono">
+                {typeof (currentUser?.roles || [])[0] === 'string'
+                  ? (currentUser?.roles || [])[0]
+                  : ((currentUser?.roles || [])[0]?.display_name || (currentUser?.roles || [])[0]?.name || 'superadmin')}
+              </div>
             </div>
           </div>
           <button
