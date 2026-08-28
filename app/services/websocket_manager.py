@@ -26,6 +26,27 @@ class WebSocketManager:
             self.active_connections.discard(websocket)
         logger.info(f"WebSocket client disconnected. Active clients: {len(self.active_connections)}")
 
+    async def broadcast(self, message: Dict[str, Any]) -> None:
+        """
+        Broadcasts a generic JSON message (such as STRANGER_ALERT or SPOOFING_ALERT) to all connected clients.
+        """
+        if not self.active_connections:
+            return
+
+        json_str = json.dumps(message, default=str)
+        stale_connections = []
+
+        async with self._lock:
+            for connection in list(self.active_connections):
+                try:
+                    await connection.send_text(json_str)
+                except Exception as e:
+                    logger.warning(f"Error sending message to WebSocket client: {e}")
+                    stale_connections.append(connection)
+
+            for stale in stale_connections:
+                self.active_connections.discard(stale)
+
     async def broadcast_attendance(self, data: Dict[str, Any]) -> None:
         """
         Broadcasts an attendance event to all connected clients.

@@ -23,30 +23,58 @@ from app.models.face_feature import FaceFeature
 from app.services.attendance_service import attendance_service
 from app.services.camera_stream import CameraStreamReader
 from app.services.face_engine import ExtractedFace, face_engine
+from app.services.websocket_manager import ws_manager
 # Unicode Font Cache for Vietnamese text rendering
-_FONT_CACHE: Dict[int, ImageFont.FreeTypeFont] = {}
+_FONT_CACHE: Dict[Tuple[int, bool], ImageFont.FreeTypeFont] = {}
 
 
-def _get_unicode_font(size: int = 16) -> ImageFont.FreeTypeFont:
-    """Loads system TrueType font with full Vietnamese Unicode diacritics support."""
-    if size in _FONT_CACHE:
-        return _FONT_CACHE[size]
-    font_paths = [
+def _get_unicode_font(size: int = 16, bold: bool = False) -> ImageFont.FreeTypeFont:
+    """Loads system TrueType font with full Vietnamese Unicode diacritics support across Windows, Linux, and macOS."""
+    key = (size, bold)
+    if key in _FONT_CACHE:
+        return _FONT_CACHE[key]
+
+    font_paths: List[str] = []
+    # 1. Windows Fonts
+    windir = os.environ.get("WINDIR", "C:\\Windows")
+    if bold:
+        font_paths.extend([
+            os.path.join(windir, "Fonts", "arialbd.ttf"),
+            os.path.join(windir, "Fonts", "segoeuib.ttf"),
+            os.path.join(windir, "Fonts", "calibrib.ttf"),
+            os.path.join(windir, "Fonts", "tahomabd.ttf"),
+            "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        ])
+    font_paths.extend([
+        os.path.join(windir, "Fonts", "arial.ttf"),
+        os.path.join(windir, "Fonts", "segoeui.ttf"),
+        os.path.join(windir, "Fonts", "tahoma.ttf"),
+        os.path.join(windir, "Fonts", "calibri.ttf"),
+        # 2. macOS Fonts
         "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
         "/System/Library/Fonts/SFNS.ttf",
         "/Library/Fonts/Arial Unicode.ttf",
-    ]
+        # 3. Linux / Docker Fonts
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    ])
+
     for p in font_paths:
         if os.path.exists(p):
             try:
                 f = ImageFont.truetype(p, size)
-                _FONT_CACHE[size] = f
+                _FONT_CACHE[key] = f
                 return f
             except Exception:
                 continue
+
     f = ImageFont.load_default()
-    _FONT_CACHE[size] = f
+    _FONT_CACHE[key] = f
     return f
 
 
@@ -273,9 +301,9 @@ class VideoStreamProcessor:
             cv2.line(canvas, (x2, y2), (x2 - corner_len, y2), color_bgr, thickness + 1)
             cv2.line(canvas, (x2, y2), (x2, y2 - corner_len), color_bgr, thickness + 1)
 
-            # 2. Text rendering with PIL for Full Vietnamese Diacritics (e.g. Trần Phúc Hậu)
-            font_main = _get_unicode_font(17)
-            font_sub = _get_unicode_font(13)
+            # 2. Text rendering with PIL for Full Vietnamese Diacritics (e.g. NGƯỜI LẠ, Trần Phúc Hậu)
+            font_main = _get_unicode_font(16, bold=True)
+            font_sub = _get_unicode_font(12, bold=False)
 
             # Convert BGR canvas to PIL Image
             canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
@@ -375,7 +403,7 @@ class VideoStreamProcessor:
                         self._draw_hud_box(
                             canvas=annotated_canvas,
                             bbox=face.bbox,
-                            label="Nhoe Chuyen Dong (Blur)",
+                            label="Nhòe Chuyển Động (Blur)",
                             color_bgr=(100, 116, 139)
                         )
                         continue
@@ -442,7 +470,7 @@ class VideoStreamProcessor:
                 self._draw_hud_box(
                     canvas=annotated_canvas,
                     bbox=face.bbox,
-                    label="GIA MAO (SPOOF)",
+                    label="GIẢ MẠO (SPOOF)",
                     sub_label=f"Liveness: {liveness_score * 100:.0f}%",
                     color_bgr=(50, 50, 240),
                     is_highlight=True

@@ -193,16 +193,28 @@ def _generate_video_mjpeg():
     while True:
         if not stream_processor._is_running or not stream_processor.stream_reader:
             placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
-            cv2.putText(
-                placeholder,
-                "Camera Dang Tat / Nhan Bat Camera",
-                (90, 240),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (100, 116, 139),
-                2,
-                cv2.LINE_AA
-            )
+            try:
+                from PIL import Image, ImageDraw
+                from app.services.stream_processor import _get_unicode_font
+                pil_img = Image.fromarray(placeholder)
+                draw = ImageDraw.Draw(pil_img)
+                font = _get_unicode_font(18, bold=True)
+                msg = "Camera Đang Tắt / Nhấn Bật Camera"
+                bbox = draw.textbbox((0, 0), msg, font=font)
+                tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                draw.text(((640 - tw) // 2, (480 - th) // 2), msg, font=font, fill=(148, 163, 184))
+                placeholder = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            except Exception:
+                cv2.putText(
+                    placeholder,
+                    "Camera Dang Tat / Nhan Bat Camera",
+                    (90, 240),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (100, 116, 139),
+                    2,
+                    cv2.LINE_AA
+                )
             ret, jpeg = cv2.imencode(".jpg", placeholder)
             frame_bytes = jpeg.tobytes()
             yield (

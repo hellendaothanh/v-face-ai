@@ -55,9 +55,12 @@ class DeviceWorker:
         try:
             logger.info(f"▶ [CameraManager] Starting camera device worker '{self.device_name}' ({self.rtsp_url})...")
             # Start stream reader thread
-            self.stream_reader.start()
+            if not self.stream_reader._is_running:
+                self.stream_reader.start()
             # Start background async processing task
-            self.processor.start(source_type=self.source_type, rtsp_url=self.rtsp_url if self.source_type == "RTSP" else None)
+            self.processor._is_running = True
+            if not self.processor._task or self.processor._task.done():
+                self.processor._task = asyncio.create_task(self.processor._processing_loop())
             return True
         except Exception as e:
             logger.error(f"Failed to start camera device worker '{self.device_name}': {e}")

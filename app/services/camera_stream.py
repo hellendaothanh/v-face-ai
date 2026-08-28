@@ -2,7 +2,7 @@ import os
 import platform
 import threading
 import time
-from typing import Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 from loguru import logger
 import numpy as np
 import cv2
@@ -22,12 +22,15 @@ class CameraStreamReader:
         source_type: Literal["WEBCAM", "RTSP"] = "WEBCAM",
         webcam_index: int = 0,
         rtsp_url: Optional[str] = None,
-        device_id: str = "CAM_01"
+        device_id: str = "CAM_01",
+        target_fps: int = 15,
+        **kwargs: Any
     ):
         self.source_type = source_type
         self.webcam_index = webcam_index
         self.rtsp_url = rtsp_url or ""
         self.device_id = device_id
+        self.target_fps = target_fps
 
         self._cap: Optional[cv2.VideoCapture] = None
         self._thread: Optional[threading.Thread] = None
@@ -82,20 +85,22 @@ class CameraStreamReader:
                 if platform.system() == "Darwin":
                     self._cap = cv2.VideoCapture(self.webcam_index, cv2.CAP_AVFOUNDATION)
                 elif platform.system() == "Windows":
-                    self._cap = cv2.VideoCapture(self.webcam_index, cv2.CAP_DSHOW)
+                    self._cap = cv2.VideoCapture(self.webcam_index, cv2.CAP_MSMF)
+                    if not self._cap or not self._cap.isOpened():
+                        self._cap = cv2.VideoCapture(self.webcam_index)
                 else:
                     self._cap = cv2.VideoCapture(self.webcam_index)
 
                 # Set optimal resolution (e.g. 1280x720)
-                if self._cap.isOpened():
+                if self._cap and self._cap.isOpened():
                     self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                     self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
                     self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                     self.is_connected = True
-                    logger.info(f"Successfully connected to MacBook Webcam ({self.device_id}).")
+                    logger.info(f"Successfully connected to Webcam ({self.device_id}).")
                     return True
                 else:
-                    logger.warning(f"Could not open MacBook Webcam index {self.webcam_index}.")
+                    logger.warning(f"Could not open Webcam index {self.webcam_index}.")
                     self.is_connected = False
                     return False
 
@@ -103,10 +108,10 @@ class CameraStreamReader:
                 logger.info(f"Opening RTSP Stream: {self.rtsp_url}...")
                 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay"
                 self._cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
-                if self._cap.isOpened():
+                if self._cap and self._cap.isOpened():
                     self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                     self.is_connected = True
-                    logger.info(f"Successfully connected to Tapo C200 RTSP Stream ({self.device_id}).")
+                    logger.info(f"Successfully connected to RTSP Stream ({self.device_id}).")
                     return True
                 else:
                     logger.warning(f"Failed to open RTSP stream ({self.device_id}).")
@@ -134,40 +139,46 @@ class CameraStreamReader:
         fps_start_time = time.time()
 
         while self._is_running:
-            if not self.is_connected or self._cap is None or not self._cap.isOpened():
-                if not self._open_capture():
+            try:
+                if not self.is_connected or self._cap is None or not self._cap.isOpened():
+                    if not self._open_capture():
+                        time.sleep(self._reconnect_interval)
+                        continue
+
+                ret, frame = self._cap.read()
+                if not ret or frame is None:
+                    logger.warning(f"Lost video frame on {self.device_id}. Re-opening in {self._reconnect_interval}s...")
+                    self.is_connected = False
+                    self._release_cap()
                     time.sleep(self._reconnect_interval)
                     continue
 
-            ret, frame = self._cap.read()
-            if not ret or frame is None:
-                logger.warning(f"Lost video frame on {self.device_id}. Re-opening in {self._reconnect_interval}s...")
+                # For local Webcam, flip horizontally for natural mirror viewing (turn left -> moves left)
+                if self.source_type == "WEBCAM":
+                    frame = cv2.flip(frame, 1)
+
+                # Atomic update of latest frame
+                with self._lock:
+                    self._latest_frame = frame
+                    self._last_frame_time = time.time()
+                    self.total_frames_read += 1
+
+                # FPS calculation
+                fps_count += 1
+                elapsed = time.time() - fps_start_time
+                if elapsed >= 1.0:
+                    self.fps = round(fps_count / elapsed, 1)
+                    fps_count = 0
+                    fps_start_time = time.time()
+
+                # Small yield to prevent CPU pegging on fast webcams
+                if self.source_type == "WEBCAM":
+                    time.sleep(0.005)
+            except Exception as e:
+                logger.warning(f"Exception in camera capture loop ({self.device_id}): {e}")
                 self.is_connected = False
                 self._release_cap()
                 time.sleep(self._reconnect_interval)
-                continue
-
-            # For local MacBook Webcam, flip horizontally for natural mirror viewing (turn left -> moves left)
-            if self.source_type == "WEBCAM":
-                frame = cv2.flip(frame, 1)
-
-            # Atomic update of latest frame
-            with self._lock:
-                self._latest_frame = frame
-                self._last_frame_time = time.time()
-                self.total_frames_read += 1
-
-            # FPS calculation
-            fps_count += 1
-            elapsed = time.time() - fps_start_time
-            if elapsed >= 1.0:
-                self.fps = round(fps_count / elapsed, 1)
-                fps_count = 0
-                fps_start_time = time.time()
-
-            # Small yield to prevent CPU pegging on fast webcams
-            if self.source_type == "WEBCAM":
-                time.sleep(0.005)
 
         self._release_cap()
 
