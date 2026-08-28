@@ -123,9 +123,21 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 - **Multi-Level Approval Workflow**: Role-restricted authorization enabling Department Managers and HR Managers to approve or reject requests with audit commentary.
 - **Daily Operational Summary**: Instant summary cards reporting on-duty ratios, absent rates, on-site personnel, and pending approval queues.
 
-### 4.4. Face AI Attendance & Camera Monitoring (`app/` - Port 8000)
+### 4.4. 1-Click Biometric Face ID Login (`app/` - Port 8000 & `services/core-user` - Port 8001)
+- **Multi-Mode Authentication**: Users can authenticate using traditional username/password or instant **1-Click Face ID**.
+- **Interactive Sci-Fi Biometric HUD**: Live webcam stream with animated neon oval target frame, radar scanner line, and automatic camera activation.
+- **3-Layer Security Pipeline**:
+  1. **Anti-Spoofing Liveness Detection (MiniFASNetV2 ONNX)**: Discards printed photos, screens, and masks ($<0.35$ confidence threshold).
+  2. **512D ArcFace Extraction & Multi-Template pgvector Matching**: Retrieves the closest facial embedding from the 5 registered angles (`<=>` Cosine Distance).
+  3. **Microservice IAM Token Proxy**: Calls Core User IAM Service (`POST /api/v1/auth/face-token`) to issue standard JWT access & refresh tokens.
+- **Personalized Onboarding**: Automatically redirects user to the Dashboard with personalized greetings upon successful face recognition.
+
+### 4.5. 5-Angle Biometric Registration & Live Verification Modal
+- **Multi-Angle Registration (5 Templates per Employee)**: Captures Frontal (0°), Tilt Up (+15°), Tilt Down (-15°), Turn Left (-30°), and Turn Right (+30°) with dynamic visual direction indicators.
+- **Live Biometric Verification Modal**: Allows immediate verification of registered face templates with real-time confidence scores and vector cosine distance metrics (`POST /api/v1/employees/{id}/verify-face`).
+
+### 4.6. Face AI Attendance & Camera Monitoring (`app/` - Port 8000)
 - **InsightFace ArcFace 512D**: Sub-second face recognition powered by pgvector cosine distance and HNSW vector indexing.
-- **Liveness Anti-Spoofing (MiniFASNetV2 ONNX)**: Eliminates spoofing attempts from 2D photos, smartphone screen replays, and physical masks.
 - **Continuous Self-Learning (Auto Face Update)**: Dynamically extracts and enriches auxiliary facial templates when check-in confidence $\ge 95\%$.
 - **Flexible Camera View Modes**:
   - **3 Viewport Layouts**: `Standard` (4:3 crisp), `Wide` (16:9 widescreen), and `Cinema` (21:9 ultra-wide).
@@ -136,7 +148,7 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
   - **3-Consecutive-Frame Counter**: Filters out transient movement artifacts and passing pedestrians.
   - **60-Second Cooldown Debounce**: Prevents siren alarm spamming and preserves WebSocket bandwidth.
 
-### 4.5. Attendance History & Multi-Filter BI Analytics
+### 4.7. Attendance History & Multi-Filter BI Analytics
 - **Advanced Multi-Criteria Filtering**: Filter attendance records by Employee Code/Name, Department, Custom Date Ranges, Attendance Type (`CHECK_IN` / `CHECK_OUT`), and Confidence Thresholds.
 - **Data Export**: Direct CSV/Excel export for HR payroll and compliance reporting.
 - **Interactive BI Visualizations (Recharts)**: Weekly punctuality trends, departmental lateness breakdown, and peak hourly traffic density charts.
@@ -147,6 +159,7 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 
 ### Core User, IAM & Helpdesk Endpoints (Port 8001)
 - `POST /api/v1/auth/login` - User login and token generation
+- `POST /api/v1/auth/face-token` - Issue JWT tokens for biometrically verified Face ID users
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `GET /api/v1/auth/me` - Current user profile, roles, and permissions
 - `POST /api/v1/auth/change-password` - Change account password
@@ -170,8 +183,10 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 - `GET /health` - Microservice health status and uptime telemetry
 
 ### Face AI & Attendance Endpoints (Port 8000)
+- `POST /api/v1/auth/face-login` - 1-Click Biometric Face ID login with anti-spoofing & IAM token proxy
 - `GET /api/v1/employees` - List registered facial profiles
 - `POST /api/v1/employees/{id}/register-face` - Register 512D face embeddings (5 angles)
+- `POST /api/v1/employees/{id}/verify-face` - Live face match verification modal against registered pgvector templates
 - `GET /api/v1/attendance` - Query attendance history with multi-filter parameters
 - `POST /api/v1/attendance/check-in` - Manual photo verification and check-in
 - `GET /api/v1/requests` - Query HRM leave and exception requests
@@ -190,23 +205,40 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 
 ---
 
-## 6. Automated E2E Testing (Playwright)
+## 6. Automated Testing Suites
 
-The project includes an enterprise-grade automated testing suite using Playwright:
-- **UI & Flow Verification (`e2e/dashboard.spec.js`)**: Tests seamless tab switching, live dashboards, and ensures zero runtime errors (`ReferenceError`, `TypeError`).
-- **Localization Integrity (`e2e/i18n.spec.js`)**: Guarantees zero Vietnamese strings appear in English mode.
-- **Security & Secret Leak Audit (`e2e/security.spec.js`)**: Verifies `.gitignore` rules and ensures credentials/private RTSP URLs are never committed to Git.
+### 6.1. Comprehensive 8-Module Microservices & Biometrics E2E Suite (`tests/test_e2e_full_system.py`)
+Run the all-inclusive microservices E2E test suite covering security, RBAC, organizations, unified identity sync, 5-angle biometrics, live verification, ITIL helpdesk, and 1-Click Face ID login:
 
 ```powershell
-# Run all automated tests on Windows
+# Windows
+.\venv\Scripts\python.exe tests/test_e2e_full_system.py
+
+# Linux / macOS
+./venv/bin/python tests/test_e2e_full_system.py
+```
+
+**Results (31/31 Tests PASS - 100%)**:
+- **Module 1**: Authentication & JWT (`/auth/login`, `/auth/me`, token verification)
+- **Module 2**: RBAC Roles & Authorization (Role listing, admin existence, 14 atomic permissions)
+- **Module 3**: Organization Structure (Departments, Positions CRUD)
+- **Module 4**: Unified Personnel & IAM Sync (Face AI Employee $\leftrightarrow$ Core User IAM sync)
+- **Module 5**: 5-Angle Face Registration & pgvector (5 vector embeddings stored & linked)
+- **Module 6**: Live Face Verification & Attendance (`/verify-face`, `/attendance/check-in`)
+- **Module 7**: ITIL Helpdesk & Service Tickets (Ticket creation, AI auto-resolution response)
+- **Module 8**: 1-Click Biometric Face ID Login (`POST /auth/face-login`, JWT issuance, `/auth/me` verification)
+
+### 6.2. Playwright Frontend & UI Testing
+- **UI & Flow Verification (`e2e/dashboard.spec.js`)**: Tests seamless tab switching, live dashboards, and ensures zero runtime errors.
+- **Localization Integrity (`e2e/i18n.spec.js`)**: Guarantees zero Vietnamese strings appear in English mode.
+- **Security & Secret Leak Audit (`e2e/security.spec.js`)**: Verifies `.gitignore` rules and ensures credentials/private RTSP URLs are never committed.
+
+```powershell
+# Run Playwright tests on Windows
 .\service.ps1 test
 
 # Or on Linux / macOS
 ./service.sh test
-
-# Interactive UI Mode
-cd frontend
-npm run test:e2e:ui
 ```
 
 ---

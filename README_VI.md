@@ -123,9 +123,21 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 - **Quy trình phê duyệt phân cấp (Approval Workflow)**: Trưởng phòng (Department Manager) và HR Manager có quyền phê duyệt (`Approved`) hoặc từ chối (`Rejected`) kèm ghi chú phản hồi.
 - **Báo cáo tổng hợp ngày (Daily Summary)**: Thống kê tức thì tỷ lệ nhân sự có mặt, vắng mặt, đi công tác và các trường hợp đang chờ duyệt.
 
-### 4.4. Phân Hệ Face AI & Giám Sát Camera Realtime (`app/` - Port 8000)
+### 4.4. Đăng Nhập Sinh Trắc Học Face ID 1-Chạm (`app/` - Port 8000 & `services/core-user` - Port 8001)
+- **Đăng nhập đa phương thức**: Cho phép người dùng chuyển đổi linh hoạt giữa Mật khẩu truyền thống và **Face ID AI 1-Chạm**.
+- **Giao diện HUD Sci-Fi tương tác cao**: Khung quét webcam trực tiếp với khung oval neon căn chỉnh khuôn mặt, hiệu ứng laser quét radar và kích hoạt camera mượt mà.
+- **Quy trình bảo mật 3 lớp**:
+  1. **Chống giả mạo Anti-Spoofing Liveness (MiniFASNetV2 ONNX)**: Tự động loại bỏ ảnh in giấy, màn hình điện thoại và video tái tạo (ngưỡng tin cậy $<0.35$).
+  2. **Trích xuất 512D ArcFace & So khớp đa mẫu pgvector**: Tìm kiếm vector có khoảng cách Cosine Distance (`<=>`) gần nhất trong 5 góc mặt đã đăng ký.
+  3. **Ủy quyền Token liên microservice**: Gọi tự động sang Core User Service (`POST /api/v1/auth/face-token`) để phát hành cặp JWT Access/Refresh Token chuẩn.
+- **Tự động chuyển hướng**: Khi xác thực thành công, hệ thống chào mừng đích danh nhân viên và chuyển thẳng vào Dashboard.
+
+### 4.5. Đăng Ký Sinh Trắc Học 5 Góc Độ & Modal Xác Minh Trực Tiếp
+- **Thu thập 5 mẫu đa góc độ (5 Templates / Nhân viên)**: Chính diện (0°), Hướng lên (+15°), Hướng xuống (-15°), Nghiêng trái (-30°), và Nghiêng phải (+30°) kèm hướng dẫn chuyển động trực quan.
+- **Modal kiểm tra sinh trắc học trực tiếp (Live Verification Modal)**: Cho phép kiểm tra ngay độ tương đồng % và khoảng cách vector sau khi vừa đăng ký (`POST /api/v1/employees/{id}/verify-face`).
+
+### 4.6. Phân Hệ Face AI & Giám Sát Camera Realtime (`app/` - Port 8000)
 - **Nhận diện khuôn mặt ArcFace 512D**: So khớp vector Cosine Similarity siêu tốc qua pgvector HNSW Index.
-- **Chống gian lận sinh trắc học (MiniFASNetV2 Anti-Spoofing)**: Nhận diện ảnh chụp 2D, video phát lại trên màn hình điện thoại hoặc mặt nạ giả lập.
 - **Cơ chế tự học (Auto Face Update / Continuous Learning)**: Tự động trích xuất và cập nhật vector khuôn mặt phụ trợ khi nhân viên điểm danh đạt độ tin cậy $\ge 95\%$.
 - **Chế độ xem Stream linh hoạt (Camera View Modes)**:
   - **3 Tỉ lệ khung hình**: `Standard` (4:3 chuẩn nét), `Wide` (16:9 mở rộng), và `Cinema` (21:9 màn ảnh rộng).
@@ -136,7 +148,7 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
   - **Bộ lọc 3 khung hình liên tiếp (3-Frame Counter)**: Ngăn chặn cảnh báo giả do người đi lướt qua hoặc bóng mờ chuyển động.
   - **Bộ đệm Cooldown 60 giây (Debounce Anti-Spam)**: Tránh spam còi hú báo động liên tục và tối ưu băng thông WebSocket.
 
-### 4.5. Lịch Sử & Báo Cáo Chấm Công Đa Tiêu Chí (Attendance History & Reporting)
+### 4.7. Lịch Sử & Báo Cáo Chấm Công Đa Tiêu Chí (Attendance History & Reporting)
 - **Bộ lọc tìm kiếm nâng cao**: Lọc theo Mã/Tên nhân viên, Phòng ban, Khoảng ngày tùy chọn (Date Range), Loại điểm danh (`CHECK_IN` / `CHECK_OUT`), và Ngưỡng độ tin cậy.
 - **Xuất dữ liệu báo cáo (Export Data)**: Hỗ trợ trích xuất nhật ký điểm danh phục vụ tổng hợp công và tính lương cho phòng Nhân sự.
 - **Biểu đồ trực quan hóa BI (Recharts)**: Biểu đồ đường tính đúng giờ theo tuần (Weekly Punctuality), biểu đồ cột tỷ lệ đi muộn theo phòng ban (Department Lateness), và biểu đồ mật độ lưu lượng theo giờ (Hourly Density).
@@ -147,6 +159,7 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 
 ### Core User, IAM & Helpdesk Endpoints (Port 8001)
 - `POST /api/v1/auth/login` - Đăng nhập tài khoản & Nhận JWT Tokens
+- `POST /api/v1/auth/face-token` - Cấp phát JWT token cho người dùng đã xác minh Face ID
 - `POST /api/v1/auth/refresh` - Cấp mới Access Token bằng Refresh Token
 - `GET /api/v1/auth/me` - Lấy thông tin tài khoản, danh sách Roles và Permissions
 - `POST /api/v1/auth/change-password` - Đổi mật khẩu
@@ -170,8 +183,10 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 - `GET /health` - Kiểm tra sức khỏe microservice Core User & IAM
 
 ### Face AI & Chấm Công Endpoints (Port 8000)
+- `POST /api/v1/auth/face-login` - Đăng nhập Face ID 1-chạm kết hợp Anti-Spoofing & IAM Token Proxy
 - `GET /api/v1/employees` - Danh sách hồ sơ khuôn mặt nhân viên
 - `POST /api/v1/employees/{id}/register-face` - Đăng ký mẫu khuôn mặt 512D (5 góc độ)
+- `POST /api/v1/employees/{id}/verify-face` - Xác minh trực tiếp mẫu mặt với kho pgvector
 - `GET /api/v1/attendance` - Lịch sử điểm danh và bộ lọc đa tiêu chí
 - `POST /api/v1/attendance/check-in` - Chấm công thủ công qua ảnh upload
 - `GET /api/v1/requests` - Danh sách đơn từ & ngoại lệ chấm công HRM
@@ -190,23 +205,40 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 
 ---
 
-## 6. Kiểm Thử Tự Động (E2E Testing)
+## 6. Bộ Kiểm Thử Tự Động (Testing Suites)
 
-Dự án tích hợp bộ kiểm thử tự động toàn diện bằng Playwright:
+### 6.1. Kiểm Thử Toàn Diện 8 Module Hệ Thống Microservices & Sinh Trắc Học (`tests/test_e2e_full_system.py`)
+Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật, RBAC, cơ cấu tổ chức, đồng bộ danh tính, đăng ký 5 góc mặt, xác minh realtime, Helpdesk và Đăng nhập Face ID:
+
+```powershell
+# Windows
+.\venv\Scripts\python.exe tests/test_e2e_full_system.py
+
+# Linux / macOS
+./venv/bin/python tests/test_e2e_full_system.py
+```
+
+**Kết quả kiểm thử (31/31 Tests PASS - 100%)**:
+- **Module 1**: Authentication & JWT (`/auth/login`, `/auth/me`, xác thực token)
+- **Module 2**: RBAC Roles & Authorization (Danh sách vai trò, vai trò admin, 14 atomic permissions)
+- **Module 3**: Organization Structure (CRUD Phòng ban & Chức vụ)
+- **Module 4**: Unified Personnel & IAM Sync (Đồng bộ hồ sơ Face AI Employee $\leftrightarrow$ Core User IAM)
+- **Module 5**: 5-Angle Face Registration & pgvector (Trích xuất và lưu trữ 5 vector đặc trưng)
+- **Module 6**: Live Face Verification & Attendance (`/verify-face`, `/attendance/check-in`)
+- **Module 7**: ITIL Helpdesk & Service Tickets (Tạo ticket, AI phản hồi tự động giải pháp)
+- **Module 8**: 1-Click Biometric Face ID Login (`POST /auth/face-login`, cấp JWT, xác minh `/auth/me`)
+
+### 6.2. Kiểm Thử Giao Diện Frontend (Playwright)
 - **Kiểm thử luồng giao diện (Navigation & CRUD)**: Đảm bảo chuyển đổi mượt mà qua các Tab mà không phát sinh lỗi JavaScript (`ReferenceError`, `TypeError`).
 - **Kiểm tra tính toàn vẹn đa ngôn ngữ (i18n Integrity)**: Đảm bảo khi chọn Tiếng Anh thì không bị lẫn chuỗi Tiếng Việt.
 - **Kiểm toán bảo mật (Security & Secret Leak Audit)**: Quét mã nguồn và file cấu hình để đảm bảo không lưu mật khẩu hay API keys trên Git.
 
 ```powershell
-# Chạy toàn bộ test tự động trên Windows
+# Chạy Playwright test trên Windows
 .\service.ps1 test
 
 # Hoặc trên Linux/macOS
 ./service.sh test
-
-# Chạy giao diện tương tác trực quan (Interactive Mode)
-cd frontend
-npm run test:e2e:ui
 ```
 
 ---

@@ -90,8 +90,8 @@ export const AuthProvider = ({ children }) => {
 
         // Fetch the full authenticated user profile immediately
         try {
-          const meRes = await api.getCurrentUser();
-          const userProfile = meRes?.data || meRes?.user || { username, roles: ['superadmin'] };
+          const meRes = await (api.getMe ? api.getMe() : api.getCurrentUser());
+          const userProfile = meRes?.data || meRes?.user || meRes || { username, roles: ['superadmin'] };
           setCurrentUser(userProfile);
           localStorage.setItem('vface_user_profile', JSON.stringify(userProfile));
         } catch (meErr) {
@@ -103,6 +103,46 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
       throw new Error('Không nhận được access token từ máy chủ.');
+    } catch (err) {
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithFace = async (imageBlob) => {
+    setIsLoading(true);
+    try {
+      const res = await api.faceLogin(imageBlob);
+      const tokenData = res?.data?.tokens || res?.tokens;
+      const accessToken = tokenData?.access_token || tokenData?.data?.access_token || res?.access_token;
+      if (accessToken) {
+        localStorage.setItem('vface_access_token', accessToken);
+        setToken(accessToken);
+
+        const employee = res?.data?.employee;
+        try {
+          const meRes = await (api.getMe ? api.getMe() : api.getCurrentUser());
+          const userProfile = meRes?.data || meRes?.user || meRes || { 
+            username: employee?.employee_code || 'user', 
+            full_name: employee?.full_name 
+          };
+          setCurrentUser(userProfile);
+          localStorage.setItem('vface_user_profile', JSON.stringify(userProfile));
+        } catch (meErr) {
+          const fallbackUser = {
+            username: employee?.employee_code || 'user',
+            full_name: employee?.full_name || 'User',
+            roles: ['user'],
+            department: employee?.department,
+            position: employee?.position
+          };
+          setCurrentUser(fallbackUser);
+          localStorage.setItem('vface_user_profile', JSON.stringify(fallbackUser));
+        }
+        return { success: true, employee, message: res?.message };
+      }
+      throw new Error(res?.message || 'Không nhận được access token từ hệ thống xác thực khuôn mặt.');
     } catch (err) {
       throw err;
     } finally {
@@ -127,6 +167,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         isLoading,
         login,
+        loginWithFace,
         logout,
         refreshProfile,
       }}

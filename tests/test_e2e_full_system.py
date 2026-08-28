@@ -293,6 +293,34 @@ class E2ETestRunner:
         self.assert_true(create_ticket_res.status_code in [200, 201], "Create Attendance Exception Ticket", create_ticket_res.text)
 
     # ------------------------------------------------------------------------
+    # Module 8: 1-Click Biometric Face ID Login
+    # ------------------------------------------------------------------------
+    def test_face_id_login(self):
+        print(f"\n{INFO_ICON}--- Module 8: 1-Click Biometric Face ID Login ---")
+        face_bytes = get_test_face_bytes()
+
+        # 1. Test POST /api/v1/auth/face-login
+        login_files = {"image": ("face_login.jpg", face_bytes, "image/jpeg")}
+        face_login_res = requests.post(f"{FACE_AI_URL}/auth/face-login", files=login_files)
+        self.assert_true(face_login_res.status_code == 200, "1-Click Face ID Login (POST /auth/face-login)", face_login_res.text)
+
+        res_json = face_login_res.json() if face_login_res.status_code == 200 else {}
+        data = res_json.get("data") or {}
+        tokens = data.get("tokens") or {}
+        jwt_token = tokens.get("access_token")
+        self.assert_true(bool(jwt_token), "JWT Access Token received from Face ID Login")
+
+        # 2. Verify issued JWT works on Core User Service (/auth/me)
+        if jwt_token:
+            auth_headers = {"Authorization": f"Bearer {jwt_token}"}
+            me_res = requests.get(f"{CORE_USER_URL}/auth/me", headers=auth_headers)
+            self.assert_true(me_res.status_code == 200, "Verify Face ID JWT on Core User IAM (/auth/me)")
+            me_data = me_res.json()
+            if "data" in me_data and isinstance(me_data["data"], dict):
+                me_data = me_data["data"]
+            self.assert_true(bool(me_data.get("username")), f"Authenticated User Profile verified: {me_data.get('username')}")
+
+    # ------------------------------------------------------------------------
     # Teardown / Cleanup
     # ------------------------------------------------------------------------
     def cleanup(self):
@@ -309,7 +337,7 @@ class E2ETestRunner:
             self.assert_true(del_dept.status_code in [200, 204], f"Delete Test Department ({self.test_dept_id})", f"{del_dept.status_code} {del_dept.text}")
         if self.test_pos_id:
             del_pos = requests.delete(f"{CORE_USER_URL}/organization/positions/{self.test_pos_id}", headers=headers)
-            self.assert_true(del_pos.status_code in [200, 204], f"Delete Test Position ({self.test_pos_id})", f"{del_pos.status_code} {del_pos.text}")
+            self.assert_true(del_pos.status_code in [200, 204], f"Delete Test Position ({self.test_pos_id})", f"{del_pos.status_code} {del_pos.status_code}")
 
     def wait_for_services(self, max_wait: int = 15):
         import time
@@ -339,6 +367,7 @@ class E2ETestRunner:
             self.test_unified_personnel()
             self.test_face_biometrics_registration()
             self.test_face_verification_and_checkin()
+            self.test_face_id_login()
             self.test_helpdesk()
         finally:
             self.cleanup()

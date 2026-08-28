@@ -13,14 +13,24 @@ const apiClient = axios.create({
   },
 });
 
+const extractErrorMessage = (error, defaultMsg) => {
+  const data = error.response?.data;
+  if (!data) return error.message || defaultMsg;
+  if (typeof data.message === 'string' && data.message) return data.message;
+  if (typeof data.detail === 'string' && data.detail) return data.detail;
+  if (typeof data.detail === 'object' && data.detail !== null) {
+    return data.detail.message || JSON.stringify(data.detail);
+  }
+  if (typeof data.message === 'object' && data.message !== null) {
+    return data.message.message || JSON.stringify(data.message);
+  }
+  return error.message || defaultMsg;
+};
+
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const errorMsg =
-      error.response?.data?.message ||
-      error.response?.data?.detail ||
-      error.message ||
-      'Đã xảy ra lỗi khi kết nối Face AI Backend.';
+    const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Face AI Backend.');
     return Promise.reject(new Error(errorMsg));
   }
 );
@@ -49,11 +59,7 @@ coreUserClient.interceptors.request.use((config) => {
 coreUserClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const errorMsg =
-      error.response?.data?.message ||
-      error.response?.data?.detail ||
-      error.message ||
-      'Đã xảy ra lỗi khi kết nối Core User Service.';
+    const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Core User Service.');
     return Promise.reject(new Error(errorMsg));
   }
 );
@@ -129,14 +135,18 @@ export const api = {
   // ============================================================================
   // Core User & IAM Microservice APIs (Port 8001)
   // ============================================================================
-  // Auth & Session
-  login: (username, password) => {
-    return coreUserClient.post('/auth/login', {
-      username,
-      password,
+  // Face AI Authentication & Face ID Login
+  faceLogin: (imageBlob) => {
+    const formData = new FormData();
+    formData.append('image', imageBlob, 'face_login.jpg');
+    return apiClient.post('/auth/face-login', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  getCurrentUser: () => coreUserClient.get('/auth/me'),
+
+  // Auth & IAM (Core User Service)
+  login: (username, password) => coreUserClient.post('/auth/login', { username, password }),
+  getMe: () => coreUserClient.get('/auth/me'),
   changePassword: (data) => coreUserClient.post('/auth/change-password', data),
 
   // Users & Profiles

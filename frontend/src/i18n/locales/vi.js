@@ -50,6 +50,21 @@ const vi = {
   login_subtitle: 'Hệ thống Quản trị Doanh nghiệp & Chấm công AI',
   demo_accounts: 'Tài khoản mẫu mặc định:',
 
+  // Face ID Login
+  tab_password_login: 'Mật Khẩu',
+  tab_face_login: 'Face ID AI',
+  face_login_title: 'Đăng Nhập Sinh Trắc Học Face ID',
+  face_login_desc: 'Nhìn thẳng vào camera để nhận diện khuôn mặt và đăng nhập tức thì',
+  btn_scan_and_login: 'Xác Thực & Đăng Nhập Ngay',
+  btn_start_camera: 'Mở Camera',
+  btn_switch_password: 'Đăng nhập bằng mật khẩu',
+  face_login_scanning: 'Đang trích xuất đặc trưng sinh trắc học...',
+  face_login_verifying: 'Đang kiểm tra liveness & đối chiếu pgvector...',
+  face_login_success: 'Đăng nhập thành công! Chào mừng',
+  face_login_no_camera: 'Không tìm thấy camera hoặc quyền truy cập camera bị từ chối.',
+  face_login_tip: 'Đảm bảo gương mặt ở giữa khung hình và đủ ánh sáng.',
+  face_login_retry: 'Thử lại',
+
   // Navigation Tabs
   nav_menu: 'Menu Quản Trị',
   nav_dashboard: 'Dashboard Realtime',

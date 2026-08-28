@@ -50,6 +50,21 @@ const en = {
   login_subtitle: 'Enterprise AI HRM & Facial Attendance System',
   demo_accounts: 'Default Demo Credentials:',
 
+  // Face ID Login
+  tab_password_login: 'Password',
+  tab_face_login: 'Face ID AI',
+  face_login_title: 'Biometric Face ID Login',
+  face_login_desc: 'Look directly at the camera to verify your facial biometrics and log in instantly',
+  btn_scan_and_login: 'Verify & Log In Now',
+  btn_start_camera: 'Start Camera',
+  btn_switch_password: 'Log in with password',
+  face_login_scanning: 'Extracting biometric facial features...',
+  face_login_verifying: 'Verifying liveness & matching pgvector...',
+  face_login_success: 'Biometric Login successful! Welcome',
+  face_login_no_camera: 'Camera not found or access permission denied.',
+  face_login_tip: 'Ensure your face is centered in the frame with good lighting.',
+  face_login_retry: 'Retry',
+
   // Navigation Tabs
   nav_menu: 'Management Menu',
   nav_dashboard: 'Realtime Dashboard',

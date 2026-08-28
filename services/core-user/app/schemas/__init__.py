@@ -23,6 +23,13 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class FaceTokenRequest(BaseModel):
+    user_code: Optional[str] = Field(None, description="Employee/User Code")
+    username: Optional[str] = Field(None, description="Username or Email")
+    employee_id: Optional[str] = Field(None, description="Employee UUID from Face AI")
+    secret_key: Optional[str] = Field(None, description="Internal service secret if needed")
+
+
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str = Field(..., min_length=6)

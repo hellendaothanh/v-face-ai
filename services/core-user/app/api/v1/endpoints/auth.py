@@ -16,6 +16,7 @@ from app.database.session import get_db
 from app.models.user import User
 from app.schemas import (
     ChangePasswordRequest,
+    FaceTokenRequest,
     LoginRequest,
     RefreshTokenRequest,
     TokenResponse,
@@ -23,6 +24,64 @@ from app.schemas import (
 )
 
 router = APIRouter()
+
+
+@router.post("/face-token", response_model=TokenResponse, summary="Issue JWT for Biometrically Verified User")
+async def face_token(
+    req: FaceTokenRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Issue Access and Refresh tokens for a user whose biometric face was successfully matched."""
+    conditions = []
+    if req.user_code:
+        conditions.append(User.user_code == req.user_code)
+    if req.username:
+        conditions.append(User.username == req.username)
+        conditions.append(User.email == req.username)
+
+    if not conditions:
+        raise UnauthorizedException("user_code or username is required for biometric token issuance")
+
+    stmt = select(User).where(or_(*conditions))
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # Fallback: check if username matches user_code (case-insensitive)
+        if req.user_code:
+            fallback_stmt = select(User).where(User.username.ilike(req.user_code))
+            fallback_res = await db.execute(fallback_stmt)
+            user = fallback_res.scalar_one_or_none()
+
+    if not user:
+        raise UnauthorizedException(f"No IAM User found matching biometric identity '{req.user_code or req.username}'")
+
+    if not user.is_active:
+        raise UnauthorizedException("Account is disabled. Please contact administrator.")
+
+    # Update last login time
+    user.last_login = datetime.now(timezone.utc)
+    await db.commit()
+
+    # Collect roles for token claims
+    roles = [role.name for role in user.roles]
+    access_token = create_access_token(
+        subject=str(user.id),
+        extra_claims={
+            "user_code": user.user_code,
+            "username": user.username,
+            "roles": roles,
+            "is_superuser": user.is_superuser
+        }
+    )
+    refresh_token = create_refresh_token(subject=str(user.id))
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=24 * 60 * 60
+    )
 
 
 @router.post("/login", response_model=TokenResponse, summary="User Authentication & JWT Issuance")
