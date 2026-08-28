@@ -1,0 +1,23 @@
+changelog:
+  categories:
+    - title: "🚀 Features & Enhancements"
+      labels:
+        - "feature"
+        - "enhancement"
+    - title: "🤖 AI & LLM Integrations"
+      labels:
+        - "ai"
+        - "helpdesk"
+    - title: "🛡️ Security & IAM Fixes"
+      labels:
+        - "security"
+        - "iam"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "fix"
+        - "bug"
+    - title: "🧰 Maintenance & CI/CD"
+      labels:
+        - "chore"
+        - "ci"
+        - "dependencies"
