@@ -150,6 +150,7 @@ export const api = {
   updateTicket: (id, data) => coreUserClient.patch(`/helpdesk/tickets/${id}`, data),
   addTicketComment: (id, data) => coreUserClient.post(`/helpdesk/tickets/${id}/comments`, data),
   submitTicketFeedback: (id, data) => coreUserClient.post(`/helpdesk/tickets/${id}/feedback`, data),
+  triggerAIDiagnose: (id) => coreUserClient.post(`/helpdesk/tickets/${id}/ai-diagnose`),
 
   // Knowledge Base (KB)
   getKBCategories: () => coreUserClient.get('/helpdesk/kb/categories'),

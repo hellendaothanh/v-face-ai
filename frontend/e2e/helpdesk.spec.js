@@ -79,4 +79,20 @@ test.describe('ITIL Helpdesk & Knowledge Base (KB) Module Tests', () => {
     await cancelBtn.click();
     await expect(modal).not.toBeVisible();
   });
+
+  test('TC-HD-04: AI Helpdesk Agent Auto-Resolution & Timeline Diagnostics', async ({ page }) => {
+    const helpdeskNav = page.locator('aside button').filter({ hasText: /Helpdesk|Service Desk/i }).first();
+    await helpdeskNav.click();
+    await page.waitForTimeout(400);
+
+    // Verify tickets exist and click the first ticket to open details
+    const firstTicketRow = page.locator('tbody tr').first();
+    await expect(firstTicketRow).toBeVisible();
+    await firstTicketRow.click();
+    await page.waitForTimeout(400);
+
+    // Verify AI re-diagnose button is present in the discussion timeline
+    const reDiagnoseBtn = page.getByRole('button', { name: /Yêu cầu AI|AI Chẩn Đoán|Re-diagnosis|AI/i }).first();
+    await expect(reDiagnoseBtn).toBeVisible();
+  });
 });

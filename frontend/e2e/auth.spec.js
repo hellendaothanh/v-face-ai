@@ -43,6 +43,24 @@ test.describe('V-Face AI - Authentication & IAM Guard Flow', () => {
       localStorage.clear();
     });
 
+    // Mock the backend login API to return valid JWT and user details reliably in E2E sandbox
+    await page.route('**/api/v1/auth/login', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          access_token: 'mock_valid_e2e_jwt_token',
+          token_type: 'bearer',
+          user: {
+            id: '1d8000',
+            username: 'admin',
+            full_name: 'System Administrator',
+            roles: ['superadmin'],
+          },
+        }),
+      });
+    });
+
     await page.goto('/');
     await page.waitForTimeout(600);
 

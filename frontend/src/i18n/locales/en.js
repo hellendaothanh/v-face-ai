@@ -448,6 +448,14 @@ const en = {
   helpdesk_kb_toast_updated: 'KB solution article updated successfully!',
   helpdesk_kb_toast_deleted: 'KB solution article deleted successfully!',
   helpdesk_kb_no_articles_found: 'No KB articles found matching the current search / tag filters.',
+
+  // AI Helpdesk Agent Keys
+  helpdesk_ai_badge: 'V-Face AI IT Assistant',
+  helpdesk_ai_bot_title: 'Auto-Diagnosis Response From AI Agent',
+  helpdesk_ai_btn_redediagnose: 'Request AI Re-diagnosis',
+  helpdesk_ai_diagnosing: 'AI is analyzing...',
+  helpdesk_ai_toast_diagnosed: 'AI Agent completed diagnosis and posted action steps to Timeline!',
+  helpdesk_ai_auto_resolved_tag: 'AI Responded',
 };
 
 export default en;

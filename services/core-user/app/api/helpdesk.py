@@ -245,3 +245,19 @@ async def submit_csat_feedback(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     return _format_ticket(ticket)
+
+
+@router.post("/tickets/{ticket_id}/ai-diagnose", response_model=TicketResponse)
+async def trigger_ai_diagnose(
+    ticket_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Trigger or re-run AI Helpdesk Agent auto-diagnosis and KB matching on a ticket."""
+    from app.services.ai_helpdesk_service import AIHelpdeskService
+    await AIHelpdeskService.process_ticket_auto_resolution(db, ticket_id)
+    ticket = await HelpdeskService.get_ticket_by_id(db, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return _format_ticket(ticket)
+

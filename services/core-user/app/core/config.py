@@ -47,5 +47,13 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "admin123"
     FIRST_SUPERUSER_FULLNAME: str = "System Administrator"
 
+    # AI Helpdesk Agent Settings
+    AI_HELPDESK_ENABLED: bool = True
+    AI_PROVIDER: str = "gemini"  # gemini | openai | anthropic | ollama | hybrid
+    AI_API_KEY: str = ""
+    AI_MODEL_NAME: str = "gemini-1.5-flash"
+    AI_AUTO_COMMENT_ENABLED: bool = True
+    AI_CONFIDENCE_THRESHOLD: float = 0.50
+
 
 settings = Settings()

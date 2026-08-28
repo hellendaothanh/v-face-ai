@@ -1,22 +1,19 @@
-﻿param (
-    [string]$Command = $null,
-    [string]$Target = "all"
-)
-
-# Extract from $args if invoked via script without named params
-if ([string]::IsNullOrWhiteSpace($Command) -and $args.Count -gt 0) {
-    $Command = $args[0]
-    if ($args.Count -gt 1) { $Target = $args[1] }
-}
-if ([string]::IsNullOrWhiteSpace($Command)) {
-    $Command = "help"
-}
-
 # ==============================================================================
 # V-Face Service Manager Script for Windows (PowerShell)
 # Supports: start | stop | restart | status | logs
 # Targets:  all (default) | core-user | backend | frontend | db
 # ==============================================================================
+
+[CmdletBinding()]
+param (
+    [Parameter(Position = 0)]
+    [ValidateSet("start", "stop", "restart", "status", "test", "logs", "help")]
+    [string]$Command = "help",
+
+    [Parameter(Position = 1)]
+    [ValidateSet("all", "core-user", "backend", "frontend", "db")]
+    [string]$Target = "all"
+)
 
 $PROJECT_ROOT = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PID_DIR = Join-Path $PROJECT_ROOT ".pids"
@@ -55,26 +52,21 @@ function Test-PidRunning([int]$pidNumber) {
 # Helper: find PID by listening port
 function Get-PidByPort([int]$portNumber) {
     try {
-        $conn = Get-NetTCPConnection -LocalPort $portNumber -State Listen -ErrorAction Stop
-        if ($conn) {
-            $p = ($conn | Select-Object -ExpandProperty OwningProcess -First 1)
-            if ($p -and $p -gt 0) { return [int]$p }
+        $connections = Get-NetTCPConnection -LocalPort $portNumber -State Listen -ErrorAction SilentlyContinue
+        if ($connections) {
+            return ($connections | Select-Object -ExpandProperty OwningProcess -First 1)
         }
     }
-    catch {}
-
-    # Reliable fallback to netstat -ano
-    try {
-        $netstatOutput = netstat -ano
-        foreach ($line in $netstatOutput) {
-            if ($line -match ":$portNumber\s+.*LISTENING\s+(\d+)") {
-                $pidVal = [int]$Matches[1]
-                if ($pidVal -gt 0) { return $pidVal }
+    catch {
+        # Fallback to netstat if Get-NetTCPConnection fails
+        $lines = netstat -ano | Select-String ":$portNumber\s+.*LISTENING\s+(\d+)"
+        if ($lines) {
+            $match = [regex]::Match($lines[0], ":$portNumber\s+.*LISTENING\s+(\d+)")
+            if ($match.Success) {
+                return [int]$match.Groups[1].Value
             }
         }
     }
-    catch {}
-
     return $null
 }
 
@@ -197,23 +189,25 @@ function Start-CoreUser {
 
     $pythonExec = Get-PythonExec
 
-    # Start uvicorn via Start-Process
-    $cmdArgs = "/c `"`"$pythonExec`" -m uvicorn app.main:app --host 0.0.0.0 --port $CORE_USER_PORT >> `"$CORE_USER_LOG_FILE`" 2>&1`""
-    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WorkingDirectory $CORE_USER_DIR -WindowStyle Hidden -PassThru
+    # Start process via cmd.exe redirection to avoid file locking issues in PowerShell
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "cmd.exe"
+    $argStr = '/c ""{0}" -m uvicorn app.main:app --host 0.0.0.0 --port {1} >> "{2}" 2>&1"' -f $pythonExec, $CORE_USER_PORT, $CORE_USER_LOG_FILE
+    $psi.Arguments = $argStr
+    $psi.WorkingDirectory = $CORE_USER_DIR
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+
+    $proc = [System.Diagnostics.Process]::Start($psi)
     if ($proc) {
         Set-Content -Path $CORE_USER_PID_FILE -Value $proc.Id
 
-        # Wait for port to become active (up to 8 seconds)
-        for ($i = 0; $i -lt 8; $i++) {
-            Start-Sleep -Seconds 1
-            $portPid = Get-PidByPort $CORE_USER_PORT
-            if ($portPid) { break }
-        }
+        Start-Sleep -Milliseconds 2000
 
         $portPid = Get-PidByPort $CORE_USER_PORT
-        if ($portPid) {
-            Set-Content -Path $CORE_USER_PID_FILE -Value $portPid
-            Write-Host "✔ Core User Service started! (PID: $portPid)" -ForegroundColor Green
+        if ($portPid -or (Test-PidRunning $proc.Id)) {
+            if ($portPid) { Set-Content -Path $CORE_USER_PID_FILE -Value $portPid }
+            Write-Host "✔ Core User Service started! (PID: $($proc.Id))" -ForegroundColor Green
             Write-Host "  API URL:  http://localhost:$CORE_USER_PORT" -ForegroundColor Cyan
             Write-Host "  Docs URL: http://localhost:$CORE_USER_PORT/docs" -ForegroundColor Cyan
             Write-Host "  Logs:     $CORE_USER_LOG_FILE"
@@ -282,23 +276,25 @@ function Start-Backend {
 
     $pythonExec = Get-PythonExec
 
-    # Start uvicorn via Start-Process
-    $cmdArgs = "/c `"`"$pythonExec`" -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT >> `"$BACKEND_LOG_FILE`" 2>&1`""
-    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WorkingDirectory $PROJECT_ROOT -WindowStyle Hidden -PassThru
+    # Start background process via cmd.exe redirection to prevent file locks
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "cmd.exe"
+    $argStr = '/c ""{0}" -m uvicorn app.main:app --host 0.0.0.0 --port {1} >> "{2}" 2>&1"' -f $pythonExec, $BACKEND_PORT, $BACKEND_LOG_FILE
+    $psi.Arguments = $argStr
+    $psi.WorkingDirectory = $PROJECT_ROOT
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+
+    $proc = [System.Diagnostics.Process]::Start($psi)
     if ($proc) {
         Set-Content -Path $BACKEND_PID_FILE -Value $proc.Id
 
-        # Wait for port to become active (up to 8 seconds)
-        for ($i = 0; $i -lt 8; $i++) {
-            Start-Sleep -Seconds 1
-            $portPid = Get-PidByPort $BACKEND_PORT
-            if ($portPid) { break }
-        }
+        Start-Sleep -Milliseconds 2000
 
         $portPid = Get-PidByPort $BACKEND_PORT
-        if ($portPid) {
-            Set-Content -Path $BACKEND_PID_FILE -Value $portPid
-            Write-Host "✔ Face AI Backend started! (PID: $portPid)" -ForegroundColor Green
+        if ($portPid -or (Test-PidRunning $proc.Id)) {
+            if ($portPid) { Set-Content -Path $BACKEND_PID_FILE -Value $portPid }
+            Write-Host "✔ Face AI Backend started! (PID: $($proc.Id))" -ForegroundColor Green
             Write-Host "  API URL:  http://localhost:$BACKEND_PORT" -ForegroundColor Cyan
             Write-Host "  Docs URL: http://localhost:$BACKEND_PORT/docs" -ForegroundColor Cyan
             Write-Host "  Logs:     $BACKEND_LOG_FILE"
@@ -375,23 +371,25 @@ function Start-Frontend {
         Pop-Location
     }
 
-    # Start Vite via Start-Process
-    $cmdArgs = '/c "npm run dev >> "{0}" 2>&1"' -f $FRONTEND_LOG_FILE
-    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WorkingDirectory $frontendDir -WindowStyle Hidden -PassThru
+    # Start Vite in background via cmd.exe redirection
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "cmd.exe"
+    $argStr = '/c "npm run dev >> "{0}" 2>&1"' -f $FRONTEND_LOG_FILE
+    $psi.Arguments = $argStr
+    $psi.WorkingDirectory = $frontendDir
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+
+    $proc = [System.Diagnostics.Process]::Start($psi)
     if ($proc) {
         Set-Content -Path $FRONTEND_PID_FILE -Value $proc.Id
 
-        # Wait for port to become active (up to 8 seconds)
-        for ($i = 0; $i -lt 8; $i++) {
-            Start-Sleep -Seconds 1
-            $portPid = Get-PidByPort $FRONTEND_PORT
-            if ($portPid) { break }
-        }
+        Start-Sleep -Milliseconds 2000
 
         $portPid = Get-PidByPort $FRONTEND_PORT
-        if ($portPid) {
-            Set-Content -Path $FRONTEND_PID_FILE -Value $portPid
-            Write-Host "✔ Frontend started! (PID: $portPid)" -ForegroundColor Green
+        if ($portPid -or (Test-PidRunning $proc.Id)) {
+            if ($portPid) { Set-Content -Path $FRONTEND_PID_FILE -Value $portPid }
+            Write-Host "✔ Frontend started! (PID: $($proc.Id))" -ForegroundColor Green
             Write-Host "  Web URL: http://localhost:$FRONTEND_PORT" -ForegroundColor Cyan
             Write-Host "  Logs:    $FRONTEND_LOG_FILE"
         }
@@ -452,15 +450,15 @@ function Get-ServiceStatus {
     }
 
     # Core User Service
-    $coreUserPid = Get-PidByPort $CORE_USER_PORT
-    if (-not $coreUserPid -and (Test-Path $CORE_USER_PID_FILE)) {
+    $coreUserPid = $null
+    if (Test-Path $CORE_USER_PID_FILE) {
         $pidContent = (Get-Content $CORE_USER_PID_FILE -ErrorAction SilentlyContinue | Out-String).Trim()
-        if ($pidContent -match '^\d+$') {
-            $checkPid = [int]$pidContent
-            if (Test-PidRunning $checkPid) {
-                $coreUserPid = $checkPid
-            }
+        if ($pidContent -match '^\d+$' -and (Test-PidRunning ([int]$pidContent))) {
+            $coreUserPid = [int]$pidContent
         }
+    }
+    if (-not $coreUserPid) {
+        $coreUserPid = Get-PidByPort $CORE_USER_PORT
     }
 
     if ($coreUserPid) {
@@ -474,15 +472,15 @@ function Get-ServiceStatus {
     }
 
     # Backend Face AI
-    $backendPid = Get-PidByPort $BACKEND_PORT
-    if (-not $backendPid -and (Test-Path $BACKEND_PID_FILE)) {
+    $backendPid = $null
+    if (Test-Path $BACKEND_PID_FILE) {
         $pidContent = (Get-Content $BACKEND_PID_FILE -ErrorAction SilentlyContinue | Out-String).Trim()
-        if ($pidContent -match '^\d+$') {
-            $checkPid = [int]$pidContent
-            if (Test-PidRunning $checkPid) {
-                $backendPid = $checkPid
-            }
+        if ($pidContent -match '^\d+$' -and (Test-PidRunning ([int]$pidContent))) {
+            $backendPid = [int]$pidContent
         }
+    }
+    if (-not $backendPid) {
+        $backendPid = Get-PidByPort $BACKEND_PORT
     }
 
     if ($backendPid) {
@@ -496,15 +494,15 @@ function Get-ServiceStatus {
     }
 
     # Frontend
-    $frontendPid = Get-PidByPort $FRONTEND_PORT
-    if (-not $frontendPid -and (Test-Path $FRONTEND_PID_FILE)) {
+    $frontendPid = $null
+    if (Test-Path $FRONTEND_PID_FILE) {
         $pidContent = (Get-Content $FRONTEND_PID_FILE -ErrorAction SilentlyContinue | Out-String).Trim()
-        if ($pidContent -match '^\d+$') {
-            $checkPid = [int]$pidContent
-            if (Test-PidRunning $checkPid) {
-                $frontendPid = $checkPid
-            }
+        if ($pidContent -match '^\d+$' -and (Test-PidRunning ([int]$pidContent))) {
+            $frontendPid = [int]$pidContent
         }
+    }
+    if (-not $frontendPid) {
+        $frontendPid = Get-PidByPort $FRONTEND_PORT
     }
 
     if ($frontendPid) {

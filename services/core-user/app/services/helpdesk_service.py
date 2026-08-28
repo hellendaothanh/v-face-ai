@@ -253,6 +253,15 @@ class HelpdeskService:
         )
         db.add(ticket)
         await db.commit()
+
+        # Trigger AI Helpdesk Auto-Resolution
+        try:
+            from app.services.ai_helpdesk_service import AIHelpdeskService
+            await AIHelpdeskService.process_ticket_auto_resolution(db, ticket.id)
+        except Exception as e:
+            from loguru import logger
+            logger.warning(f"Non-blocking AI Helpdesk processing error: {e}")
+
         return await HelpdeskService.get_ticket_by_id(db, ticket.id)
 
     @staticmethod

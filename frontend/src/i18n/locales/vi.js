@@ -448,6 +448,14 @@ const vi = {
   helpdesk_kb_toast_updated: 'Đã cập nhật bài viết tri thức thành công!',
   helpdesk_kb_toast_deleted: 'Đã xóa bài viết tri thức thành công!',
   helpdesk_kb_no_articles_found: 'Không tìm thấy bài viết tri thức nào phù hợp với bộ lọc.',
+
+  // AI Helpdesk Agent Keys
+  helpdesk_ai_badge: 'V-Face AI IT Assistant',
+  helpdesk_ai_bot_title: 'Phản Hồi Tự Động Từ AI Agent',
+  helpdesk_ai_btn_redediagnose: 'Yêu cầu AI Chẩn Đoán Lại',
+  helpdesk_ai_diagnosing: 'AI đang phân tích...',
+  helpdesk_ai_toast_diagnosed: 'AI Agent đã hoàn tất chẩn đoán và cập nhật hướng dẫn vào Timeline!',
+  helpdesk_ai_auto_resolved_tag: 'Đã phản hồi bởi AI',
 };
 
 export default vi;

@@ -30,7 +30,10 @@ import {
   Code,
   List,
   Info,
-  X
+  X,
+  Bot,
+  Cpu,
+  RefreshCw
 } from 'lucide-react';
 import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
@@ -257,6 +260,9 @@ const HelpdeskManager = () => {
   const [csatRating, setCsatRating] = useState(5);
   const [csatFeedback, setCsatFeedback] = useState('');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  // AI Diagnose Loading State
+  const [aiDiagnosing, setAiDiagnosing] = useState(false);
 
   // Notification Toast
   const [notification, setNotification] = useState(null);
@@ -680,31 +686,91 @@ const HelpdeskManager = () => {
 
                   {/* Comments / Activity Timeline */}
                   <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-                      <MessageSquare className="w-4 h-4 text-amber-400" />
-                      <span>{t('helpdesk_timeline_title', 'Lịch Sử Trao Đổi & Phản Hồi')} ({selectedTicket.comments?.length || 0})</span>
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                        <MessageSquare className="w-4 h-4 text-amber-400" />
+                        <span>{t('helpdesk_timeline_title', 'Lịch Sử Trao Đổi & Phản Hồi')} ({selectedTicket.comments?.length || 0})</span>
+                      </h4>
 
-                    <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                      {selectedTicket.comments?.map((c) => (
-                        <div
-                          key={c.id}
-                          className={`p-3 rounded-xl border text-xs ${
-                            c.is_internal
-                              ? 'bg-amber-950/30 border-amber-500/30 text-amber-200'
-                              : 'bg-slate-900/60 border-slate-800 text-slate-200'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                            <span className="font-bold text-white flex items-center space-x-1">
-                              <span>{c.author_name}</span>
-                              {c.is_internal && <span className="text-amber-400 font-semibold">{t('helpdesk_internal_badge', '[Ghi chú nội bộ IT]')}</span>}
-                            </span>
-                            <span>{new Date(c.created_at).toLocaleString()}</span>
+                      {/* AI Re-diagnose Button */}
+                      <button
+                        onClick={async () => {
+                          setAiDiagnosing(true);
+                          try {
+                            const res = await api.triggerAIDiagnose(selectedTicket.id);
+                            showToast(t('helpdesk_ai_toast_diagnosed', 'AI Agent đã hoàn tất chẩn đoán và cập nhật hướng dẫn vào Timeline!'));
+                            setSelectedTicket(res);
+                            fetchTickets();
+                          } catch (err) {
+                            showToast(err.message || 'Lỗi khi kích hoạt AI', 'error');
+                          } finally {
+                            setAiDiagnosing(false);
+                          }
+                        }}
+                        disabled={aiDiagnosing}
+                        className="px-3 py-1 rounded-xl bg-cyan-600/20 border border-cyan-500/30 hover:bg-cyan-600/30 text-cyan-300 text-[11px] font-semibold flex items-center space-x-1.5 transition-all shadow-sm shadow-cyan-500/10"
+                      >
+                        {aiDiagnosing ? (
+                          <RefreshCw className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        )}
+                        <span>{aiDiagnosing ? t('helpdesk_ai_diagnosing', 'AI đang phân tích...') : t('helpdesk_ai_btn_redediagnose', 'Yêu cầu AI Chẩn Đoán Lại')}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                      {selectedTicket.comments?.map((c) => {
+                        const isAI = c.content && (
+                          c.content.includes('V-Face AI Support Agent') || 
+                          c.content.includes('AI Helpdesk') ||
+                          c.content.includes('🤖')
+                        );
+                        return (
+                          <div
+                            key={c.id}
+                            className={`p-4 rounded-2xl border text-xs transition-all ${
+                              isAI
+                                ? 'bg-gradient-to-br from-cyan-950/40 via-indigo-950/30 to-slate-900/90 border-cyan-500/40 shadow-lg shadow-cyan-500/10'
+                                : c.is_internal
+                                ? 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+                                : 'bg-slate-900/60 border-slate-800 text-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2 pb-1.5 border-b border-slate-800/80">
+                              <span className="font-bold flex items-center space-x-1.5">
+                                {isAI ? (
+                                  <span className="flex items-center space-x-1.5 text-cyan-300">
+                                    <div className="w-5 h-5 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
+                                      <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                                    </div>
+                                    <span className="font-bold tracking-wide">{t('helpdesk_ai_badge', 'V-Face AI IT Assistant')}</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                                      AI Auto-Resolution
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <span className="text-white flex items-center space-x-1">
+                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>{c.author_name}</span>
+                                    {c.is_internal && <span className="text-amber-400 font-semibold">{t('helpdesk_internal_badge', '[Ghi chú nội bộ IT]')}</span>}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString()}</span>
+                            </div>
+
+                            {/* Markdown Render for AI or plain content */}
+                            {isAI ? (
+                              <div className="prose prose-invert max-w-none text-xs text-slate-200">
+                                {renderRichMarkdown(c.content)}
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-line text-slate-200">{c.content}</p>
+                            )}
                           </div>
-                          <p className="whitespace-pre-line">{c.content}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
                         <p className="text-xs text-slate-500 text-center py-4">{t('helpdesk_no_comments', 'Chưa có bình luận nào.')}</p>
                       )}
