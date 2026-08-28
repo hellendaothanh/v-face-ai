@@ -1,17 +1,18 @@
 import axios from 'axios';
 
-// API Base URL configured for local backend
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// -----------------------------------------------------------------------------
+// Face AI & Attendance API Client (Port 8000)
+// -----------------------------------------------------------------------------
+const BACKEND_BASE_URL = 'http://localhost:8000/api/v1';
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: BACKEND_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Response interceptor for unified response extracting and error formatting
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -19,55 +20,87 @@ apiClient.interceptors.response.use(
       error.response?.data?.message ||
       error.response?.data?.detail ||
       error.message ||
-      'Đã xảy ra lỗi khi kết nối máy chủ.';
+      'Đã xảy ra lỗi khi kết nối Face AI Backend.';
+    return Promise.reject(new Error(errorMsg));
+  }
+);
+
+// -----------------------------------------------------------------------------
+// Core User & IAM API Client (Port 8001)
+// -----------------------------------------------------------------------------
+const CORE_USER_BASE_URL = 'http://localhost:8001/api/v1';
+
+const coreUserClient = axios.create({
+  baseURL: CORE_USER_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+coreUserClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('vface_access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+coreUserClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    const errorMsg =
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      error.message ||
+      'Đã xảy ra lỗi khi kết nối Core User Service.';
     return Promise.reject(new Error(errorMsg));
   }
 );
 
 export const api = {
-  // Employee APIs
+  // ============================================================================
+  // Face AI Attendance APIs (Port 8000)
+  // ============================================================================
+  // Employees
   getEmployees: (params = {}) => apiClient.get('/employees', { params }),
   getEmployeeDetail: (id) => apiClient.get(`/employees/${id}`),
   createEmployee: (data) => apiClient.post('/employees', data),
   deleteEmployee: (id) => apiClient.delete(`/employees/${id}`),
   registerFace: (employeeId, formData) =>
     apiClient.post(`/employees/${employeeId}/register-face`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
-  // Attendance APIs
+  // Attendance History
   getAttendanceHistory: (params = {}) => apiClient.get('/attendance', { params }),
   getAttendanceLogs: (params = {}) => apiClient.get('/attendance', { params }),
   faceCheckIn: (formData) =>
     apiClient.post('/attendance/check-in', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
-  // Attendance Requests & Exceptions APIs
+  // Attendance Requests & Exceptions
   getRequests: (params = {}) => apiClient.get('/requests', { params }),
   createRequest: (data) => apiClient.post('/requests', data),
   approveRequest: (id, data = {}) => apiClient.put(`/requests/${id}/approve`, data),
   rejectRequest: (id, data = {}) => apiClient.put(`/requests/${id}/reject`, data),
   getDailySummary: (params = {}) => apiClient.get('/requests/daily-summary', { params }),
 
-  // Multi-Device Camera Management APIs
+  // Multi-Device Camera Management
   getDevices: () => apiClient.get('/devices'),
   createDevice: (data) => apiClient.post('/devices', data),
   toggleDevice: (id) => apiClient.put(`/devices/${id}/toggle`),
   updateDevice: (id, data) => apiClient.put(`/devices/${id}`, data),
   deleteDevice: (id) => apiClient.delete(`/devices/${id}`),
 
-  // Analytics & BI Reporting APIs
+  // Analytics & BI
   getWeeklyPunctuality: (params = {}) => apiClient.get('/analytics/weekly-punctuality', { params }),
   getDepartmentLateness: (params = {}) => apiClient.get('/analytics/department-lateness', { params }),
   getHourlyDensity: (params = {}) => apiClient.get('/analytics/hourly-density', { params }),
   getAnalyticsSummary: () => apiClient.get('/analytics/summary'),
 
-  // Camera RTSP / Webcam Stream APIs
+  // Camera RTSP / Webcam Stream
   getCameraStatus: () => apiClient.get('/camera/status'),
   startCamera: (payload = {}) => apiClient.post('/camera/start', payload),
   stopCamera: () => apiClient.post('/camera/stop'),
@@ -75,9 +108,40 @@ export const api = {
   registerFaceFromLiveCamera: (employeeId) =>
     apiClient.post(`/camera/register-face/${employeeId}`),
 
-  // API Health & Diagnostics APIs
+  // API Health Diagnostics
   getBackendHealth: () => axios.get('http://localhost:8000/health', { timeout: 5000 }).then(res => res.data),
   getCoreUserHealth: () => axios.get('http://localhost:8001/health', { timeout: 5000 }).then(res => res.data),
+
+  // ============================================================================
+  // Core User & IAM Microservice APIs (Port 8001)
+  // ============================================================================
+  // Auth & Session
+  login: (username, password) => {
+    return coreUserClient.post('/auth/login', {
+      username,
+      password,
+    });
+  },
+  getCurrentUser: () => coreUserClient.get('/auth/me'),
+  changePassword: (data) => coreUserClient.post('/auth/change-password', data),
+
+  // Users & Profiles
+  getCoreUsers: (params = {}) => coreUserClient.get('/users', { params }),
+  getCoreUserDetail: (id) => coreUserClient.get(`/users/${id}`),
+  createCoreUser: (data) => coreUserClient.post('/users', data),
+  updateCoreUser: (id, data) => coreUserClient.put(`/users/${id}`, data),
+  deleteCoreUser: (id) => coreUserClient.delete(`/users/${id}`),
+
+  // RBAC Roles & Permissions
+  getRoles: () => coreUserClient.get('/rbac/roles'),
+  createRole: (data) => coreUserClient.post('/rbac/roles', data),
+  getPermissions: () => coreUserClient.get('/rbac/permissions'),
+
+  // Organization (Departments & Positions)
+  getDepartments: () => coreUserClient.get('/organization/departments'),
+  createDepartment: (data) => coreUserClient.post('/organization/departments', data),
+  getPositions: () => coreUserClient.get('/organization/positions'),
+  createPosition: (data) => coreUserClient.post('/organization/positions', data),
 };
 
 export default api;

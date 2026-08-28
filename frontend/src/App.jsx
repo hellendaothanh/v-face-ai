@@ -8,11 +8,15 @@ import RequestManagement from './components/RequestManagement';
 import DeviceManagement from './components/DeviceManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SystemHealth from './components/SystemHealth';
+import CoreUserManager from './components/CoreUserManager';
+import Login from './components/Login';
 import api from './services/api';
 import { useI18n } from './i18n/I18nContext';
+import { useAuth } from './context/AuthContext';
 
 function App() {
   const { t } = useI18n();
+  const { isAuthenticated, isLoading } = useAuth();
   const [currentTab, setCurrentTab] = useState(NAV_TABS.DASHBOARD);
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [isApiConnected, setIsApiConnected] = useState(null); // null = checking, true = online, false = offline
@@ -73,6 +77,11 @@ function App() {
           title: t('header_analytics_title'),
           subtitle: t('header_analytics_sub'),
         };
+      case NAV_TABS.CORE_USER:
+        return {
+          title: t('header_core_user_title') || 'Quản Lý Core User & Hệ Thống IAM',
+          subtitle: t('header_core_user_sub') || 'Quản lý tài khoản người dùng, phân quyền RBAC đa phân hệ và cơ cấu tổ chức',
+        };
       case NAV_TABS.HEALTH:
         return {
           title: t('header_health_title') || 'Kiểm Tra Tình Trạng API & Hệ Thống',
@@ -84,6 +93,25 @@ function App() {
   };
 
   const headerInfo = getHeaderInfo();
+
+  // 1. Loading State while checking JWT Token
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#070A12] flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 animate-spin">
+          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full" />
+        </div>
+        <p className="text-xs font-mono text-slate-400 mt-4 tracking-wider uppercase animate-pulse">
+          Verifying IAM Credentials...
+        </p>
+      </div>
+    );
+  }
+
+  // 2. Auth Guard: If not authenticated, render Login screen
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="flex bg-[#0B0F19] text-slate-100 min-h-screen">
@@ -119,6 +147,8 @@ function App() {
               onNavigateToEmployees={() => setCurrentTab(NAV_TABS.EMPLOYEES)}
             />
           )}
+
+          {currentTab === NAV_TABS.CORE_USER && <CoreUserManager />}
 
           {currentTab === NAV_TABS.EMPLOYEES && <EmployeeManagement />}
 

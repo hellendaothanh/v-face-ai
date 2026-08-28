@@ -2,6 +2,15 @@ import { test, expect } from '@playwright/test';
 
 test.describe('V-Face AI - Camera Devices & Backend API Integration', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('vface_access_token', 'mock_jwt_session');
+      localStorage.setItem('vface_user_profile', JSON.stringify({
+        id: '1d8000',
+        username: 'admin',
+        full_name: 'System Administrator',
+        roles: ['superadmin'],
+      }));
+    });
     await page.goto('/');
   });
 

@@ -9,9 +9,16 @@ const VIETNAMESE_KEYWORD_REGEX = /\b(chấm công|nhân viên|quản lý|phòng 
 
 test.describe('V-Face AI - English Localization Integrity Test', () => {
   test.beforeEach(async ({ page }) => {
-    // Set localStorage language to English before loading
+    // Set localStorage language to English and inject auth session before loading
     await page.addInitScript(() => {
       localStorage.setItem('vface_lang', 'en');
+      localStorage.setItem('vface_access_token', 'mock_jwt_session');
+      localStorage.setItem('vface_user_profile', JSON.stringify({
+        id: '1d8000',
+        username: 'admin',
+        full_name: 'System Administrator',
+        roles: ['superadmin'],
+      }));
     });
     await page.goto('/');
     await expect(page.locator('#root')).toBeVisible();
@@ -122,6 +129,21 @@ test.describe('V-Face AI - English Localization Integrity Test', () => {
       expect(
         VIETNAMESE_KEYWORD_REGEX.test(reqText),
         `Requests screen in EN mode contains untranslated Vietnamese keywords`
+      ).toBeFalsy();
+    }
+  });
+
+  test('TC-I18N-05: Core User & IAM Screen in EN Mode Must NOT Contain Vietnamese Text', async ({ page }) => {
+    const coreNav = page.locator('aside button').filter({ hasText: /Core User|IAM/i }).first();
+    if (await coreNav.isVisible()) {
+      await coreNav.click();
+      await page.waitForTimeout(500);
+
+      const coreContent = page.locator('main');
+      const coreText = (await coreContent.innerText()) || '';
+      expect(
+        VIETNAMESE_KEYWORD_REGEX.test(coreText),
+        `Core User screen in EN mode contains untranslated Vietnamese keywords: "${coreText.slice(0, 100)}..."`
       ).toBeFalsy();
     }
   });

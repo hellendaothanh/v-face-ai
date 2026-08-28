@@ -15,9 +15,11 @@ import {
   FileCheck,
   TrendingUp,
   Video,
-  BarChart3
+  BarChart3,
+  LogOut
 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
+import { useAuth } from '../context/AuthContext';
 
 export const NAV_TABS = {
   DASHBOARD: 'DASHBOARD',
@@ -26,11 +28,13 @@ export const NAV_TABS = {
   ATTENDANCE: 'ATTENDANCE',
   DEVICES: 'DEVICES',
   ANALYTICS: 'ANALYTICS',
+  CORE_USER: 'CORE_USER',
   HEALTH: 'HEALTH',
 };
 
 const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cameraStatus }) => {
   const { t } = useI18n();
+  const { currentUser, logout } = useAuth();
 
   const menuItems = [
     {
@@ -40,6 +44,14 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: Activity,
       badge: isWsConnected ? 'LIVE' : 'OFFLINE',
       badgeColor: isWsConnected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+    },
+    {
+      id: NAV_TABS.CORE_USER,
+      label: t('nav_core_user') || 'Core User & IAM',
+      subLabel: t('nav_core_user_sub') || 'Tài khoản, RBAC & Cơ cấu',
+      icon: ShieldCheck,
+      badge: 'IAM',
+      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
     },
     {
       id: NAV_TABS.EMPLOYEES,
@@ -208,10 +220,31 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
           </div>
         </div>
 
+        {/* User Account & Logout in Sidebar */}
+        <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+          <div className="flex items-center space-x-2 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-white text-xs flex-shrink-0 shadow-md shadow-indigo-600/30">
+              {currentUser?.full_name ? currentUser.full_name.charAt(0).toUpperCase() : currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : 'A'}
+            </div>
+            <div className="truncate text-left">
+              <div className="font-bold text-white text-xs truncate">{currentUser?.full_name || currentUser?.username || 'Super Admin'}</div>
+              <div className="text-[10px] text-indigo-400 font-mono">{(currentUser?.roles || [])[0] || 'superadmin'}</div>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 transition-all flex-shrink-0 shadow-sm text-[11px] font-semibold"
+            title={t('logout') || 'Đăng xuất'}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">{t('logout') || 'Thoát'}</span>
+          </button>
+        </div>
+
         <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
           <span className="flex items-center space-x-1">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Apple Silicon M4</span>
+            <span>AI ArcFace Core</span>
           </span>
           <span>v1.4.0</span>
         </div>

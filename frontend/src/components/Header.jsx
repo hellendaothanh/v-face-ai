@@ -2,56 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { 
   Camera, 
   CameraOff, 
-  Clock, 
   RefreshCw, 
-  Laptop, 
-  Video, 
   Server, 
   Wifi, 
-  WifiOff, 
   AlertTriangle,
-  CheckCircle2,
-  Globe
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
+import { useAuth } from '../context/AuthContext';
 
-const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, onRefreshCamera }) => {
+const Header = ({ title, subtitle, isApiConnected, cameraStatus, onRefreshCamera }) => {
   const { language, setLanguage, t } = useI18n();
-  const [timeStr, setTimeStr] = useState('');
+  const { currentUser, logout } = useAuth();
   const [isTogglingCamera, setIsTogglingCamera] = useState(false);
-  const [selectedSource, setSelectedSource] = useState('WEBCAM'); // 'WEBCAM' or 'RTSP'
+  const [selectedSource, setSelectedSource] = useState('WEBCAM');
 
-  // Update selected source when cameraStatus changes
   useEffect(() => {
     if (cameraStatus?.camera?.source_type) {
       setSelectedSource(cameraStatus.camera.source_type);
     }
   }, [cameraStatus]);
-
-  // Digital clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const localeCode = language === 'vi' ? 'vi-VN' : 'en-US';
-      setTimeStr(
-        now.toLocaleTimeString(localeCode, {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-        }) + ' | ' + now.toLocaleDateString(localeCode, {
-          weekday: 'short',
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        })
-      );
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, [language]);
 
   const handleToggleCamera = async () => {
     setIsTogglingCamera(true);
@@ -71,7 +43,6 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
 
   const handleSwitchSource = async (newSource) => {
     setSelectedSource(newSource);
-    // If camera is already running, seamlessly restart with new source
     if (cameraStatus?.is_running) {
       setIsTogglingCamera(true);
       try {
@@ -86,142 +57,123 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
   };
 
   const isCamRunning = !!cameraStatus?.is_running;
-  const isCamConnected = !!cameraStatus?.camera?.is_connected;
-  const defaultCamName = selectedSource === 'RTSP' ? 'Tapo C200' : t('switch_to_webcam');
-  const sourceName = cameraStatus?.camera?.device_id || defaultCamName;
 
   return (
-    <header className="h-20 bg-[#0E1322]/80 backdrop-blur-md border-b border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20">
+    <header className="h-16 bg-[#0E1322]/90 backdrop-blur-xl border-b border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-lg shadow-black/20">
+      {/* 1. Left: Page Title & Short Description */}
       <div className="min-w-0 pr-4">
-        <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate">{title}</h1>
-        <p className="text-xs text-slate-400 mt-0.5 hidden sm:block truncate">{subtitle}</p>
+        <h1 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">{title}</h1>
+        {subtitle && (
+          <p className="text-[11px] text-slate-400 truncate hidden md:block">{subtitle}</p>
+        )}
       </div>
 
-      <div className="flex items-center space-x-3 flex-shrink-0">
-        {/* 1. Language Switcher (EN / VI) */}
-        <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs shadow-sm">
-          <button
-            onClick={() => setLanguage('en')}
-            className={`flex items-center space-x-1 px-2 py-1 rounded-lg font-bold text-xs transition-all ${
-              language === 'en'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-            }`}
-            title="English (Default)"
-          >
-            <span>🇬🇧</span>
-            <span>EN</span>
-          </button>
-          <button
-            onClick={() => setLanguage('vi')}
-            className={`flex items-center space-x-1 px-2 py-1 rounded-lg font-bold text-xs transition-all ${
-              language === 'vi'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-            }`}
-            title="Tiếng Việt"
-          >
-            <span>🇻🇳</span>
-            <span>VI</span>
-          </button>
-        </div>
-
-        {/* 2. API Connection Status Badge */}
+      {/* 2. Right: Streamlined Control Group */}
+      <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+        
+        {/* System Health Dot (Compact) */}
         <div
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition-all ${
+          className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold ${
             isApiConnected === true
-              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-              : isApiConnected === false
-              ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 animate-pulse'
-              : 'bg-slate-800/80 border-slate-700 text-slate-400'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+              : 'bg-rose-500/15 border-rose-500/30 text-rose-400 animate-pulse'
           }`}
-          title={isApiConnected === true ? 'Backend API is active' : 'Cannot connect to Backend API'}
+          title={isApiConnected ? 'API Server Connected (8000/8001)' : 'API Disconnected'}
         >
-          <Server className={`w-3.5 h-3.5 ${isApiConnected === true ? 'text-emerald-400' : 'text-rose-400'}`} />
-          <span className="hidden md:inline">API:</span>
-          <span>{isApiConnected === true ? t('online') : isApiConnected === false ? t('offline') : t('connecting')}</span>
+          <span className={`w-2 h-2 rounded-full ${isApiConnected ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-rose-400'}`} />
+          <span className="hidden sm:inline text-[11px]">{isApiConnected ? t('online') : t('offline')}</span>
         </div>
 
-        {/* 3. Camera Connection Status Badge */}
-        <div
-          className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-            isCamRunning && isCamConnected
-              ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
-              : isCamRunning && !isCamConnected
-              ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse'
-              : 'bg-slate-900/90 border-slate-800 text-slate-400'
-          }`}
-        >
-          {isCamRunning && isCamConnected ? (
-            <Wifi className="w-3.5 h-3.5 text-cyan-400" />
-          ) : isCamRunning && !isCamConnected ? (
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-          ) : (
-            <CameraOff className="w-3.5 h-3.5 text-slate-500" />
-          )}
-          <span className="truncate max-w-[120px]">{sourceName}:</span>
-          <span className="font-bold">
-            {isCamRunning
-              ? isCamConnected
-                ? `${cameraStatus?.camera?.fps || 0} FPS`
-                : t('no_signal')
-              : t('camera_stopped')}
-          </span>
-        </div>
-
-        {/* 4. Camera Source Selector */}
-        <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs">
+        {/* Camera Source Selector (Compact Dropdown/Pill) */}
+        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
           <button
             onClick={() => handleSwitchSource('WEBCAM')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
               selectedSource === 'WEBCAM'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
-            title={t('switch_to_webcam')}
           >
-            <Laptop className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">{t('switch_to_webcam')}</span>
+            PC Webcam
           </button>
-
           <button
             onClick={() => handleSwitchSource('RTSP')}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
               selectedSource === 'RTSP'
-                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
-            title={t('switch_to_rtsp')}
           >
-            <Video className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">Tapo C200</span>
+            IP Cam
           </button>
         </div>
 
-        {/* 5. Camera Quick Toggle Button */}
+        {/* Camera Start/Stop Button */}
         <button
           onClick={handleToggleCamera}
           disabled={isTogglingCamera || isApiConnected === false}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 shadow-md ${
-            cameraStatus?.is_running
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${
+            isCamRunning
               ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 shadow-rose-500/10'
-              : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/20 disabled:opacity-40 disabled:cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/20'
           }`}
         >
           {isTogglingCamera ? (
-            <RefreshCw className="w-4 h-4 animate-spin text-white" />
-          ) : cameraStatus?.is_running ? (
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          ) : isCamRunning ? (
             <>
-              <CameraOff className="w-4 h-4 text-rose-400" />
-              <span>{t('turn_off_camera')}</span>
+              <CameraOff className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">{t('turn_off_camera')}</span>
             </>
           ) : (
             <>
-              <Camera className="w-4 h-4 text-white" />
-              <span>{t('turn_on_camera')}</span>
+              <Camera className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t('turn_on_camera')}</span>
             </>
           )}
         </button>
+
+        {/* Language Switcher (Compact) */}
+        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-[11px]">
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-2 py-1 rounded-lg font-bold transition-all ${
+              language === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => setLanguage('vi')}
+            className={`px-2 py-1 rounded-lg font-bold transition-all ${
+              language === 'vi' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            VI
+          </button>
+        </div>
+
+        {/* User Profile & Logout Button (Clean & Compact) */}
+        <div className="flex items-center space-x-2 pl-2 border-l border-slate-800">
+          <div className="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center font-bold text-white text-[10px] shadow-sm">
+              {currentUser?.full_name ? currentUser.full_name.charAt(0).toUpperCase() : currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : 'A'}
+            </div>
+            <span className="text-xs font-bold text-white hidden lg:inline truncate max-w-[90px]">
+              {currentUser?.full_name || currentUser?.username || 'Admin'}
+            </span>
+          </div>
+
+          <button
+            onClick={logout}
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all text-xs font-semibold shadow-sm"
+            title={t('logout') || 'Đăng xuất'}
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden xl:inline">{t('logout') || 'Đăng xuất'}</span>
+          </button>
+        </div>
+
       </div>
     </header>
   );
