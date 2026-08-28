@@ -1,6 +1,6 @@
 <div align="center">
 
-# V-Face Pro: Hệ Thống Chấm Công & Quản Trị Nhân Sự (HRM) Bằng AI Nhận Diện Khuôn Mặt
+# V-Face Pro: Hệ Sinh Thái Microservices Doanh Nghiệp (Face AI, Core User IAM, HRM & Helpdesk)
 
 [🇻🇳 Tiếng Việt](README_VI.md) | [🇬🇧 English](README.md)
 
@@ -8,15 +8,15 @@
 
 </div>
 
-Hệ thống Full-stack Enterprise (**FastAPI Backend + React Frontend**) tích hợp **PostgreSQL pgvector** (Vector 512D ArcFace), mô hình AI **InsightFace (buffalo_l)** tối ưu hóa cho phần cứng **Apple Silicon M4**, công nghệ **Anti-Spoofing MiniFASNet**, **Phát hiện người lạ (Stranger Alert)**, **Quản lý thiết bị Camera tập trung đa luồng**, **Xử lý ngoại lệ đơn từ** và **Dashboard phân tích biểu đồ BI (Recharts)**.
+**V-Face Pro** là hệ sinh thái Microservices chuẩn Enterprise phục vụ chuyển đổi số doanh nghiệp toàn diện. Hệ thống kết hợp giữa **FastAPI Backend (Python 3.13)** và **React 19 + Tailwind CSS**, tích hợp **PostgreSQL 16 pgvector** (Vector 512D ArcFace), mô hình AI **InsightFace (buffalo_l)**, công nghệ chống gian lận **Anti-Spoofing MiniFASNetV2**, **Phát hiện người lạ (Stranger Alert)**, **Quản lý đa Camera RTSP**, và microservice độc lập **Core User & IAM Service (Port 8001)** làm nền tảng xác thực tập trung, phân quyền RBAC đa cấp, quản lý cơ cấu tổ chức và sẵn sàng tích hợp các phân hệ **HRM** và **Helpdesk**.
 
 ---
 
-## 1. 🏗️ Kiến Trúc Hệ Thống Tổng Quan
+## 1. 🏗️ Kiến Trúc Hệ Thống Microservices
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                   Frontend: React 19 + Vite + Tailwind CSS + Recharts                  │
+│                   Frontend: React 19 + Vite + Tailwind CSS + Recharts (Port 5173)      │
 │  ┌───────────────────────┬──────────────────────┬───────────────────────────────────┐  │
 │  │  Realtime Dashboard   │   HRM & Attendance   │   Camera Devices & BI Analytics   │  │
 │  │ • 3 View Modes+Fullscr│ • 5-Photo Multi-Face │ • Multi-Device RTSP Switcher      │  │
@@ -25,175 +25,119 @@ Hệ thống Full-stack Enterprise (**FastAPI Backend + React Frontend**) tích 
 └────────────────────────────▲──────────────────────────────────▲────────────────────────┘
                              │ REST API (Axios)                 │ WebSocket (/ws/attendance)
                              ▼                                  ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        FastAPI Async Backend Framework (Port 8000)                     │
-│ ────────────────────────────────────────────────────────────────────────────────────── │
-│ • CameraManager: Quản lý đa luồng (Multi-threading) độc lập cho từng Camera RTSP/Webcam│
-│ • StreamProcessor: Xử lý nhận diện song song nhiều người cùng lúc (asyncio.gather)     │
-│ • Anti-Spoofing: MiniFASNetV2 ONNX + Fourier Moire (Chống gian lận ảnh/màn hình)       │
-│ • Auto Face Update: Tự động cập nhật vector mới khi nhận diện đạt độ tin cậy > 95%     │
-│ • Stranger Detector: Bộ đếm 3 khung hình nhận diện người lạ < 70% + Còi báo động       │
-│ • Exception Calculator: Tự động đối chiếu đơn nghỉ phép/công tác/đi trễ khi tính công  │
-│ • TrueType Font Engine: Render tên nhân viên tiếng Việt có dấu trực tiếp trên Canvas   │
-└────────────────────────────┬──────────────────────────────────┬────────────────────────┘
-                             │                                  │
-                             ▼                                  ▼
+┌──────────────────────────────────────────────┐   ┌────────────────────────────────────────────┐
+│      Core User & IAM Service (Port 8001)     │   │      Face AI Attendance Service (Port 8000)│
+│ ──────────────────────────────────────────── │   │ ────────────────────────────────────────── │
+│ • Quản lý JWT Token & Refresh Token (Auth)   │   │ • Quản lý đa luồng Camera RTSP & Webcam    │
+│ • Phân quyền vai trò RBAC (Roles/Permissions)│   │ • Trích xuất & So khớp ArcFace 512D        │
+│ • Hồ sơ Người dùng & Mã nhân viên dùng chung │   │ • Chống giả mạo MiniFASNetV2 Liveness      │
+│ • Cơ cấu Phòng ban (Departments) & Chức vụ   │   │ • Tự học & Cập nhật mẫu mặt tự động (>95%) │
+│ • Nền tảng Identity cho HRM & Helpdesk       │   │ • Báo động người lạ & WebSocket thời gian  │
+└──────────────────────┬───────────────────────┘   └─────────────────────┬──────────────────────┘
+                       │                                                 │
+                       ▼                                                 ▼
 ┌────────────────────────────────────────┐   ┌───────────────────────────────────────────┐
 │     PostgreSQL 16 + pgvector Database  │   │            Local File Storage             │
-│ • HNSW Cosine Distance Index (<=>)     │   │ • 5 Đăng ký góc mặt (.jpg)                │
-│ • Employees, FaceFeatures, Devices     │   │ • Ảnh chụp Snapshot thời gian thực        │
-│ • AttendanceRecords, Requests (Đơn từ) │   │ • Trọng số AI: InsightFace & MiniFASNet   │
+│ • Users, Profiles, Roles, Permissions  │   │ • 5 Đăng ký góc mặt (.jpg)                │
+│ • Sơ đồ Phòng ban, Chức vụ, Cấp bậc    │   │ • Ảnh chụp Snapshot thời gian thực        │
+│ • HNSW Vector Index (<=>), Điểm danh   │   │ • Trọng số AI: InsightFace & MiniFASNet   │
 └────────────────────────────────────────┘   └───────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. 🚀 Khởi Động Nhanh Hệ Thống (Khuyên Dùng)
+## 2. 🚀 Khởi Động Nhanh & Điều Khiển Hệ Thống
 
-Hệ thống được trang bị kịch bản tự động hóa [service.sh](file:///Users/hautp/Documents/Projects/v-face/service.sh) và `Makefile`:
+Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn chỉnh cho cả **Windows PowerShell** (`service.ps1`) và **Linux/macOS Bash** (`service.sh`) cùng `Makefile`.
 
-### 2.1. Lệnh điều khiển chính
+### 2.1. Bảng lệnh điều khiển chính
 
-| Lệnh `service.sh` | Lệnh `make` | Chức năng |
-| :--- | :--- | :--- |
-| `./service.sh start` | `make start` | Tự động khởi chạy Database, Backend & Frontend |
-| `./service.sh stop` | `make stop` | Tắt an toàn toàn bộ tiến trình |
-| `./service.sh restart` | `make restart` | Khởi động lại toàn bộ dịch vụ |
-| `./service.sh status` | `make status` | Kiểm tra PID, Port (8000, 5173, 5432) & tình trạng luồng |
-| `./service.sh logs` | `make logs` | Xem stream log của cả Backend & Frontend |
+| Thao tác | Windows PowerShell (`service.ps1`) | Linux/macOS (`service.sh`) | Lệnh `make` | Mô tả chức năng |
+| :--- | :--- | :--- | :--- | :--- |
+| **Bật tất cả** | `.\service.ps1 start` | `./service.sh start` | `make start` | Tự động chạy DB, Core User, Face AI & Frontend |
+| **Tắt tất cả** | `.\service.ps1 stop` | `./service.sh stop` | `make stop` | Tắt an toàn toàn bộ tiến trình hệ thống |
+| **Khởi động lại** | `.\service.ps1 restart` | `./service.sh restart` | `make restart` | Khởi động lại toàn bộ services |
+| **Kiểm tra trạng thái** | `.\service.ps1 status` | `./service.sh status` | `make status` | Kiểm tra PID, Ports (8001, 8000, 5173, 5432) |
+| **Xem realtime logs** | `.\service.ps1 logs` | `./service.sh logs` | `make logs` | Xem stream log của tất cả các service |
 
-### 2.2. Điều khiển riêng lẻ từng thành phần
+### 2.2. Điều khiển chi tiết từng Microservice
+
+```powershell
+# Ví dụ trên Windows PowerShell:
+.\service.ps1 start core-user      # Bật riêng Core User Service (Port 8001)
+.\service.ps1 logs core-user       # Xem trực tiếp log của Core User Service
+.\service.ps1 restart backend      # Khởi động lại Face AI Backend (Port 8000)
+.\service.ps1 start frontend       # Khởi động Web App React (Port 5173)
+```
 
 ```bash
-# Quản lý Backend (Port 8000)
-./service.sh restart backend
-./service.sh logs backend      # Xem file log: logs/backend.log
-
-# Quản lý Frontend (Port 5173)
-./service.sh restart frontend
-./service.sh logs frontend     # Xem file log: logs/frontend.log
-
-# Quản lý PostgreSQL pgvector (Docker)
-./service.sh restart db
+# Ví dụ trên Linux / macOS:
+./service.sh start core-user       # Bật riêng Core User Service (Port 8001)
+./service.sh logs core-user        # Xem trực tiếp log của Core User Service
+./service.sh restart backend       # Khởi động lại Face AI Backend (Port 8000)
+./service.sh start frontend        # Khởi động Web App React (Port 5173)
 ```
 
 ---
 
-## 3. 💻 Khởi Chạy Thủ Công (Dành cho Lập Trình Viên)
+## 3. 🌐 Danh Mục Dịch Vụ & Tài Liệu API
 
-### Bước 1: Khởi động Cơ sở dữ liệu PostgreSQL + pgvector
-```bash
-docker compose up -d
-```
+| Dịch vụ | Port | Địa chỉ Base URL | Tài liệu Swagger API | Vai trò |
+| :--- | :---: | :--- | :--- | :--- |
+| **Core User & IAM** | `8001` | `http://localhost:8001` | [http://localhost:8001/docs](http://localhost:8001/docs) | Xác thực JWT, RBAC, Quản lý User, Cơ cấu tổ chức |
+| **Face AI Attendance** | `8000` | `http://localhost:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | Nhận diện khuôn mặt, Stream Camera, Chấm công |
+| **Frontend Web App** | `5173` | `http://localhost:5173` | - | Giao diện Dashboard, Giám sát và Quản trị |
 
-### Bước 2: Khởi chạy Backend FastAPI
-```bash
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-- **Backend API**: `http://localhost:8000`
-- **Swagger Docs**: `http://localhost:8000/docs`
-- **WebSocket Endpoint**: `ws://localhost:8000/ws/attendance`
-
-### Bước 3: Khởi chạy Frontend React
-```bash
-cd frontend
-npm install
-npm run dev
-```
-- **Web App**: `http://localhost:5173`
+### Tài khoản Quản trị viên khởi tạo mặc định:
+- **Tên đăng nhập / Email:** `admin` / `admin@vface.ai`
+- **Mật khẩu ban đầu:** `admin123`
+- **Mã nhân viên:** `EMP000`
+- **Vai trò:** `superadmin` (Toàn quyền hệ thống)
 
 ---
 
-## 4. 🌟 Các Nhóm Tính Năng Nổi Bật
+## 4. 🌟 Các Phân Hệ & Tính Năng Nổi Bật
 
-### 4.1. 🖥️ Dashboard Giám Sát Trực Tiếp (Realtime Live Monitor)
-- **3 Chế độ hiển thị linh hoạt + Toàn màn hình**:
-  - **Tiêu chuẩn (Standard - 5/7)**: Cân đối giữa màn hình camera và bảng điểm danh.
-  - **Mở rộng (Wide - 8/4)**: Màn hình camera chiếm 2/3 không gian làm việc.
-  - **Toàn cảnh (Cinema - 12/12)**: Luồng camera trải rộng 100% chiều ngang phía trên; Thẻ nhận diện gần nhất & Bảng điểm danh đặt song song bên dưới.
-  - **Fullscreen (`Maximize2`)**: Trình chiếu quầy lễ tân hoặc màn hình phòng bảo vệ.
-- **HUD Bounding Box AI thời gian thực**:
-  - 🟢 **Khung Xanh Lá**: Nhận diện đúng nhân viên + Mã NV + Tên tiếng Việt có dấu.
-  - ✨ **Khung Vàng (Gold)**: Tự động học & cập nhật mẫu khuôn mặt mới nhất (`> 95%`).
-  - 🟡 **Khung Cam (Amber)**: Nhân viên vừa điểm danh (Cooldown 5 phút chống spam).
-  - 🔴 **Khung Đỏ (Stranger)**: Cảnh báo người lạ chưa có trong hồ sơ công ty.
-  - 🚨 **Khung Đỏ Chớp Nháy**: Chặn hành vi gian lận (Anti-Spoofing).
+### 4.1. 🔑 Phân Hệ Core User & IAM (`services/core-user` - Port 8001)
+- **Quản lý Định danh & Phiên đăng nhập (IAM)**: Cấp phát JWT Access Token và Refresh Token, băm mật khẩu chuẩn `bcrypt`.
+- **Phân quyền vai trò chi tiết (RBAC)**: Định nghĩa 14+ Permissions cấp độ module (`core_user`, `attendance`, `hrm`, `helpdesk`) và cấu hình 5 Roles mặc định (`superadmin`, `hr_manager`, `dept_manager`, `it_support`, `employee`).
+- **Hồ sơ Người dùng (User & Profile)**: Mã nhân viên chuẩn hóa (`user_code`), thông tin cá nhân, CCCD/CMND, avatar, liên hệ.
+- **Cơ cấu Tổ chức Doanh nghiệp**: Quản lý cây Phòng ban cha - con (Departments), gán Trưởng phòng (Manager), chức danh và cấp bậc (Positions & Levels).
 
-### 4.2. 🛡️ Chống Giả Mạo (Anti-Spoofing) & Cảnh Báo Người Lạ (Stranger Alert)
-- **Liveness Detection (MiniFASNetV2 + Moire FFT)**: Nhận diện và từ chối các hành vi đưa ảnh in, ảnh điện thoại hoặc iPad trước camera để chấm công hộ.
-- **Stranger Alert**: Khi phát hiện người lạ xuất hiện liên tục trong 3 khung hình, hệ thống lập tức phát còi cảnh báo an ninh và bắn sự kiện WebSocket kèm ảnh chụp tức thì.
-
-### 4.3. 👥 Đăng Ký Đa Mẫu & Tự Động Học Diện Mạo (Auto Face Update)
-- **Đăng ký 5 góc mặt**: Hỗ trợ nạp 5 ảnh chân dung (Chính diện, Nghiêng trái, Nghiêng phải, Cúi nhẹ, Cười) giúp AI nhận diện cực nhạy từ mọi góc quay camera.
-- **Tự học liên tục (Continuous Self-Learning)**: Khi nhân viên điểm danh với độ tin cậy $\ge 95\%$, hệ thống tự trích xuất vector mới nhất để lưu vào database, giúp hệ thống "tự thích nghi" khi nhân viên đổi kiểu tóc, đeo kính hoặc già đi theo thời gian.
-
-### 4.4. 📝 Quản Lý Đơn Từ & Xử Lý Ngoại Lệ Chấm Công
-- **Hỗ trợ 4 loại đơn**:
-  1. `HALF_DAY_LEAVE_AM`: Nghỉ nửa ngày sáng (Tính 0.5 công).
-  2. `HALF_DAY_LEAVE_PM`: Nghỉ nửa ngày chiều (Tính 0.5 công).
-  3. `BUSINESS_TRIP`: Đi công tác ngoài giờ (Tính 1.0 công).
-  4. `LATE_EXCUSE`: Giải trình đi trễ / về sớm có lý do (Tính 1.0 công, miễn trừ phạt).
-- **Quy trình Duyệt/Từ chối**: Quản lý có thể xem lý do, ngày áp dụng và duyệt đơn trực tiếp.
-- **Tự động tính công**: Đối chiếu đơn hợp lệ khi tổng hợp báo cáo ngày.
-
-### 4.5. 📹 Quản Lý Thiết Bị Camera Tập Trung (CameraManager)
-- **Quản lý đa luồng (Multi-threading)**: Kết nối đồng thời nhiều Camera RTSP (Tapo C200, Hikvision, Dahua) và Webcam FaceTime HD.
-- **Bật/Tắt luồng từ xa**: Nút gạt Live Switch điều khiển trực tiếp trạng thái tiến trình backend qua API `PUT /api/v1/devices/{id}/toggle`.
-- **Phân loại cổng**: Cấu hình mục đích cho từng camera: `CHECK_IN` (Cổng vào), `CHECK_OUT` (Cổng ra), `BOTH` (Hai chiều).
-
-### 4.6. 📊 Dashboard Biểu Đồ Phân Tích Chuyên Sâu (HRM BI - Recharts)
-- 📈 **LineChart**: Xu hướng tỷ lệ đi làm đúng giờ của 7/14/30 ngày gần nhất.
-- 📊 **BarChart**: Thống kê số lượt đi muộn và tỷ lệ đi muộn của từng phòng ban.
-- 🌊 **AreaChart**: Mật độ nhân viên chấm công theo các khung giờ 30 phút trong ngày.
-- 📌 **Chỉ số KPI**: Tỷ lệ đúng giờ tuần, tổng lượt check-in hôm nay, khung giờ cao điểm, phòng ban chuyên cần nhất.
+### 4.2. 👁️ Phân Hệ Face AI Chấm Công (`app/` - Port 8000)
+- **AI ArcFace 512D**: Nhận diện siêu tốc với pgvector HNSW Index.
+- **Anti-Spoofing MiniFASNetV2**: Chống gian lận qua hình ảnh chụp hoặc video phát lại từ màn hình điện thoại.
+- **Cơ chế Tự học (Auto Face Update)**: Tự động bổ sung vector khuôn mặt mới khi nhân viên điểm danh đạt độ tin cậy $\ge 95\%$.
+- **Cảnh báo Người lạ (Stranger Alert)**: Phát hiện khuôn mặt lạ trong 3 khung hình liên tiếp, kích hoạt còi hú và cảnh báo WebSocket.
+- **Quản lý Đa Camera RTSP**: Xử lý đa luồng độc lập cho từng Camera lối vào/lối ra.
 
 ---
 
-## 5. 📡 Danh Sách Endpoint REST API
+## 5. 📡 Tóm Tắt Danh Mục Endpoints API
 
-| Nhóm | Phương thức | Endpoint | Mô tả |
-| :--- | :---: | :--- | :--- |
-| **Nhân viên** | `GET` | `/api/v1/employees` | Lấy danh sách nhân viên phân trang |
-| | `POST` | `/api/v1/employees` | Thêm nhân viên mới |
-| | `POST` | `/api/v1/employees/{id}/register-face` | Đăng ký vector khuôn mặt từ ảnh tải lên |
-| | `DELETE` | `/api/v1/employees/{id}` | Xóa nhân viên |
-| **Điểm danh** | `GET` | `/api/v1/attendance` | Tra cứu lịch sử chấm công |
-| | `POST` | `/api/v1/attendance/check-in` | Chấm công qua ảnh tải lên |
-| **Đơn từ** | `GET` | `/api/v1/requests` | Lấy danh sách đơn từ ngoại lệ |
-| | `POST` | `/api/v1/requests` | Tạo đơn xin nghỉ / công tác / đi trễ |
-| | `PUT` | `/api/v1/requests/{id}/approve` | Duyệt đơn |
-| | `PUT` | `/api/v1/requests/{id}/reject` | Từ chối đơn |
-| | `GET` | `/api/v1/requests/daily-summary` | Tổng hợp công theo ngày dựa trên đơn từ |
-| **Thiết bị** | `GET` | `/api/v1/devices` | Lấy danh sách camera & telemetry |
-| | `POST` | `/api/v1/devices` | Thêm camera RTSP / Webcam mới |
-| | `PUT` | `/api/v1/devices/{id}/toggle` | Bật/Tắt luồng camera thời gian thực |
-| | `PUT` | `/api/v1/devices/{id}` | Cập nhật cấu hình camera |
-| | `DELETE` | `/api/v1/devices/{id}` | Xóa camera |
-| **Phân tích BI**| `GET` | `/api/v1/analytics/weekly-punctuality` | Tỷ lệ đúng giờ 7 ngày gần nhất (LineChart) |
-| | `GET` | `/api/v1/analytics/department-lateness`| Thống kê đi muộn theo phòng ban (BarChart) |
-| | `GET` | `/api/v1/analytics/hourly-density` | Mật độ check-in theo khung giờ (AreaChart) |
-| | `GET` | `/api/v1/analytics/summary` | Tổng hợp chỉ số KPI quản trị |
-| **Camera & WS**| `GET` | `/api/v1/camera/status` | Tình trạng luồng video & chẩn đoán AI |
-| | `GET` | `/api/v1/camera/video_feed` | Luồng video MJPEG kèm Bounding Box HUD |
-| | `WS` | `/ws/attendance` | WebSocket bắn sự kiện check-in & cảnh báo |
+### Core User & IAM Endpoints (Port 8001)
+- `POST /api/v1/auth/login` - Đăng nhập tài khoản & Nhận JWT Tokens
+- `POST /api/v1/auth/refresh` - Cấp mới Access Token bằng Refresh Token
+- `GET /api/v1/auth/me` - Lấy thông tin tài khoản, danh sách Roles và Permissions
+- `POST /api/v1/auth/change-password` - Đổi mật khẩu
+- `GET /api/v1/users` - Danh sách người dùng (tìm kiếm, lọc theo phòng ban, trạng thái)
+- `POST /api/v1/users` - Tạo người dùng mới và phân vai trò
+- `GET /api/v1/rbac/roles` - Quản lý danh sách vai trò và gán quyền
+- `GET /api/v1/rbac/permissions` - Danh sách toàn bộ quyền hạn hệ thống
+- `GET /api/v1/organization/departments` - Danh sách phòng ban
+- `GET /api/v1/organization/positions` - Danh sách chức vụ
+
+### Face AI & Chấm Công Endpoints (Port 8000)
+- `GET /api/v1/employees` - Danh sách hồ sơ khuôn mặt nhân viên
+- `POST /api/v1/employees/{id}/register-face` - Đăng ký mẫu khuôn mặt 512D
+- `GET /api/v1/attendance` - Lịch sử điểm danh và lọc dữ liệu
+- `POST /api/v1/attendance/check-in` - Chấm công thủ công qua ảnh
+- `GET /api/v1/devices` - Quản lý thiết bị Camera RTSP
+- `GET /api/v1/analytics/summary` - Báo cáo chỉ số KPI chấm công
+- `WS /ws/attendance` - Luồng WebSocket cập nhật điểm danh thời gian thực
 
 ---
 
-## 6. ⚙️ Cấu Hình Môi Trường (.env)
+## 6. 📄 Bản Quyền & Đóng Góp
 
-| Biến môi trường | Mặc định | Ý nghĩa |
-| :--- | :--- | :--- |
-| `POSTGRES_SERVER` | `127.0.0.1` | Địa chỉ máy chủ PostgreSQL |
-| `POSTGRES_PORT` | `5432` | Cổng kết nối cơ sở dữ liệu |
-| `POSTGRES_USER` / `PASSWORD` | `postgres` / `postgres123` | Thông tin đăng nhập DB |
-| `POSTGRES_DB` | `vface_db` | Tên Database |
-| `FACE_MODEL_NAME` | `buffalo_l` | Mô hình InsightFace (ArcFace 512D) |
-| `CAMERA_BLUR_THRESHOLD` | `15.0` | Ngưỡng lọc nhòe chuyển động |
-| `CAMERA_MIN_FACE_SIZE` | `60` | Kích thước khuôn mặt tối thiểu (px) |
-| `CAMERA_SIMILARITY_THRESHOLD`| `0.58` | Ngưỡng chấp thuận nhận diện khuôn mặt |
-| `LIVENESS_THRESHOLD` | `0.50` | Ngưỡng xác thực thực thể sống Anti-Spoofing |
-| `STRANGER_CONFIDENCE_THRESHOLD`| `0.70` | Ngưỡng cảnh báo người lạ |
-| `STRANGER_CONSECUTIVE_FRAMES` | `3` | Số khung hình liên tiếp kích hoạt cảnh báo người lạ |
-| `STRANGER_COOLDOWN_SECONDS` | `60` | Thời gian cooldown chống spam cảnh báo người lạ |
+Phát triển với ❤️ vì mục tiêu tự động hóa và quản trị thông minh cho doanh nghiệp. Sử dụng các công nghệ mã nguồn mở [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/) và [React](https://react.dev/).

@@ -87,7 +87,7 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
 
   const isCamRunning = !!cameraStatus?.is_running;
   const isCamConnected = !!cameraStatus?.camera?.is_connected;
-  const sourceName = cameraStatus?.camera?.device_id || (selectedSource === 'RTSP' ? 'Tapo C200' : 'MacBook M4');
+  const sourceName = cameraStatus?.camera?.device_id || (selectedSource === 'RTSP' ? 'Tapo C200' : 'Camera máy tính');
 
   return (
     <header className="h-20 bg-[#0E1322]/80 backdrop-blur-md border-b border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20">
@@ -180,7 +180,7 @@ const Header = ({ title, subtitle, isApiConnected, isWsConnected, cameraStatus, 
             title={t('switch_to_webcam')}
           >
             <Laptop className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">MacBook M4</span>
+            <span className="hidden lg:inline">Camera máy tính</span>
           </button>
 
           <button

@@ -23,11 +23,11 @@ router = APIRouter(prefix="/camera", tags=["Camera Stream"])
 class CameraStartRequest(BaseModel):
     source_type: Optional[Literal["WEBCAM", "RTSP"]] = Field(
         default="WEBCAM",
-        description="Nguồn camera: 'WEBCAM' (Camera MacBook Air M4) hoặc 'RTSP' (Camera Tapo C200)"
+        description="Nguồn camera: 'WEBCAM' (Camera máy tính / Built-in Webcam) hoặc 'RTSP' (Camera Tapo C200)"
     )
     webcam_index: Optional[int] = Field(
         default=0,
-        description="Chỉ số webcam tích hợp (mặc định 0 là FaceTime HD camera trên Mac)"
+        description="Chỉ số webcam tích hợp (mặc định 0 là Camera mặc định trên máy tính)"
     )
     rtsp_url: Optional[str] = Field(
         None,
@@ -35,14 +35,14 @@ class CameraStartRequest(BaseModel):
     )
     device_id: Optional[str] = Field(
         None,
-        description="Mã định danh thiết bị (VD: MACBOOK_M4_WEBCAM hoặc TAPO_C200_GATE)"
+        description="Mã định danh thiết bị (VD: PC_WEBCAM hoặc TAPO_C200_GATE)"
     )
 
 
 @router.post(
     "/start",
     response_model=ResponseBase[dict],
-    summary="Khởi động luồng Camera (Webcam MacBook M4 hoặc Tapo C200)"
+    summary="Khởi động luồng Camera (Webcam máy tính hoặc Tapo C200)"
 )
 async def start_camera_stream(payload: Optional[CameraStartRequest] = None):
     source_type = payload.source_type if payload and payload.source_type else settings.CAMERA_DEFAULT_SOURCE

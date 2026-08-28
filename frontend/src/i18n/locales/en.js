@@ -75,7 +75,7 @@ const en = {
   // Camera & Stream Controls
   turn_on_camera: 'Turn On Camera',
   turn_off_camera: 'Turn Off Camera',
-  switch_to_webcam: 'Built-in Webcam (MacBook)',
+  switch_to_webcam: 'PC Built-in Webcam',
   switch_to_rtsp: 'Tapo C200 IP RTSP',
   camera_running: 'Running',
   camera_stopped: 'Stopped',

@@ -92,6 +92,19 @@ async def vface_exception_handler(request: Request, exc: VFaceException):
     )
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled Exception on {request.method} {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "success": False,
+            "message": str(exc),
+            "data": None
+        }
+    )
+
+
 # WebSocket root endpoint: /ws/attendance
 @app.websocket("/ws/attendance")
 async def root_websocket_attendance(websocket: WebSocket):

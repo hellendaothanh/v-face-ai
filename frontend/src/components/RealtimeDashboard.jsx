@@ -281,7 +281,7 @@ const RealtimeDashboard = ({
   const isCamRunning = cameraStatus?.is_running;
   const isCamConnected = cameraStatus?.camera?.is_connected;
   const isWebcam = !cameraStatus?.camera?.source_type || cameraStatus?.camera?.source_type === 'WEBCAM';
-  const sourceName = cameraStatus?.camera?.device_id || (isWebcam ? 'FaceTime HD (MacBook M4)' : 'Tapo C200 (RTSP Gate)');
+  const sourceName = cameraStatus?.camera?.device_id || (isWebcam ? 'Camera máy tính (Webcam)' : 'Tapo C200 (RTSP Gate)');
 
   // Helper render for Live Camera Card
   const renderLiveCameraCard = () => (

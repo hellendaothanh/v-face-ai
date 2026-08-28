@@ -75,7 +75,7 @@ const vi = {
   // Camera & Stream Controls
   turn_on_camera: 'Bật Camera',
   turn_off_camera: 'Tắt Camera',
-  switch_to_webcam: 'Camera MacBook M4',
+  switch_to_webcam: 'Camera máy tính (Webcam)',
   switch_to_rtsp: 'Camera Tapo C200',
   camera_running: 'Đang chạy',
   camera_stopped: 'Đang tắt',

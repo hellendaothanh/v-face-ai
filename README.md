@@ -1,6 +1,6 @@
 <div align="center">
 
-# V-Face Pro: Enterprise AI Face Recognition Attendance & HRM System
+# V-Face Pro: Enterprise Microservices Ecosystem (Face AI, Core User IAM, HRM & Helpdesk)
 
 [🇬🇧 English](README.md) | [🇻🇳 Tiếng Việt](README_VI.md)
 
@@ -8,15 +8,15 @@
 
 </div>
 
-**V-Face Pro** is an enterprise-grade full-stack smart attendance and workforce intelligence solution. Built with **FastAPI** (Python 3.13) and **React 19 + Tailwind CSS**, powered by **PostgreSQL 16 with pgvector** (512-dimensional ArcFace embeddings), **InsightFace (buffalo_l)** optimized for **Apple Silicon M4 CoreML/MPS**, **MiniFASNetV2 Anti-Spoofing**, **Multi-Threaded Camera Manager**, **Stranger Threat Detection**, **Attendance Request / Exception Management**, and **Interactive HRM Analytics BI Dashboards (Recharts)**.
+**V-Face Pro** is an enterprise-grade microservices ecosystem designed for intelligent workforce management, identity access control, and multi-service expansion (Face AI Attendance, HRM, Helpdesk). Built with **FastAPI** (Python 3.13) and **React 19 + Tailwind CSS**, powered by **PostgreSQL 16 with pgvector** (512-dimensional ArcFace embeddings), **InsightFace (buffalo_l)** optimized for Apple Silicon and x86, **MiniFASNetV2 Anti-Spoofing**, **Multi-Threaded Camera Manager**, **Stranger Threat Detection**, and a standalone **Core User & IAM Service (Port 8001)** for unified enterprise authentication, granular RBAC, and organization hierarchy.
 
 ---
 
-## 1. 🏗️ High-Level System Architecture
+## 1. 🏗️ High-Level Microservices Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                   Frontend: React 19 + Vite + Tailwind CSS + Recharts                  │
+│                   Frontend: React 19 + Vite + Tailwind CSS + Recharts (Port 5173)      │
 │  ┌───────────────────────┬──────────────────────┬───────────────────────────────────┐  │
 │  │  Realtime Dashboard   │   HRM & Attendance   │   Camera Devices & BI Analytics   │  │
 │  │ • 3 View Modes+Fullscr│ • 5-Photo Multi-Face │ • Multi-Device RTSP Switcher      │  │
@@ -25,183 +25,147 @@
 └────────────────────────────▲──────────────────────────────────▲────────────────────────┘
                              │ REST API (Axios)                 │ WebSocket (/ws/attendance)
                              ▼                                  ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        FastAPI Async Backend Framework (Port 8000)                     │
-│ ────────────────────────────────────────────────────────────────────────────────────── │
-│ • CameraManager: Multi-threaded worker lifecycle for concurrent RTSP / Webcam streams  │
-│ • StreamProcessor: Multi-face parallel inference pipeline (asyncio.gather)             │
-│ • Anti-Spoofing Engine: MiniFASNetV2 ONNX + Fourier Moire texture analysis             │
-│ • Continuous Self-Learning (Auto Face Update): Embeds newest vector when confidence>95%│
-│ • Stranger Threat Detector: 3-frame counter trigger (<70% match) + Audio security siren│
-│ • Exception Calculator: Dynamic work-hour synthesis matching approved leave requests   │
-│ • TrueType Font Engine: In-canvas Unicode Vietnamese text & bounding box HUD renderer  │
-└────────────────────────────┬──────────────────────────────────┬────────────────────────┘
-                             │                                  │
-                             ▼                                  ▼
+┌──────────────────────────────────────────────┐   ┌────────────────────────────────────────────┐
+│      Core User & IAM Service (Port 8001)     │   │      Face AI Attendance Service (Port 8000)│
+│ ──────────────────────────────────────────── │   │ ────────────────────────────────────────── │
+│ • JWT Token & Refresh Token Management (Auth)│   │ • Multi-camera RTSP/Webcam Worker Pool     │
+│ • Role-Based Access Control (RBAC System)    │   │ • 512D ArcFace Recognition Engine          │
+│ • User Profiles, Avatars & Unified User Code │   │ • Anti-Spoofing MiniFASNetV2 Liveness      │
+│ • Departments & Positions Hierarchy          │   │ • Continuous Self-Learning Auto Face Update│
+│ • Foundation for HRM & Helpdesk Services     │   │ • Stranger Threat Detector & Realtime WS   │
+└──────────────────────┬───────────────────────┘   └─────────────────────┬──────────────────────┘
+                       │                                                 │
+                       ▼                                                 ▼
 ┌────────────────────────────────────────┐   ┌───────────────────────────────────────────┐
 │     PostgreSQL 16 + pgvector Database  │   │            Local File Storage             │
-│ • HNSW Cosine Distance Index (<=>)     │   │ • 5-angle face enrollment photos (.jpg)   │
-│ • Employees, FaceFeatures, Devices     │   │ • Real-time cropped check-in snapshots    │
-│ • AttendanceRecords, LeaveRequests     │   │ • AI Weights: InsightFace & MiniFASNet    │
+│ • Users, Profiles, Roles, Permissions  │   │ • 5-angle face enrollment photos (.jpg)   │
+│ • Departments, Positions Hierarchy     │   │ • Real-time cropped check-in snapshots    │
+│ • HNSW Vector Index (<=>), Attendance  │   │ • AI Weights: InsightFace & MiniFASNet    │
 └────────────────────────────────────────┘   └───────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. 🚀 Quick Start & Service Orchestration (Recommended)
+## 2. 🚀 Quick Start & Multi-Service Orchestration
 
-V-Face provides an automated service management script ([service.sh](file:///Users/hautp/Documents/Projects/v-face/service.sh)) and `Makefile` to start, stop, restart, and monitor all processes without juggling multiple terminal tabs.
+V-Face provides unified service management scripts for both **Windows PowerShell** (`service.ps1`) and **Linux/macOS Bash** (`service.sh`) as well as `Makefile`.
 
 ### 2.1. Primary Commands
 
-| Action | `service.sh` Command | `make` Command | Description |
-| :--- | :--- | :--- | :--- |
-| **Start All** | `./service.sh start` | `make start` | Spawns PostgreSQL container, Backend & Frontend |
-| **Stop All** | `./service.sh stop` | `make stop` | Safely terminates all running services |
-| **Restart All** | `./service.sh restart` | `make restart` | Restarts all containers and workers |
-| **Check Status** | `./service.sh status` | `make status` | Displays PIDs, listening ports (8000, 5173, 5432) & health |
-| **Realtime Logs** | `./service.sh logs` | `make logs` | Streams consolidated backend & frontend logs |
+| Action | Windows PowerShell (`service.ps1`) | Linux/macOS (`service.sh`) | `make` Command | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Start All** | `.\service.ps1 start` | `./service.sh start` | `make start` | Spawns PostgreSQL, Core User, Face AI & Frontend |
+| **Stop All** | `.\service.ps1 stop` | `./service.sh stop` | `make stop` | Safely terminates all running services |
+| **Restart All** | `.\service.ps1 restart` | `./service.sh restart` | `make restart` | Restarts all services and containers |
+| **Check Status**| `.\service.ps1 status` | `./service.sh status` | `make status` | Displays PIDs, listening ports & health |
+| **Realtime Logs**| `.\service.ps1 logs` | `./service.sh logs` | `make logs` | Streams consolidated logs of all services |
 
-### 2.2. Granular Service Control
+### 2.2. Granular Microservice Control
+
+```powershell
+# Windows PowerShell Examples:
+.\service.ps1 start core-user      # Start Core User Service only (Port 8001)
+.\service.ps1 logs core-user       # Stream Core User logs
+.\service.ps1 restart backend      # Restart Face AI Backend (Port 8000)
+.\service.ps1 start frontend       # Start React Web App (Port 5173)
+```
 
 ```bash
-# Manage Backend only (FastAPI on Port 8000)
-./service.sh restart backend
-./service.sh logs backend      # Output file: logs/backend.log
-
-# Manage Frontend only (Vite/React on Port 5173)
-./service.sh restart frontend
-./service.sh logs frontend     # Output file: logs/frontend.log
-
-# Manage Database only (Postgres pgvector container)
-./service.sh restart db
+# Linux/macOS Bash Examples:
+./service.sh start core-user       # Start Core User Service only (Port 8001)
+./service.sh logs core-user        # Stream Core User logs
+./service.sh restart backend       # Restart Face AI Backend (Port 8000)
+./service.sh start frontend        # Start React Web App (Port 5173)
 ```
 
 ---
 
-## 3. 💻 Manual Setup & Local Development
+## 3. 🌐 Ecosystem Services & API Documentation
 
-### Step 1: Start PostgreSQL + pgvector Docker Container
-```bash
-docker compose up -d
-```
+| Service | Port | Base URL | Swagger Documentation | Description |
+| :--- | :---: | :--- | :--- | :--- |
+| **Core User & IAM** | `8001` | `http://localhost:8001` | [http://localhost:8001/docs](http://localhost:8001/docs) | Authentication, RBAC, Users, Organization |
+| **Face AI Attendance** | `8000` | `http://localhost:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | Face Recognition, Streams, Attendance logs |
+| **Frontend Dashboard** | `5173` | `http://localhost:5173` | - | React 19 UI for Attendance & Admin |
 
-### Step 2: Start FastAPI Backend
-```bash
-# Activate Python virtual environment
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run Uvicorn ASGI server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-- **Backend Base URL**: `http://localhost:8000`
-- **Interactive Swagger Docs**: `http://localhost:8000/docs`
-- **Live WebSocket Feed**: `ws://localhost:8000/ws/attendance`
-
-### Step 3: Start Vite + React Frontend
-In a new terminal window:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-- **Frontend Web Dashboard**: `http://localhost:5173`
+### Default Administrator Credentials (Seeded on first startup):
+- **Username / Email:** `admin` / `admin@vface.ai`
+- **Password:** `admin123`
+- **Employee Code:** `EMP000`
+- **Assigned Role:** `superadmin`
 
 ---
 
-## 4. 🌟 Key Enterprise Features
+## 4. 🌟 Key Capabilities by Service
 
-### 4.1. 🖥️ Realtime AI Live Monitor (Multi-View System)
-- **4 Ergonomic View Modes**:
-  - **Standard (5/7 Grid)**: Balanced view between live video and attendance feed.
-  - **Wide (8/4 Grid)**: 2/3 wide camera view for large control rooms.
-  - **Cinema (12/12 Full-Width)**: Top ultra-wide video monitor + dual bottom telemetry cards.
-  - **Fullscreen Mode (`Maximize2`)**: Full-screen kiosk display for reception desks and security gates.
-- **Dynamic AI HUD Bounding Boxes**:
-  - 🟢 **Emerald Box**: Verified employee check-in + Employee code + Confidence %.
-  - ✨ **Gold Box**: Auto-Learned template update triggered ($\ge 95\%$).
-  - 🟡 **Amber Box**: Employee already checked in (5-minute cooldown debounce).
-  - 🔴 **Rose Box**: Unknown stranger detected ($< 70\%$ match).
-  - 🚨 **Flashing Crimson Box**: Anti-spoofing attack blocked.
+### 4.1. 🔑 Core User & IAM Service (`services/core-user` - Port 8001)
+- **JWT Authentication**: Secure login, refresh token rotation, and password hashing (`bcrypt`).
+- **Granular RBAC**: Role-Based Access Control with 14+ granular module permissions (`core_user`, `attendance`, `hrm`, `helpdesk`) and pre-configured roles (`superadmin`, `hr_manager`, `dept_manager`, `it_support`, `employee`).
+- **User & Profile Management**: Unified `user_code` identifier across systems, personal profiles, and avatars.
+- **Organization Structure**: Hierarchical Departments (parent/child, department managers) and Position ranks.
 
-### 4.2. 🛡️ Face Anti-Spoofing & Stranger Threat Alert
-- **Liveness Detection (MiniFASNetV2 ONNX + Fourier Moire Analysis)**: Detects printed photos, smartphone screen replays, and tablet presentations.
-- **Stranger Alert Engine**: Consecutive 3-frame counter triggers real-time WebSocket security broadcasts, snapshots, and audio alarm sirens.
-
-### 4.3. 👥 Multi-Template Enrollment & Continuous Self-Learning (Auto Face Update)
-- **5-Angle Photo Registration**: Enrolls Portrait, Left Tilt, Right Tilt, Slight Downward, and Smile angles to maximize accuracy under angled camera views.
-- **Continuous Self-Learning**: When an employee checks in with high confidence ($\ge 95\%$), the backend seamlessly saves the new feature vector to PostgreSQL, allowing the system to self-adapt as employees change hairstyles or age over time.
-
-### 4.4. 📝 Attendance Requests & Leave Exception Management
-- **4 Supported Request Types**:
-  1. `HALF_DAY_LEAVE_AM`: Morning half-day leave (Credited 0.5 work-day).
-  2. `HALF_DAY_LEAVE_PM`: Afternoon half-day leave (Credited 0.5 work-day).
-  3. `BUSINESS_TRIP`: Offsite business trip (Credited 1.0 work-day).
-  4. `LATE_EXCUSE`: Late arrival / early departure justification (Credited 1.0 work-day, waives penalties).
-- **Approval Workflow & Daily Synthesis**: Manager review workflow automatically reconciles daily timecards against approved exemptions.
-
-### 4.5. 📹 Centralized Multi-Camera Manager (`CameraManager`)
-- **Multi-Threaded Architecture**: Manages multiple concurrent RTSP cameras (Tapo C200, Hikvision, Dahua) and built-in FaceTime HD webcams.
-- **Real-Time Remote Toggle Switch**: Instantly start or stop camera workers via `PUT /api/v1/devices/{id}/toggle`.
-- **Purpose Categorization**: Assigns cameras as `CHECK_IN` (Entrance), `CHECK_OUT` (Exit), or `BOTH` (Bi-directional gate).
-
-### 4.6. 📊 Interactive HRM Analytics & BI Dashboard (Recharts)
-- 📈 **LineChart**: 7/14/30-day weekly punctuality rate trend.
-- 📊 **BarChart**: Department lateness distribution across IT, Engineering, Sales, HR, etc.
-- 🌊 **AreaChart**: 30-minute hourly check-in arrival density curves with gradient fills.
-- 📌 **Executive KPI Cards**: Average punctuality rate, peak arrival time slot, most punctual department, and total daily throughput.
+### 4.2. 👁️ Face AI Attendance Service (`app/` - Port 8000)
+- **InsightFace ArcFace 512D**: Sub-second face recognition with cosine similarity and pgvector HNSW indexing.
+- **Liveness Anti-Spoofing (MiniFASNetV2 ONNX)**: Blocks 2D screen replays and printed photos.
+- **Continuous Self-Learning**: Automatically enriches face embeddings when check-in confidence $\ge 95\%$.
+- **Stranger Threat Alert**: 3-consecutive-frame threat detection with audio siren and WebSocket broadcast.
+- **Multi-Camera Manager**: Multi-threaded RTSP and webcam stream orchestrator.
+- **Attendance Requests & BI Analytics**: Leave justification workflows and interactive Recharts dashboards.
 
 ---
 
-## 5. 📡 REST API & WebSocket Endpoint Reference
+## 5. 📡 REST API Reference Overview
 
-| Module | Method | Endpoint | Description |
-| :--- | :---: | :--- | :--- |
-| **Employees** | `GET` | `/api/v1/employees` | List paginated employees |
-| | `POST` | `/api/v1/employees` | Create employee profile |
-| | `POST` | `/api/v1/employees/{id}/register-face` | Extract & register 512D face embeddings |
-| | `DELETE` | `/api/v1/employees/{id}` | Delete employee and associated face vectors |
-| **Attendance** | `GET` | `/api/v1/attendance` | Query historical attendance logs with filters |
-| | `POST` | `/api/v1/attendance/check-in` | Manual photo upload check-in |
-| **Requests** | `GET` | `/api/v1/requests` | List leave and exception requests |
-| | `POST` | `/api/v1/requests` | Submit new attendance request |
-| | `PUT` | `/api/v1/requests/{id}/approve` | Approve request |
-| | `PUT` | `/api/v1/requests/{id}/reject` | Reject request |
-| | `GET` | `/api/v1/requests/daily-summary` | Generate daily work-day synthesis report |
-| **Devices** | `GET` | `/api/v1/devices` | List camera devices with live FPS and telemetry |
-| | `POST` | `/api/v1/devices` | Add new RTSP / Webcam camera device |
-| | `PUT` | `/api/v1/devices/{id}/toggle` | Remote live toggle (start/stop worker thread) |
-| | `PUT` | `/api/v1/devices/{id}` | Update device configuration |
-| | `DELETE` | `/api/v1/devices/{id}` | Delete camera device |
-| **Analytics BI**| `GET` | `/api/v1/analytics/weekly-punctuality` | 7-day punctuality rate trend (LineChart) |
-| | `GET` | `/api/v1/analytics/department-lateness`| Department lateness statistics (BarChart) |
-| | `GET` | `/api/v1/analytics/hourly-density` | 30-min time slot check-in density (AreaChart) |
-| | `GET` | `/api/v1/analytics/summary` | Executive HRM KPI summary metrics |
-| **Camera & WS**| `GET` | `/api/v1/camera/status` | Video stream status & AI diagnostics |
-| | `GET` | `/api/v1/camera/video_feed` | Live MJPEG video stream with HUD overlays |
-| | `WS` | `/ws/attendance` | Real-time WebSocket event broadcaster |
+### Core User & IAM Endpoints (Port 8001)
+- `POST /api/v1/auth/login` - User login and token generation
+- `POST /api/v1/auth/refresh` - Refresh access token
+- `GET /api/v1/auth/me` - Current user profile, roles, and permissions
+- `POST /api/v1/auth/change-password` - Change account password
+- `GET /api/v1/users` - List users with search & department filters
+- `POST /api/v1/users` - Create user profile and assign roles
+- `GET /api/v1/rbac/roles` - Manage roles and permission assignments
+- `GET /api/v1/rbac/permissions` - List available system permissions
+- `GET /api/v1/organization/departments` - List departments
+- `GET /api/v1/organization/positions` - List job positions
+
+### Face AI & Attendance Endpoints (Port 8000)
+- `GET /api/v1/employees` - List registered facial profiles
+- `POST /api/v1/employees/{id}/register-face` - Register 512D face embeddings
+- `GET /api/v1/attendance` - Query attendance history
+- `POST /api/v1/attendance/check-in` - Manual photo verification
+- `GET /api/v1/devices` - List connected RTSP & webcam streams
+- `GET /api/v1/analytics/summary` - Executive HRM BI analytics
+- `WS /ws/attendance` - Real-time WebSocket attendance feed
 
 ---
 
-## 6. ⚙️ Environment Configuration (`.env`)
+## 6. ⚙️ Environment Configuration
 
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `POSTGRES_SERVER` | `127.0.0.1` | PostgreSQL database host address |
-| `POSTGRES_PORT` | `5432` | Database port |
-| `POSTGRES_USER` / `PASSWORD` | `postgres` / `postgres123` | Database credentials |
-| `POSTGRES_DB` | `vface_db` | PostgreSQL database name |
-| `FACE_MODEL_NAME` | `buffalo_l` | InsightFace model name (ArcFace 512D) |
-| `CAMERA_BLUR_THRESHOLD` | `15.0` | Motion blur Laplacian variance threshold |
-| `CAMERA_MIN_FACE_SIZE` | `60` | Minimum bounding box size in pixels |
-| `CAMERA_SIMILARITY_THRESHOLD`| `0.58` | Cosine similarity threshold for positive identification |
-| `LIVENESS_THRESHOLD` | `0.50` | Anti-Spoofing real-face confidence threshold |
-| `STRANGER_CONFIDENCE_THRESHOLD`| `0.70` | Similarity threshold below which a face is marked stranger |
-| `STRANGER_CONSECUTIVE_FRAMES` | `3` | Frame count required before firing stranger alert |
-| `STRANGER_COOLDOWN_SECONDS` | `60` | Cooldown period between stranger security alerts |
+### Root Face AI Service (`.env`)
+```env
+PORT=8000
+POSTGRES_SERVER=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres123
+POSTGRES_DB=vface_db
+FACE_MODEL_NAME=buffalo_l
+LIVENESS_ENABLED=True
+STRANGER_ALERT_ENABLED=True
+```
+
+### Core User Service (`services/core-user/.env`)
+```env
+PORT=8001
+POSTGRES_SERVER=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres123
+POSTGRES_DB=vface_db
+JWT_SECRET_KEY=your_production_secret_key
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+REFRESH_TOKEN_EXPIRE_DAYS=7
+```
 
 ---
 

@@ -80,10 +80,25 @@ async def create_device(
     if new_device.is_active:
         camera_manager.start_worker_for_device(new_device)
 
+    telemetry = camera_manager.get_device_status(new_device.id) or {}
+    response_data = DeviceResponse(
+        id=new_device.id,
+        device_name=new_device.device_name,
+        rtsp_url=new_device.rtsp_url,
+        location=new_device.location,
+        purpose=new_device.purpose,
+        is_active=new_device.is_active,
+        created_at=new_device.created_at,
+        updated_at=new_device.updated_at,
+        is_connected=telemetry.get("is_connected", False) if new_device.is_active else False,
+        fps=telemetry.get("fps", 0.0) if new_device.is_active else 0.0,
+        processed_count=0
+    )
+
     return ResponseBase(
         success=True,
         message=f"Đã thêm thiết bị '{new_device.device_name}' thành công.",
-        data=DeviceResponse.model_validate(new_device)
+        data=response_data
     )
 
 
@@ -132,32 +147,55 @@ async def update_device(
             detail=f"Không tìm thấy thiết bị với ID: {device_id}"
         )
 
-    # Stop current worker before modifying connection details
-    await camera_manager.stop_worker_for_device(device_id)
+    try:
+        # Stop current worker before modifying connection details
+        await camera_manager.stop_worker_for_device(device_id)
 
-    if payload.device_name is not None:
-        device.device_name = payload.device_name
-    if payload.rtsp_url is not None:
-        device.rtsp_url = payload.rtsp_url
-    if payload.location is not None:
-        device.location = payload.location
-    if payload.purpose is not None:
-        device.purpose = payload.purpose
-    if payload.is_active is not None:
-        device.is_active = payload.is_active
+        if payload.device_name is not None:
+            device.device_name = payload.device_name
+        if payload.rtsp_url is not None:
+            device.rtsp_url = payload.rtsp_url
+        if payload.location is not None:
+            device.location = payload.location
+        if payload.purpose is not None:
+            device.purpose = payload.purpose
+        if payload.is_active is not None:
+            device.is_active = payload.is_active
 
-    await db.commit()
-    await db.refresh(device)
+        await db.commit()
+        await db.refresh(device)
 
-    # Restart worker if active
-    if device.is_active:
-        camera_manager.start_worker_for_device(device)
+        telemetry = camera_manager.get_device_status(device_id) or {}
+        is_conn = telemetry.get("is_connected", False) if device.is_active else False
+        fps_val = telemetry.get("fps", 0.0) if device.is_active else 0.0
+        checkins_cnt = telemetry.get("successful_checkins", 0)
 
-    return ResponseBase(
-        success=True,
-        message=f"Đã cập nhật cấu hình '{device.device_name}' thành công.",
-        data=DeviceResponse.model_validate(device)
-    )
+        response_data = DeviceResponse(
+            id=device.id,
+            device_name=device.device_name,
+            rtsp_url=device.rtsp_url,
+            location=device.location,
+            purpose=device.purpose,
+            is_active=device.is_active,
+            created_at=device.created_at,
+            updated_at=device.updated_at,
+            is_connected=is_conn,
+            fps=fps_val,
+            processed_count=checkins_cnt
+        )
+
+        return ResponseBase(
+            success=True,
+            message=f"Đã cập nhật cấu hình '{device.device_name}' thành công.",
+            data=response_data
+        )
+    except Exception as e:
+        logger.error(f"Error updating device {device_id}: {e}", exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi cập nhật camera: {str(e)}"
+        )
 
 
 @router.delete("/{device_id}", response_model=ResponseBase[dict])

@@ -77,10 +77,12 @@ class CameraStreamReader:
 
         try:
             if self.source_type == "WEBCAM":
-                logger.info(f"Opening local Webcam (Index: {self.webcam_index}) on macOS...")
-                # On macOS (Apple Silicon M4), use CAP_AVFOUNDATION for low-latency native access
+                logger.info(f"Opening local Webcam (Index: {self.webcam_index})...")
+                # On macOS use AVFoundation, on Windows use DirectShow for fast, reliable webcam capture
                 if platform.system() == "Darwin":
                     self._cap = cv2.VideoCapture(self.webcam_index, cv2.CAP_AVFOUNDATION)
+                elif platform.system() == "Windows":
+                    self._cap = cv2.VideoCapture(self.webcam_index, cv2.CAP_DSHOW)
                 else:
                     self._cap = cv2.VideoCapture(self.webcam_index)
 

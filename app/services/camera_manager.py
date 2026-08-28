@@ -121,7 +121,7 @@ class CameraManager:
                     default_devs = [
                         Device(
                             id=uuid.uuid4(),
-                            device_name="MacBook M4 FaceTime HD (Cửa vào A)",
+                            device_name="Camera máy tính (Built-in Webcam)",
                             rtsp_url="0",
                             location="Văn phòng chính - Cửa vào A",
                             purpose=DevicePurpose.CHECK_IN,

@@ -39,6 +39,7 @@ export const api = {
 
   // Attendance APIs
   getAttendanceHistory: (params = {}) => apiClient.get('/attendance', { params }),
+  getAttendanceLogs: (params = {}) => apiClient.get('/attendance', { params }),
   faceCheckIn: (formData) =>
     apiClient.post('/attendance/check-in', formData, {
       headers: {

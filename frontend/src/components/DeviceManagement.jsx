@@ -116,7 +116,14 @@ const DeviceManagement = () => {
     if (!editingDevice) return;
 
     try {
-      await api.updateDevice(editingDevice.id, formData);
+      const payload = {
+        device_name: formData.device_name,
+        rtsp_url: formData.rtsp_url,
+        location: formData.location,
+        purpose: formData.purpose,
+        is_active: formData.is_active,
+      };
+      await api.updateDevice(editingDevice.id, payload);
       showToast(`Updated camera "${formData.device_name}" successfully!`);
       setShowEditModal(false);
       setEditingDevice(null);
@@ -170,7 +177,7 @@ const DeviceManagement = () => {
 
   const RTSP_PRESETS = [
     {
-      name: 'FaceTime HD (MacBook)',
+      name: 'Camera máy tính (Webcam)',
       url: '0',
       location: 'Reception / Gate A',
       purpose: 'CHECK_IN',

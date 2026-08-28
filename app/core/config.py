@@ -50,10 +50,10 @@ class Settings(BaseSettings):
     FACE_EMBEDDING_DIM: int = 512
     MAX_IMAGE_SIZE_MB: int = 10
 
-    # Dual Camera Sources (1. MacBook Built-in Webcam / 2. Tapo C200 RTSP)
+    # Dual Camera Sources (1. Built-in PC/Laptop Webcam / 2. Tapo C200 RTSP)
     CAMERA_DEFAULT_SOURCE: Literal["WEBCAM", "RTSP"] = "WEBCAM"
-    WEBCAM_INDEX: int = 0  # 0 is the FaceTime HD Camera on MacBook Air M4
-    WEBCAM_DEVICE_ID: str = "MACBOOK_M4_WEBCAM"
+    WEBCAM_INDEX: int = 0  # 0 is the default built-in PC/Laptop Webcam
+    WEBCAM_DEVICE_ID: str = "PC_WEBCAM"
 
     # Tapo C200 RTSP Stream Settings (Format: rtsp://username:password@ip:port/stream1)
     RTSP_URL: str = "rtsp://admin:admin123@192.168.1.100:554/stream1"

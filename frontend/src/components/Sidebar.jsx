@@ -76,7 +76,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
     },
   ];
 
-  const sourceName = cameraStatus?.camera?.device_id || (cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : 'MacBook M4');
+  const sourceName = cameraStatus?.camera?.device_id || (cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : 'Camera máy tính');
   const isCamRunning = !!cameraStatus?.is_running;
   const isCamConnected = !!cameraStatus?.camera?.is_connected;
 
