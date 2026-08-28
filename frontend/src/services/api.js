@@ -72,6 +72,10 @@ export const api = {
     apiClient.post(`/employees/${employeeId}/register-face`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  verifyEmployeeFace: (employeeId, formData) =>
+    apiClient.post(`/employees/${employeeId}/verify-face`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 
   // Attendance History
   getAttendanceHistory: (params = {}) => apiClient.get('/attendance', { params }),
@@ -106,6 +110,15 @@ export const api = {
   startCamera: (payload = {}) => apiClient.post('/camera/start', payload),
   stopCamera: () => apiClient.post('/camera/stop'),
   captureLiveSnapshot: () => apiClient.post('/camera/snapshot'),
+  getDirectCameraSnapshotBlob: async () => {
+    const res = await apiClient.post('/camera/snapshot');
+    const base64Data = res?.data?.image_base64 || res?.image_base64;
+    if (!base64Data) {
+      throw new Error('Camera snapshot failed or returned empty image');
+    }
+    const response = await fetch(base64Data);
+    return await response.blob();
+  },
   registerFaceFromLiveCamera: (employeeId) =>
     apiClient.post(`/camera/register-face/${employeeId}`),
 

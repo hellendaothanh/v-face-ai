@@ -188,8 +188,10 @@ async def register_face_from_live_camera(
     )
 
 
-def _generate_video_mjpeg():
-    """Generator for streaming live MJPEG frames from the active camera."""
+def _generate_video_mjpeg(raw: bool = False):
+    """Generator for streaming live MJPEG frames from the active camera.
+    If raw=True, streams direct camera frames at maximum FPS without running heavy face search/stranger detection.
+    """
     while True:
         if not stream_processor._is_running or not stream_processor.stream_reader:
             placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -224,9 +226,13 @@ def _generate_video_mjpeg():
             time.sleep(0.5)
             continue
 
-        has_frame, frame_bgr, _ = stream_processor.get_latest_annotated_frame()
+        if raw:
+            has_frame, frame_bgr, _ = stream_processor.stream_reader.get_latest_frame()
+        else:
+            has_frame, frame_bgr, _ = stream_processor.get_latest_annotated_frame()
+
         if not has_frame or frame_bgr is None:
-            time.sleep(0.02)
+            time.sleep(0.01)
             continue
 
         h, w = frame_bgr.shape[:2]
@@ -234,9 +240,9 @@ def _generate_video_mjpeg():
             scale = 1280 / w
             frame_bgr = cv2.resize(frame_bgr, (int(w * scale), int(h * scale)))
 
-        ret, jpeg = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 75])
+        ret, jpeg = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
         if not ret:
-            time.sleep(0.02)
+            time.sleep(0.01)
             continue
 
         frame_bytes = jpeg.tobytes()
@@ -244,15 +250,15 @@ def _generate_video_mjpeg():
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
         )
-        time.sleep(0.03)
+        time.sleep(0.02)
 
 
 @router.get(
     "/video_feed",
     summary="Xem trực tiếp luồng Video MJPEG từ Camera (Live Feed)"
 )
-def live_video_feed():
+def live_video_feed(raw: bool = False):
     return StreamingResponse(
-        _generate_video_mjpeg(),
+        _generate_video_mjpeg(raw=raw),
         media_type="multipart/x-mixed-replace; boundary=frame"
     )

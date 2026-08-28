@@ -255,6 +255,70 @@ async def register_face(
     )
 
 
+@router.post(
+    "/{id}/verify-face",
+    response_model=ResponseBase[dict],
+    summary="Kiểm tra & xác thực mẫu khuôn mặt của nhân viên"
+)
+async def verify_employee_face(
+    id: uuid.UUID,
+    image: UploadFile = File(..., description="Ảnh chụp khuôn mặt cần kiểm tra"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    So khớp trực tiếp khuôn mặt từ ảnh gửi lên với 5 vector khuôn mặt của nhân viên.
+    Trả về độ tương đồng cao nhất, chỉ số khoảng cách và kết luận XÁC THỰC THÀNH CÔNG hay THẤT BẠI.
+    """
+    import numpy as np
+    from app.services.face_engine import face_engine
+
+    employee = await db.scalar(
+        select(Employee).options(selectinload(Employee.face_features)).where(Employee.id == id)
+    )
+    if not employee:
+        raise EmployeeNotFoundException(id)
+    if not employee.face_features:
+        raise HTTPException(status_code=400, detail="Nhân viên chưa có dữ liệu vector khuôn mặt.")
+
+    image_bytes = await image.read()
+    extracted = face_engine.extract_single_face(image_bytes=image_bytes, require_single_face=False)
+
+    query_emb = np.array(extracted.embedding, dtype=np.float32)
+    norm = np.linalg.norm(query_emb)
+    if norm > 0:
+        query_emb = query_emb / norm
+
+    best_sim = -1.0
+    for feat in employee.face_features:
+        feat_emb = np.array(feat.embedding, dtype=np.float32)
+        fnorm = np.linalg.norm(feat_emb)
+        if fnorm > 0:
+            feat_emb = feat_emb / fnorm
+        sim = float(np.dot(query_emb, feat_emb))
+        if sim > best_sim:
+            best_sim = sim
+
+    confidence_percent = round(max(0.0, best_sim) * 100.0, 2)
+    is_verified = best_sim >= settings.FACE_SIMILARITY_THRESHOLD
+
+    return ResponseBase(
+        success=is_verified,
+        message=f"Xác thực {'thành công' if is_verified else 'không khớp'}: Độ tin cậy {confidence_percent}%",
+        data={
+            "employee_id": str(employee.id),
+            "employee_code": employee.employee_code,
+            "full_name": employee.full_name,
+            "is_verified": is_verified,
+            "confidence_percent": confidence_percent,
+            "similarity_score": round(best_sim, 4),
+            "threshold": settings.FACE_SIMILARITY_THRESHOLD,
+            "registered_templates_count": len(employee.face_features),
+            "blur_score": extracted.blur_score,
+            "detection_score": extracted.detection_score
+        }
+    )
+
+
 @router.put(
     "/{id}",
     response_model=ResponseBase[EmployeeRead],

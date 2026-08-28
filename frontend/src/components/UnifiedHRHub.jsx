@@ -131,11 +131,61 @@ const UnifiedHRHub = () => {
   // 3. 5-ANGLE MULTI-TEMPLATE FACE REGISTRATION STATE
   // --------------------------------------------------------------------------
   const FACE_ANGLES = [
-    { id: 'straight', step: 1, title: t('angle_1_title', 'Angle 1: Frontal Look'), desc: t('angle_1_desc', 'Look directly at camera center'), badge: t('angle_1_badge', 'Frontal'), icon: Target },
-    { id: 'left', step: 2, title: t('angle_2_title', 'Angle 2: Turn Left (~20°)'), desc: t('angle_2_desc', 'Turn head slightly to your left'), badge: t('angle_2_badge', 'Yaw -20°'), icon: ArrowLeft },
-    { id: 'right', step: 3, title: t('angle_3_title', 'Angle 3: Turn Right (~20°)'), desc: t('angle_3_desc', 'Turn head slightly to your right'), badge: t('angle_3_badge', 'Yaw +20°'), icon: ArrowRight },
-    { id: 'down', step: 4, title: t('angle_4_title', 'Angle 4: Pitch Down (~15°)'), desc: t('angle_4_desc', 'Lower your chin slightly'), badge: t('angle_4_badge', 'Pitch -15°'), icon: ArrowDown },
-    { id: 'up_smile', step: 5, title: t('angle_5_title', 'Angle 5: Pitch Up & Natural Smile'), desc: t('angle_5_desc', 'Raise head slightly and smile naturally'), badge: t('angle_5_badge', 'Pitch +15° / Expression'), icon: ArrowUp },
+    {
+      id: 'straight',
+      step: 1,
+      title: t('angle_1_title', 'Góc 1: Nhìn Thẳng Trung Tâm'),
+      desc: t('angle_1_desc', 'Giữ thẳng đầu, mắt nhìn thẳng vào tâm ống kính camera'),
+      badge: t('angle_1_badge', 'Thẳng (Center)'),
+      instruction: t('angle_1_instruction', 'NHÌN THẲNG VÀO TRUNG TÂM CAMERA'),
+      guideType: 'center',
+      icon: Target,
+      themeColor: 'from-cyan-500 to-indigo-500',
+    },
+    {
+      id: 'left',
+      step: 2,
+      title: t('angle_2_title', 'Góc 2: Quay Mặt Sang Trái (~20°)'),
+      desc: t('angle_2_desc', 'Nghiêng và quay mặt nhẹ nhàng sang phía BÊN TRÁI'),
+      badge: t('angle_2_badge', 'Quay Trái (Yaw -20°)'),
+      instruction: t('angle_2_instruction', 'QUAY MẶT SANG BÊN TRÁI (~20°)'),
+      guideType: 'left',
+      icon: ArrowLeft,
+      themeColor: 'from-purple-500 to-indigo-500',
+    },
+    {
+      id: 'right',
+      step: 3,
+      title: t('angle_3_title', 'Góc 3: Quay Mặt Sang Phải (~20°)'),
+      desc: t('angle_3_desc', 'Nghiêng và quay mặt nhẹ nhàng sang phía BÊN PHẢI'),
+      badge: t('angle_3_badge', 'Quay Phải (Yaw +20°)'),
+      instruction: t('angle_3_instruction', 'QUAY MẶT SANG BÊN PHẢI (~20°)'),
+      guideType: 'right',
+      icon: ArrowRight,
+      themeColor: 'from-blue-500 to-cyan-500',
+    },
+    {
+      id: 'down',
+      step: 4,
+      title: t('angle_4_title', 'Góc 4: Cúi Cằm Xuống Dưới (~15°)'),
+      desc: t('angle_4_desc', 'Hơi cúi cằm và hạ thấp góc nhìn xuống dưới'),
+      badge: t('angle_4_badge', 'Cúi Xuống (Pitch -15°)'),
+      instruction: t('angle_4_instruction', 'HƠI CÚI CẰM XUỐNG DƯỚI (~15°)'),
+      guideType: 'down',
+      icon: ArrowDown,
+      themeColor: 'from-amber-500 to-orange-500',
+    },
+    {
+      id: 'up_smile',
+      step: 5,
+      title: t('angle_5_title', 'Góc 5: Ngẩng Lên & Cười Tự Nhiên ✨'),
+      desc: t('angle_5_desc', 'Hơi ngẩng cằm lên và cười tươi tự nhiên để nhận diện biểu cảm'),
+      badge: t('angle_5_badge', 'Ngẩng & Cười ✨'),
+      instruction: t('angle_5_instruction', 'HƠI NGẨNG CẰM & CƯỜI TỰ NHIÊN ✨'),
+      guideType: 'up',
+      icon: ArrowUp,
+      themeColor: 'from-emerald-500 to-teal-500',
+    },
   ];
 
   const [angleFiles, setAngleFiles] = useState({});
@@ -145,6 +195,8 @@ const UnifiedHRHub = () => {
   const [isCapturingSnapshot, setIsCapturingSnapshot] = useState(false);
   const [isUploadingFaces, setIsUploadingFaces] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [isVerifyingFace, setIsVerifyingFace] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null);
 
   // --------------------------------------------------------------------------
   // 4. DATA FETCHERS
@@ -230,19 +282,27 @@ const UnifiedHRHub = () => {
     const matchedEmployeeIds = new Set();
 
     iamUsers.forEach((u) => {
-      const userCode = (u.user_code || u.username || '').toUpperCase();
-      const userEmail = (u.email || '').toLowerCase();
+      const userCode = (u.user_code || u.username || '').toUpperCase().trim();
+      const userEmail = (u.email || '').toLowerCase().trim();
+      const userFullName = (u.profile?.full_name || u.full_name || '').toLowerCase().trim();
 
-      const emp = employees.find(
-        (e) =>
-          (e.employee_code && e.employee_code.toUpperCase() === userCode) ||
-          (e.email && e.email.toLowerCase() === userEmail) ||
-          (e.employee_code && e.employee_code.toUpperCase() === (u.username || '').toUpperCase())
-      );
+      const emp = employees.find((e) => {
+        const eCode = (e.employee_code || '').toUpperCase().trim();
+        const eEmail = (e.email || '').toLowerCase().trim();
+        const eFullName = (e.full_name || '').toLowerCase().trim();
+
+        return (
+          (eCode && userCode && (eCode === userCode || eCode === (u.username || '').toUpperCase().trim())) ||
+          (eEmail && userEmail && eEmail === userEmail) ||
+          (eFullName && userFullName && eFullName === userFullName)
+        );
+      });
 
       if (emp) {
         matchedEmployeeIds.add(emp.id);
       }
+
+      const faceCount = emp ? (emp.registered_faces_count !== undefined ? emp.registered_faces_count : (emp.face_features?.length || 0)) : 0;
 
       list.push({
         key: `iam_${u.id}`,
@@ -256,13 +316,14 @@ const UnifiedHRHub = () => {
         position: u.position?.name || u.position_name || emp?.position || '',
         roles: u.roles || [],
         is_active: u.is_active !== undefined ? u.is_active : emp?.is_active ?? true,
-        hasFaceAI: !!(emp && (emp.face_features || []).length > 0),
-        faceCount: emp ? (emp.face_features || []).length : 0,
+        hasFaceAI: faceCount > 0,
+        faceCount: faceCount,
       });
     });
 
     employees.forEach((emp) => {
       if (!matchedEmployeeIds.has(emp.id)) {
+        const faceCount = emp.registered_faces_count !== undefined ? emp.registered_faces_count : (emp.face_features?.length || 0);
         list.push({
           key: `emp_${emp.id}`,
           iamUser: null,
@@ -275,8 +336,8 @@ const UnifiedHRHub = () => {
           position: emp.position || '',
           roles: [],
           is_active: emp.is_active,
-          hasFaceAI: (emp.face_features || []).length > 0,
-          faceCount: (emp.face_features || []).length,
+          hasFaceAI: faceCount > 0,
+          faceCount: faceCount,
         });
       }
     });
@@ -653,19 +714,32 @@ const UnifiedHRHub = () => {
   // --------------------------------------------------------------------------
   // 10. FACE CAPTURE HELPERS
   // --------------------------------------------------------------------------
-  const openRegisterFaceModal = (emp) => {
+  const [feedTimestamp, setFeedTimestamp] = useState(Date.now());
+
+  const openRegisterFaceModal = async (emp) => {
     setSelectedEmployeeForFace(emp);
     setAngleFiles({});
     setAnglePreviews({});
     setActiveAngleIndex(0);
     setUploadResult(null);
+    setVerifyResult(null);
     setRegMode('backend_cam');
+    setFeedTimestamp(Date.now());
     setShowFaceRegModal(true);
+
+    try {
+      await api.startCamera({ source_type: 'WEBCAM', webcam_index: 0 });
+      setTimeout(() => setFeedTimestamp(Date.now()), 500);
+    } catch (err) {
+      console.warn('Auto start camera notice:', err.message);
+    }
   };
 
   const closeRegisterFaceModal = () => {
     setShowFaceRegModal(false);
     setSelectedEmployeeForFace(null);
+    setUploadResult(null);
+    setVerifyResult(null);
   };
 
   const captureBackendSnapshot = async () => {
@@ -708,6 +782,7 @@ const UnifiedHRHub = () => {
     if (!isAllAnglesReady || !selectedEmployeeForFace) return;
     setIsUploadingFaces(true);
     setUploadResult(null);
+    setVerifyResult(null);
 
     const formData = new FormData();
     FACE_ANGLES.forEach((angle) => {
@@ -717,20 +792,59 @@ const UnifiedHRHub = () => {
 
     try {
       const res = await api.registerFace(selectedEmployeeForFace.id, formData);
+      const data = res.data || res;
       setUploadResult({
-        success: res.success,
-        message: res.message,
-        data: res.data,
+        success: data.total_registered > 0,
+        message: res.message || 'Đã trích xuất & lưu thành công vector khuôn mặt 512D',
+        total_registered: data.total_registered,
+        total_uploaded: data.total_uploaded,
+        results: data.results || [],
       });
-      fetchAllPersonnel();
-      showToast('5-angle 512D face vectors saved successfully!');
+      await fetchAllPersonnel();
+      if (data.total_registered > 0) {
+        showToast(`✅ Đã trích xuất & lưu thành công ${data.total_registered}/5 vector khuôn mặt 512D!`);
+      } else {
+        showToast('Không phát hiện khuôn mặt rõ nét trong ảnh chụp.', 'error');
+      }
     } catch (err) {
       setUploadResult({
         success: false,
-        message: err.message || 'Face vector registration failed.',
+        message: err.message || 'Lỗi trích xuất vector khuôn mặt.',
       });
+      showToast(err.message || 'Lỗi trích xuất vector', 'error');
     } finally {
       setIsUploadingFaces(false);
+    }
+  };
+
+  const handleVerifyFaceLive = async () => {
+    if (!selectedEmployeeForFace) return;
+    setIsVerifyingFace(true);
+    setVerifyResult(null);
+
+    try {
+      const blob = await api.getDirectCameraSnapshotBlob();
+      const filename = `verify_${Date.now()}.jpg`;
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await api.verifyEmployeeFace(selectedEmployeeForFace.id, formData);
+      const data = res.data || res;
+      setVerifyResult(data);
+      if (res.success || data.is_verified) {
+        showToast(`✅ Xác thực thành công: Độ tin cậy ${data.confidence_percent}%`);
+      } else {
+        showToast(`❌ Khuôn mặt không khớp (Độ tin cậy: ${data.confidence_percent || 0}%)`, 'error');
+      }
+    } catch (err) {
+      setVerifyResult({
+        is_verified: false,
+        error: err.message || 'Lỗi khi so khớp khuôn mặt.',
+      });
+      showToast(err.message || 'Lỗi xác thực', 'error');
+    } finally {
+      setIsVerifyingFace(false);
     }
   };
 
@@ -938,15 +1052,20 @@ const UnifiedHRHub = () => {
                         )}
                       </td>
                       <td className="p-4">
-                        {item.hasFaceAI ? (
-                          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>{t('face_registered', 'Registered')} ({item.faceCount}/5)</span>
+                        {item.faceCount >= 5 ? (
+                          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            <span>Đã Xác Thực (5/5 512D)</span>
+                          </div>
+                        ) : item.faceCount > 0 ? (
+                          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                            <Check className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Đã đăng ký ({item.faceCount}/5 góc)</span>
                           </div>
                         ) : (
                           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
                             <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{t('no_face_sample', 'No Face Embedding')}</span>
+                            <span>Chưa có mẫu Face AI</span>
                           </div>
                         )}
                       </td>
@@ -2016,10 +2135,11 @@ const UnifiedHRHub = () => {
             {/* Modal Body */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 flex-1 overflow-y-auto pr-1">
               <div className="md:col-span-7 flex flex-col space-y-3">
-                <div className="relative w-full aspect-video bg-black/60 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                <div className="relative w-full aspect-video bg-black/80 rounded-3xl overflow-hidden border border-slate-800 flex items-center justify-center shadow-inner">
                   {regMode === 'backend_cam' && (
                     <img
-                      src="http://localhost:8000/api/v1/stream/video_feed"
+                      key={feedTimestamp}
+                      src={`http://localhost:8000/api/v1/camera/video_feed?raw=true&t=${feedTimestamp}`}
                       alt="Live Stream Feed"
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -2035,11 +2155,99 @@ const UnifiedHRHub = () => {
                     </div>
                   )}
 
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="w-48 h-60 rounded-full border-2 border-dashed border-indigo-400/50 flex items-center justify-center">
-                      <div className="w-40 h-52 rounded-full border border-indigo-500/30" />
+                  {/* Top Floating Active Guidance Header */}
+                  {regMode === 'backend_cam' && (
+                    <div className="absolute top-3 inset-x-3 pointer-events-none flex items-center justify-center z-20">
+                      <div className="px-4 py-2 rounded-2xl bg-black/80 backdrop-blur-md border border-cyan-500/60 shadow-2xl flex items-center space-x-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                        <span className="text-[11px] font-extrabold tracking-wider text-cyan-200 uppercase">
+                          {FACE_ANGLES[activeAngleIndex]?.instruction}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Interactive Dynamic Pose Guidance Overlay */}
+                  {regMode === 'backend_cam' && (
+                    <>
+                      {FACE_ANGLES[activeAngleIndex]?.guideType === 'center' && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-cyan-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)]">
+                            <div className="w-40 h-56 rounded-[42%] border border-cyan-500/40" />
+                            <div className="absolute w-8 h-8 rounded-full border-2 border-cyan-300 flex items-center justify-center">
+                              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {FACE_ANGLES[activeAngleIndex]?.guideType === 'left' && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-between px-6 z-10">
+                          <div className="flex flex-col items-center space-y-1.5 animate-bounce bg-purple-950/85 p-3.5 rounded-2xl border-2 border-purple-400 shadow-2xl">
+                            <ArrowLeft className="w-8 h-8 text-purple-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">QUAY TRÁI</span>
+                          </div>
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-purple-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.4)]" />
+                        </div>
+                      )}
+
+                      {FACE_ANGLES[activeAngleIndex]?.guideType === 'right' && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-between px-6 z-10">
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-blue-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.4)]" />
+                          <div className="flex flex-col items-center space-y-1.5 animate-bounce bg-blue-950/85 p-3.5 rounded-2xl border-2 border-blue-400 shadow-2xl">
+                            <ArrowRight className="w-8 h-8 text-blue-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">QUAY PHẢI</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {FACE_ANGLES[activeAngleIndex]?.guideType === 'down' && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-amber-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.4)]" />
+                          <div className="absolute bottom-3.5 flex items-center space-x-2 animate-bounce bg-amber-950/85 px-4 py-2 rounded-2xl border-2 border-amber-400 shadow-2xl">
+                            <ArrowDown className="w-5 h-5 text-amber-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">HƠI CÚI CẰM XUỐNG</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {FACE_ANGLES[activeAngleIndex]?.guideType === 'up' && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                          <div className="absolute top-14 flex items-center space-x-2 animate-bounce bg-emerald-950/85 px-4 py-2 rounded-2xl border-2 border-emerald-400 shadow-2xl">
+                            <ArrowUp className="w-5 h-5 text-emerald-300" />
+                            <Sparkles className="w-4 h-4 text-amber-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">NGẨNG LÊN & CƯỜI TƯƠI ✨</span>
+                          </div>
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-emerald-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(16,185,129,0.4)]" />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Direct Angle Quick Selection Strip */}
+                <div className="flex items-center space-x-1.5 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+                  {FACE_ANGLES.map((angle, idx) => {
+                    const isReady = !!angleFiles[angle.id];
+                    const isActive = idx === activeAngleIndex;
+                    return (
+                      <button
+                        type="button"
+                        key={angle.id}
+                        onClick={() => setActiveAngleIndex(idx)}
+                        className={`flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all flex items-center justify-center space-x-1 ${
+                          isActive
+                            ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
+                            : isReady
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-slate-800/60 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span>{angle.step}. {angle.badge.split(' ')[0]}</span>
+                        {isReady && <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {regMode === 'backend_cam' && (
@@ -2047,7 +2255,7 @@ const UnifiedHRHub = () => {
                     type="button"
                     onClick={captureBackendSnapshot}
                     disabled={isCapturingSnapshot}
-                    className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 transition-all"
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-xl shadow-indigo-600/30 transition-all"
                   >
                     {isCapturingSnapshot ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -2055,7 +2263,7 @@ const UnifiedHRHub = () => {
                       <Camera className="w-4 h-4" />
                     )}
                     <span>
-                      {t('capture_angle_btn', 'Capture Angle {angle}: {title}')
+                      {t('capture_angle_btn', 'Chụp Góc {angle}: {title}')
                         .replace('{angle}', activeAngleIndex + 1)
                         .replace('{title}', FACE_ANGLES[activeAngleIndex]?.title || '')}
                     </span>
@@ -2111,25 +2319,108 @@ const UnifiedHRHub = () => {
               </div>
             </div>
 
+            {/* Result & Verification Feedback Panel */}
+            {uploadResult && (
+              <div className={`p-4 rounded-2xl border text-xs space-y-3 transition-all ${
+                uploadResult.success
+                  ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
+                  : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 font-bold text-sm">
+                    {uploadResult.success ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <XCircle className="w-5 h-5 text-rose-400" />}
+                    <span>{uploadResult.message}</span>
+                  </div>
+                  {uploadResult.success && (
+                    <span className="px-2.5 py-0.5 rounded-full font-mono text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      {uploadResult.total_registered} / {uploadResult.total_uploaded || 5} góc thành công
+                    </span>
+                  )}
+                </div>
+
+                {uploadResult.success && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-emerald-500/20">
+                    <p className="text-[11px] text-emerald-300/80">
+                      Hệ thống đã lưu 5 vector 512 chiều vào PostgreSQL pgvector. Hãy kiểm tra xác thực trực tiếp trước camera:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleVerifyFaceLive}
+                      disabled={isVerifyingFace}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-cyan-500/20 flex-shrink-0 disabled:opacity-50"
+                    >
+                      {isVerifyingFace ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 text-cyan-200" />}
+                      <span>{isVerifyingFace ? 'Đang so khớp...' : '🔍 Kiểm Tra & Xác Thực Ngay'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Live Verification Result Box */}
+            {verifyResult && (
+              <div className={`p-4 rounded-2xl border text-xs space-y-2 transition-all ${
+                verifyResult.is_verified
+                  ? 'bg-gradient-to-r from-emerald-950/60 to-cyan-950/60 border-emerald-400 shadow-xl text-white'
+                  : 'bg-rose-950/50 border-rose-500 text-rose-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 font-bold text-sm">
+                    {verifyResult.is_verified ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-rose-400" />
+                    )}
+                    <span>
+                      {verifyResult.is_verified
+                        ? `🎉 XÁC THỰC THÀNH CÔNG: Khớp ${verifyResult.confidence_percent}%`
+                        : `❌ XÁC THỰC THẤT BẠI: Độ tin cậy ${verifyResult.confidence_percent || 0}%`}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-900/80 border border-slate-700">
+                    Sim: {verifyResult.similarity_score || '--'} (Ngưỡng: {verifyResult.threshold || 0.6})
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  {verifyResult.is_verified
+                    ? `Khuôn mặt trực tiếp khớp chính xác với hồ sơ nhân sự của ${verifyResult.full_name} (${verifyResult.employee_code}). Nhân viên đã sẵn sàng để chấm công tự động!`
+                    : 'Khuôn mặt hiện tại không khớp với 5 mẫu vector đã lưu. Vui lòng nhìn thẳng vào camera và thử xác thực lại.'}
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-4 border-t border-slate-800 mt-4 flex-shrink-0">
               <button
                 type="button"
                 onClick={closeRegisterFaceModal}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
               >
                 {t('cancel')}
               </button>
 
-              <button
-                type="button"
-                onClick={handleSave5AnglesFaceVectors}
-                disabled={!isAllAnglesReady || isUploadingFaces}
-                className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 disabled:opacity-50 flex items-center space-x-2"
-              >
-                {isUploadingFaces && <RefreshCw className="w-4 h-4 animate-spin" />}
-                <Sparkles className="w-4 h-4" />
-                <span>{t('save_5_vectors_btn', 'Extract & Save 5 Vectors 512D')}</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleVerifyFaceLive}
+                  disabled={isVerifyingFace || (!uploadResult && readyPhotosCount < 5)}
+                  className="px-4 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-40"
+                  title="Chụp 1 khung hình camera và kiểm tra độ khớp ngay"
+                >
+                  {isVerifyingFace ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 text-cyan-300" />}
+                  <span>Kiểm Tra Xác Thực</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSave5AnglesFaceVectors}
+                  disabled={!isAllAnglesReady || isUploadingFaces}
+                  className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isUploadingFaces && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  <Sparkles className="w-4 h-4" />
+                  <span>{t('save_5_vectors_btn', 'Trích Xuất & Lưu 5 Vector 512D')}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
