@@ -9,6 +9,7 @@ import DeviceManagement from './components/DeviceManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SystemHealth from './components/SystemHealth';
 import CoreUserManager from './components/CoreUserManager';
+import HelpdeskManager from './components/HelpdeskManager';
 import Login from './components/Login';
 import api from './services/api';
 import { useI18n } from './i18n/I18nContext';
@@ -76,6 +77,11 @@ function App() {
         return {
           title: t('header_analytics_title'),
           subtitle: t('header_analytics_sub'),
+        };
+      case NAV_TABS.HELPDESK:
+        return {
+          title: t('header_helpdesk_title') || 'Cổng Dịch Vụ Helpdesk & Service Desk Chuẩn ITIL',
+          subtitle: t('header_helpdesk_sub') || 'Quản lý yêu cầu hỗ trợ (Incident / Service Request), theo dõi SLA tự động và tra cứu cơ sở tri thức KB',
         };
       case NAV_TABS.CORE_USER:
         return {
@@ -147,6 +153,8 @@ function App() {
               onNavigateToEmployees={() => setCurrentTab(NAV_TABS.EMPLOYEES)}
             />
           )}
+
+          {currentTab === NAV_TABS.HELPDESK && <HelpdeskManager />}
 
           {currentTab === NAV_TABS.CORE_USER && <CoreUserManager />}
 

@@ -157,6 +157,106 @@ async def seed_initial_data(session: AsyncSession) -> None:
             phone_number="0901234567"
         )
         session.add(admin_profile)
+        await session.flush()
+
+    # 5. Seed Default Knowledge Base (KB) Categories & Articles
+    from app.models.helpdesk import (
+        KBCategory,
+        KBArticle,
+        Ticket,
+        TicketType,
+        ImpactLevel,
+        UrgencyLevel,
+        PriorityLevel,
+        TicketStatus,
+    )
+
+    stmt = select(KBCategory).where(KBCategory.code == "FACE_AI_CAM")
+    res = await session.execute(stmt)
+    cat_ai = res.scalar_one_or_none()
+    if not cat_ai:
+        cat_ai = KBCategory(
+            name="Camera AI & Nhận Diện Khuôn Mặt",
+            code="FACE_AI_CAM",
+            icon="Camera",
+            description="Xử lý sự cố luồng RTSP, mất nhận diện Face AI và thiết bị camera",
+            sort_order=1,
+        )
+        cat_net = KBCategory(
+            name="Mạng Nội Bộ & VPN & Kết Nối",
+            code="NET_VPN",
+            icon="Wifi",
+            description="Hướng dẫn kết nối mạng nội bộ công ty, VPN làm việc từ xa",
+            sort_order=2,
+        )
+        cat_acc = KBCategory(
+            name="Tài Khoản & Phân Quyền IAM",
+            code="AUTH_IAM",
+            icon="ShieldCheck",
+            description="Quên mật khẩu, xin cấp quyền hệ thống Chấm công / HRM / Helpdesk",
+            sort_order=3,
+        )
+        session.add_all([cat_ai, cat_net, cat_acc])
+        await session.flush()
+
+        # Seed Sample KB Article
+        art_rtsp = KBArticle(
+            category_id=cat_ai.id,
+            title="Khắc phục sự cố Camera AI báo Mất Tín Hiệu (Offline / RTSP Timeout)",
+            slug="khac-phuc-su-co-camera-ai-mat-tin-hieu",
+            summary="Các bước tự kiểm tra nguồn mạng IP, port 554 RTSP và khởi động lại luồng camera Face AI.",
+            content="""### Hướng Dẫn Xử Lý Mất Tín Hiệu Camera AI
+
+1. **Kiểm tra địa chỉ IP Camera**: Đảm bảo camera Tapo / IP CCTV cùng dải mạng với Server (`192.168.1.x`).
+2. **Kiểm tra cổng RTSP 554**: Dùng lệnh `Test-NetConnection -Port 554 -ComputerName <IP_CAMERA>` trên máy chủ.
+3. **Chuyển đổi nguồn luồng**:
+   - Truy cập **Quản Lý Thiết Bị** trên menu V-Face.
+   - Bấm nút **Chạy Camera** hoặc chuyển sang **PC Webcam** nếu thiết bị RTSP đang bảo trì.
+4. **Khởi động lại backend camera**: Mở terminal chạy `.\\service.ps1 restart`.
+""",
+            tags="camera,rtsp,face_ai,offline,troubleshoot",
+            is_published=True,
+            view_count=28,
+            helpful_count=12,
+            author_id=admin_user.id,
+        )
+
+        art_auth = KBArticle(
+            category_id=cat_acc.id,
+            title="Quy trình yêu cầu mở khóa tài khoản và đặt lại mật khẩu Core IAM",
+            slug="quy-trinh-mo-khoa-tai-khoan-core-iam",
+            summary="Hướng dẫn nhân viên mở khóa tài khoản khi nhập sai mật khẩu quá 5 lần.",
+            content="""### Quy Trình Mở Khóa Tài Khoản
+
+1. **Tài khoản bị khóa tự động**: Sau 5 lần đăng nhập không thành công, tài khoản sẽ chuyển sang trạng thái `LOCKED`.
+2. **Gửi yêu cầu Service Request**:
+   - Tạo ticket loại **Service Request** với tiêu đề `[Yêu Cầu] Mở khóa tài khoản [Mã NV]`.
+   - Admin IAM sẽ xác thực thông tin và kích hoạt lại trong vòng 15 phút theo cam kết SLA P3.
+""",
+            tags="iam,login,password,reset,unlock",
+            is_published=True,
+            view_count=45,
+            helpful_count=19,
+            author_id=admin_user.id,
+        )
+        session.add_all([art_rtsp, art_auth])
+        await session.flush()
+
+        # Seed Sample Ticket
+        t1 = Ticket(
+            ticket_code="INC-202608-0001",
+            title="Camera Cổng Chính (Tapo C200) chập chờn nhận diện buổi sáng",
+            description="Camera tại cửa ra vào tầng 1 thỉnh thoảng bị trễ khung hình khi nhiều nhân viên cùng check-in lúc 08:20.",
+            ticket_type=TicketType.INCIDENT,
+            status=TicketStatus.OPEN,
+            impact=ImpactLevel.MEDIUM,
+            urgency=UrgencyLevel.HIGH,
+            priority=PriorityLevel.P2_HIGH,
+            requester_id=admin_user.id,
+            category_id=cat_ai.id,
+            linked_kb_id=art_rtsp.id,
+        )
+        session.add(t1)
 
     await session.commit()
     logger.info("Database seed checks completed successfully.")

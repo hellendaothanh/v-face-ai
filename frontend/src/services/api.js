@@ -142,6 +142,24 @@ export const api = {
   createDepartment: (data) => coreUserClient.post('/organization/departments', data),
   getPositions: () => coreUserClient.get('/organization/positions'),
   createPosition: (data) => coreUserClient.post('/organization/positions', data),
+
+  // ITIL Helpdesk & Service Desk
+  getTickets: (params = {}) => coreUserClient.get('/helpdesk/tickets', { params }),
+  getTicketDetail: (id) => coreUserClient.get(`/helpdesk/tickets/${id}`),
+  createTicket: (data) => coreUserClient.post('/helpdesk/tickets', data),
+  updateTicket: (id, data) => coreUserClient.patch(`/helpdesk/tickets/${id}`, data),
+  addTicketComment: (id, data) => coreUserClient.post(`/helpdesk/tickets/${id}/comments`, data),
+  submitTicketFeedback: (id, data) => coreUserClient.post(`/helpdesk/tickets/${id}/feedback`, data),
+
+  // Knowledge Base (KB)
+  getKBCategories: () => coreUserClient.get('/helpdesk/kb/categories'),
+  createKBCategory: (data) => coreUserClient.post('/helpdesk/kb/categories', data),
+  getKBArticles: (params = {}) => coreUserClient.get('/helpdesk/kb/articles', { params }),
+  getKBArticleDetail: (id) => coreUserClient.get(`/helpdesk/kb/articles/${id}`),
+  createKBArticle: (data) => coreUserClient.post('/helpdesk/kb/articles', data),
+  updateKBArticle: (id, data) => coreUserClient.put(`/helpdesk/kb/articles/${id}`, data),
+  deleteKBArticle: (id) => coreUserClient.delete(`/helpdesk/kb/articles/${id}`),
+  markKBArticleHelpful: (id) => coreUserClient.post(`/helpdesk/kb/articles/${id}/helpful`),
 };
 
 export default api;

@@ -192,7 +192,7 @@ function Start-CoreUser {
     # Start process via cmd.exe redirection to avoid file locking issues in PowerShell
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = "cmd.exe"
-    $psi.Arguments = "/c `"`"$pythonExec`" -m uvicorn app.main:app --host 0.0.0.0 --port $CORE_USER_PORT >> `"$CORE_USER_LOG_FILE`" 2>&1`""
+    $psi.Arguments = '/c ""' + $pythonExec + '" -m uvicorn app.main:app --host 0.0.0.0 --port ' + $CORE_USER_PORT + ' >> "' + $CORE_USER_LOG_FILE + '" 2>&1"'
     $psi.WorkingDirectory = $CORE_USER_DIR
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
@@ -278,7 +278,7 @@ function Start-Backend {
     # Start background process via cmd.exe redirection to prevent file locks
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = "cmd.exe"
-    $psi.Arguments = "/c `"`"$pythonExec`" -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT >> `"$BACKEND_LOG_FILE`" 2>&1`""
+    $psi.Arguments = '/c ""' + $pythonExec + '" -m uvicorn app.main:app --host 0.0.0.0 --port ' + $BACKEND_PORT + ' >> "' + $BACKEND_LOG_FILE + '" 2>&1"'
     $psi.WorkingDirectory = $PROJECT_ROOT
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
@@ -372,7 +372,7 @@ function Start-Frontend {
     # Start Vite in background via cmd.exe redirection
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = "cmd.exe"
-    $psi.Arguments = "/c `"npm run dev >> `"$FRONTEND_LOG_FILE`" 2>&1`""
+    $psi.Arguments = '/c "npm run dev >> "' + $FRONTEND_LOG_FILE + '" 2>&1"'
     $psi.WorkingDirectory = $frontendDir
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
@@ -624,3 +624,4 @@ switch ($Command) {
         Show-Usage
     }
 }
+

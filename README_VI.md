@@ -103,6 +103,8 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 - **Phân quyền vai trò chi tiết (RBAC)**: Định nghĩa 14+ Permissions cấp độ module (`core_user`, `attendance`, `hrm`, `helpdesk`) và cấu hình 5 Roles mặc định (`superadmin`, `hr_manager`, `dept_manager`, `it_support`, `employee`).
 - **Hồ sơ Người dùng (User & Profile)**: Mã nhân viên chuẩn hóa (`user_code`), thông tin cá nhân, CCCD/CMND, avatar, liên hệ.
 - **Cơ cấu Tổ chức Doanh nghiệp**: Quản lý cây Phòng ban cha - con (Departments), gán Trưởng phòng (Manager), chức danh và cấp bậc (Positions & Levels).
+- **Hỗ Trợ Kỹ Thuật ITIL Helpdesk**: Quản lý sự cố và yêu cầu dịch vụ theo chuẩn ITIL, ma trận SLA tự động từ Tác động (Impact) & Khẩn cấp (Urgency) từ P1 đến P4, khảo sát độ hài lòng CSAT.
+- **Cơ Sở Tri Thức Nâng Cao (Advanced KB)**: Kho giải pháp tự phục vụ (Self-service) với đầy đủ CRUD, thanh công cụ soạn thảo Rich Markdown (In đậm, In nghiêng, Khối Code, Hộp Lưu ý & Cảnh báo), phân loại và lọc thẻ Tags trực quan.
 
 ### 4.2. 👁️ Phân Hệ Face AI Chấm Công (`app/` - Port 8000)
 - **AI ArcFace 512D**: Nhận diện siêu tốc với pgvector HNSW Index.
@@ -115,7 +117,7 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 
 ## 5. 📡 Tóm Tắt Danh Mục Endpoints API
 
-### Core User & IAM Endpoints (Port 8001)
+### Core User, IAM & Helpdesk Endpoints (Port 8001)
 - `POST /api/v1/auth/login` - Đăng nhập tài khoản & Nhận JWT Tokens
 - `POST /api/v1/auth/refresh` - Cấp mới Access Token bằng Refresh Token
 - `GET /api/v1/auth/me` - Lấy thông tin tài khoản, danh sách Roles và Permissions
@@ -126,6 +128,17 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 - `GET /api/v1/rbac/permissions` - Danh sách toàn bộ quyền hạn hệ thống
 - `GET /api/v1/organization/departments` - Danh sách phòng ban
 - `GET /api/v1/organization/positions` - Danh sách chức vụ
+- `GET /api/v1/helpdesk/tickets` - Danh sách & bộ lọc Ticket hỗ trợ ITIL
+- `POST /api/v1/helpdesk/tickets` - Gửi yêu cầu hỗ trợ / Báo cáo sự cố mới
+- `PATCH /api/v1/helpdesk/tickets/{id}` - Cập nhật trạng thái và giải pháp xử lý
+- `POST /api/v1/helpdesk/tickets/{id}/comments` - Thêm bình luận trao đổi kỹ thuật
+- `POST /api/v1/helpdesk/tickets/{id}/feedback` - Gửi đánh giá hài lòng CSAT
+- `GET /api/v1/helpdesk/kb/categories` - Danh mục bài viết tri thức KB
+- `GET /api/v1/helpdesk/kb/articles` - Tra cứu các bài viết giải pháp chuẩn
+- `POST /api/v1/helpdesk/kb/articles` - Đăng bài viết tri thức mới
+- `PUT /api/v1/helpdesk/kb/articles/{id}` - Chỉnh sửa bài viết tri thức
+- `DELETE /api/v1/helpdesk/kb/articles/{id}` - Xóa bài viết tri thức
+- `POST /api/v1/helpdesk/kb/articles/{id}/helpful` - Đánh giá bài viết hữu ích
 
 ### Face AI & Chấm Công Endpoints (Port 8000)
 - `GET /api/v1/employees` - Danh sách hồ sơ khuôn mặt nhân viên

@@ -22,8 +22,10 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [isLoading, setIsLoading] = useState(() => {
-    // If there is a token stored, we verify it; if no token, we are immediately done loading
-    return Boolean(localStorage.getItem('vface_access_token'));
+    const storedToken = localStorage.getItem('vface_access_token');
+    if (!storedToken) return false;
+    if (storedToken.startsWith('mock_')) return false;
+    return true;
   });
 
   // Fetch current user profile using the stored token
@@ -37,9 +39,13 @@ export const AuthProvider = ({ children }) => {
 
     // If mock token used in automated test, keep current user
     if (storedToken.startsWith('mock_')) {
-      if (!currentUser) {
-        setCurrentUser({ username: 'admin', roles: ['superadmin'], full_name: 'System Administrator' });
-      }
+      const savedUser = localStorage.getItem('vface_user_profile');
+      let parsed = null;
+      try {
+        parsed = savedUser ? JSON.parse(savedUser) : null;
+      } catch {}
+      setCurrentUser(parsed || { username: 'admin', roles: ['superadmin'], full_name: 'System Administrator' });
+      setToken(storedToken);
       setIsLoading(false);
       return;
     }
@@ -62,15 +68,16 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => {
-    if (token) {
+    const stored = localStorage.getItem('vface_access_token');
+    if (stored) {
       refreshProfile();
     } else {
       setIsLoading(false);
     }
-  }, [token, refreshProfile]);
+  }, [refreshProfile]);
 
   const login = async (username, password) => {
     setIsLoading(true);

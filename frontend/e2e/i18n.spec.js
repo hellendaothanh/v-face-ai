@@ -9,19 +9,22 @@ const VIETNAMESE_KEYWORD_REGEX = /\b(chấm công|nhân viên|quản lý|phòng 
 
 test.describe('V-Face AI - English Localization Integrity Test', () => {
   test.beforeEach(async ({ page }) => {
-    // Set localStorage language to English and inject auth session before loading
     await page.addInitScript(() => {
       localStorage.setItem('vface_lang', 'en');
       localStorage.setItem('vface_access_token', 'mock_jwt_session');
-      localStorage.setItem('vface_user_profile', JSON.stringify({
-        id: '1d8000',
-        username: 'admin',
-        full_name: 'System Administrator',
-        roles: ['superadmin'],
-      }));
+      localStorage.setItem(
+        'vface_user_profile',
+        JSON.stringify({
+          id: '1d8000',
+          username: 'admin',
+          full_name: 'System Administrator',
+          roles: ['superadmin'],
+        })
+      );
     });
     await page.goto('/');
     await expect(page.locator('#root')).toBeVisible();
+    await expect(page.locator('aside')).toBeVisible({ timeout: 5000 });
   });
 
   test('TC-I18N-01: Header and Navigation in EN Mode Must NOT Contain Vietnamese Text', async ({ page }) => {
@@ -144,6 +147,21 @@ test.describe('V-Face AI - English Localization Integrity Test', () => {
       expect(
         VIETNAMESE_KEYWORD_REGEX.test(coreText),
         `Core User screen in EN mode contains untranslated Vietnamese keywords: "${coreText.slice(0, 100)}..."`
+      ).toBeFalsy();
+    }
+  });
+
+  test('TC-I18N-06: Helpdesk & Knowledge Base Screen in EN Mode Must NOT Contain Vietnamese Text', async ({ page }) => {
+    const hdNav = page.locator('aside button').filter({ hasText: /Helpdesk|Service Desk/i }).first();
+    if (await hdNav.isVisible()) {
+      await hdNav.click();
+      await page.waitForTimeout(500);
+
+      const hdContent = page.locator('main');
+      const hdText = (await hdContent.innerText()) || '';
+      expect(
+        VIETNAMESE_KEYWORD_REGEX.test(hdText),
+        `Helpdesk screen in EN mode contains untranslated Vietnamese keywords: "${hdText.slice(0, 100)}..."`
       ).toBeFalsy();
     }
   });

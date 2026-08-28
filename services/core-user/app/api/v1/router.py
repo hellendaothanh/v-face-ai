@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-
+from app.api import helpdesk
 from app.api.v1.endpoints import auth, org, roles, users
 
 api_router = APIRouter()
@@ -8,3 +8,4 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Authentication & T
 api_router.include_router(users.router, prefix="/users", tags=["Users & Profiles"])
 api_router.include_router(roles.router, prefix="/rbac", tags=["RBAC Roles & Permissions"])
 api_router.include_router(org.router, prefix="/organization", tags=["Organization Structure"])
+api_router.include_router(helpdesk.router, tags=["Helpdesk & Service Desk (ITIL)"])

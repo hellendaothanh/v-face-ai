@@ -16,7 +16,10 @@ import {
   TrendingUp,
   Video,
   BarChart3,
-  LogOut
+  LogOut,
+  LifeBuoy,
+  BookOpen,
+  Headphones
 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +31,7 @@ export const NAV_TABS = {
   ATTENDANCE: 'ATTENDANCE',
   DEVICES: 'DEVICES',
   ANALYTICS: 'ANALYTICS',
+  HELPDESK: 'HELPDESK',
   CORE_USER: 'CORE_USER',
   HEALTH: 'HEALTH',
 };
@@ -46,9 +50,17 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       badgeColor: isWsConnected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30',
     },
     {
+      id: NAV_TABS.HELPDESK,
+      label: t('nav_helpdesk') || 'Helpdesk & Service Desk',
+      subLabel: t('nav_helpdesk_sub') || 'ITIL Tickets & Knowledge Base',
+      icon: LifeBuoy,
+      badge: 'ITIL',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    },
+    {
       id: NAV_TABS.CORE_USER,
-      label: t('nav_core_user') || 'Core User & IAM',
-      subLabel: t('nav_core_user_sub') || 'Tài khoản, RBAC & Cơ cấu',
+      label: t('nav_core_user', 'Core User & IAM'),
+      subLabel: t('nav_core_user_sub', 'Users, RBAC & Organization'),
       icon: ShieldCheck,
       badge: 'IAM',
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',

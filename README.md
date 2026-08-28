@@ -103,6 +103,8 @@ V-Face provides unified service management scripts for both **Windows PowerShell
 - **Granular RBAC**: Role-Based Access Control with 14+ granular module permissions (`core_user`, `attendance`, `hrm`, `helpdesk`) and pre-configured roles (`superadmin`, `hr_manager`, `dept_manager`, `it_support`, `employee`).
 - **User & Profile Management**: Unified `user_code` identifier across systems, personal profiles, and avatars.
 - **Organization Structure**: Hierarchical Departments (parent/child, department managers) and Position ranks.
+- **ITIL Helpdesk & Service Desk**: Standard ITIL Incident & Service Request management, Impact/Urgency SLA matrix (P1 Critical to P4 Low), and CSAT satisfaction feedback.
+- **Advanced Knowledge Base (KB)**: Self-service solution repository with full CRUD, Rich Markdown formatting toolbar (Bold, Italic, Code, Callout Alerts), and interactive contextual tags (`#camera`, `#network`, `#iam`, `#helpdesk`).
 
 ### 4.2. 👁️ Face AI Attendance Service (`app/` - Port 8000)
 - **InsightFace ArcFace 512D**: Sub-second face recognition with cosine similarity and pgvector HNSW indexing.
@@ -116,7 +118,7 @@ V-Face provides unified service management scripts for both **Windows PowerShell
 
 ## 5. 📡 REST API Reference Overview
 
-### Core User & IAM Endpoints (Port 8001)
+### Core User, IAM & Helpdesk Endpoints (Port 8001)
 - `POST /api/v1/auth/login` - User login and token generation
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `GET /api/v1/auth/me` - Current user profile, roles, and permissions
@@ -127,6 +129,17 @@ V-Face provides unified service management scripts for both **Windows PowerShell
 - `GET /api/v1/rbac/permissions` - List available system permissions
 - `GET /api/v1/organization/departments` - List departments
 - `GET /api/v1/organization/positions` - List job positions
+- `GET /api/v1/helpdesk/tickets` - List & filter ITIL support tickets
+- `POST /api/v1/helpdesk/tickets` - Create new support ticket / incident
+- `PATCH /api/v1/helpdesk/tickets/{id}` - Update ticket status & resolution
+- `POST /api/v1/helpdesk/tickets/{id}/comments` - Add internal / public comment
+- `POST /api/v1/helpdesk/tickets/{id}/feedback` - Submit CSAT rating
+- `GET /api/v1/helpdesk/kb/categories` - List KB categories
+- `GET /api/v1/helpdesk/kb/articles` - Search KB solution articles
+- `POST /api/v1/helpdesk/kb/articles` - Publish new KB solution article
+- `PUT /api/v1/helpdesk/kb/articles/{id}` - Update KB solution article
+- `DELETE /api/v1/helpdesk/kb/articles/{id}` - Delete KB article
+- `POST /api/v1/helpdesk/kb/articles/{id}/helpful` - Vote KB article as helpful
 
 ### Face AI & Attendance Endpoints (Port 8000)
 - `GET /api/v1/employees` - List registered facial profiles
