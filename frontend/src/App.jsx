@@ -16,7 +16,16 @@ import { useAuth } from './context/AuthContext';
 
 function App() {
   const { t } = useI18n();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    isSuperAdmin, 
+    isAdmin, 
+    isHR, 
+    isManager, 
+    isITSupport, 
+    hasPermission 
+  } = useAuth();
   const [currentTab, setCurrentTab] = useState(NAV_TABS.DASHBOARD);
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [isApiConnected, setIsApiConnected] = useState(null); // null = checking, true = online, false = offline
@@ -153,22 +162,68 @@ function App() {
           {currentTab === NAV_TABS.HELPDESK && <HelpdeskManager />}
 
           {(currentTab === NAV_TABS.HR_HUB || currentTab === 'EMPLOYEES' || currentTab === 'CORE_USER') && (
-            <UnifiedHRHub />
+            (isHR || isAdmin || hasPermission(['user:read', 'user:create', 'rbac:manage', 'org:manage'])) ? (
+              <UnifiedHRHub />
+            ) : (
+              <AccessDeniedScreen onGoHome={() => setCurrentTab(NAV_TABS.DASHBOARD)} t={t} />
+            )
           )}
 
           {currentTab === NAV_TABS.REQUESTS && <RequestManagement />}
 
           {currentTab === NAV_TABS.ATTENDANCE && <AttendanceHistory />}
 
-          {currentTab === NAV_TABS.DEVICES && <DeviceManagement />}
+          {currentTab === NAV_TABS.DEVICES && (
+            (isAdmin || isITSupport || isManager || hasPermission(['camera:manage'])) ? (
+              <DeviceManagement />
+            ) : (
+              <AccessDeniedScreen onGoHome={() => setCurrentTab(NAV_TABS.DASHBOARD)} t={t} />
+            )
+          )}
 
-          {currentTab === NAV_TABS.ANALYTICS && <AnalyticsDashboard />}
+          {currentTab === NAV_TABS.ANALYTICS && (
+            (isAdmin || isHR || isManager || hasPermission(['hrm:manage', 'attendance:manage'])) ? (
+              <AnalyticsDashboard />
+            ) : (
+              <AccessDeniedScreen onGoHome={() => setCurrentTab(NAV_TABS.DASHBOARD)} t={t} />
+            )
+          )}
 
-          {currentTab === NAV_TABS.HEALTH && <SystemHealth />}
+          {currentTab === NAV_TABS.HEALTH && (
+            (isAdmin || isSuperAdmin) ? (
+              <SystemHealth />
+            ) : (
+              <AccessDeniedScreen onGoHome={() => setCurrentTab(NAV_TABS.DASHBOARD)} t={t} />
+            )
+          )}
         </main>
       </div>
     </div>
   );
 }
+
+const AccessDeniedScreen = ({ onGoHome, t }) => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 glass-panel rounded-3xl border border-rose-500/20 max-w-lg mx-auto space-y-5 animate-in fade-in zoom-in-95 duration-300">
+    <div className="w-20 h-20 rounded-3xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-2xl shadow-rose-500/20">
+      <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    </div>
+    <div className="space-y-2">
+      <h3 className="text-xl font-bold text-white tracking-wide">
+        {t('access_denied_title') || '403 • Truy Cập Bị Giới Hạn'}
+      </h3>
+      <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+        {t('access_denied_desc') || 'Tài khoản của bạn không có đủ quyền hạn để truy cập phân hệ này. Vui lòng liên hệ Quản trị viên hệ thống (Admin) để được phân quyền.'}
+      </p>
+    </div>
+    <button
+      onClick={onGoHome}
+      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-600/30 transition-all hover:scale-105"
+    >
+      {t('btn_back_to_dashboard') || 'Quay về Bàn làm việc (Dashboard)'}
+    </button>
+  </div>
+);
 
 export default App;

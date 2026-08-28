@@ -37,7 +37,10 @@ import { useAuth } from '../context/AuthContext';
 
 const UnifiedHRHub = () => {
   const { t } = useI18n();
-  const { currentUser } = useAuth();
+  const { currentUser, isSuperAdmin, isAdmin, isHR, hasPermission } = useAuth();
+
+  const canManageRoles = isSuperAdmin || isAdmin || hasPermission('rbac:manage');
+  const canManageOrg = isSuperAdmin || isAdmin || isHR || hasPermission('org:manage');
 
   // Active Main Sub-Tab: 'personnel' | 'roles' | 'org'
   const [activeTab, setActiveTab] = useState('personnel');
@@ -270,9 +273,13 @@ const UnifiedHRHub = () => {
 
   useEffect(() => {
     fetchAllPersonnel();
-    fetchRbac();
-    fetchOrg();
-  }, [fetchAllPersonnel, fetchRbac, fetchOrg]);
+    if (canManageRoles) {
+      fetchRbac();
+    }
+    if (canManageOrg) {
+      fetchOrg();
+    }
+  }, [fetchAllPersonnel, fetchRbac, fetchOrg, canManageRoles, canManageOrg]);
 
   // --------------------------------------------------------------------------
   // 5. UNIFIED PERSONNEL LIST MERGING (Employees + IAM Users)
@@ -888,19 +895,23 @@ const UnifiedHRHub = () => {
         </div>
 
         {/* Quick KPI Stats Pill */}
-        <div className="grid grid-cols-3 gap-3 bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800 text-xs flex-shrink-0">
+        <div className="flex items-center space-x-3 bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800 text-xs flex-shrink-0">
           <div className="px-3 py-1 text-center border-r border-slate-800">
             <div className="text-[10px] uppercase font-semibold text-slate-400">{t('total_personnel', 'Total Personnel')}</div>
             <div className="text-base font-bold text-white font-mono">{unifiedPersonnelList.length}</div>
           </div>
-          <div className="px-3 py-1 text-center border-r border-slate-800">
-            <div className="text-[10px] uppercase font-semibold text-slate-400">{t('departments_title', 'Departments')}</div>
-            <div className="text-base font-bold text-cyan-400 font-mono">{departments.length}</div>
-          </div>
-          <div className="px-3 py-1 text-center">
-            <div className="text-[10px] uppercase font-semibold text-slate-400">{t('tab_roles', 'RBAC Roles')}</div>
-            <div className="text-base font-bold text-purple-400 font-mono">{roles.length}</div>
-          </div>
+          {canManageOrg && (
+            <div className="px-3 py-1 text-center border-r border-slate-800">
+              <div className="text-[10px] uppercase font-semibold text-slate-400">{t('departments_title', 'Departments')}</div>
+              <div className="text-base font-bold text-cyan-400 font-mono">{departments.length}</div>
+            </div>
+          )}
+          {canManageRoles && (
+            <div className="px-3 py-1 text-center">
+              <div className="text-[10px] uppercase font-semibold text-slate-400">{t('tab_roles', 'RBAC Roles')}</div>
+              <div className="text-base font-bold text-purple-400 font-mono">{roles.length}</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -920,29 +931,33 @@ const UnifiedHRHub = () => {
           <span>{t('tab_personnel_faces', 'Personnel & Face AI 512D Roster')} ({unifiedPersonnelList.length})</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('roles')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-            activeTab === 'roles'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <Shield className="w-4 h-4" />
-          <span>{t('tab_roles', 'Roles & RBAC Permissions')} ({roles.length})</span>
-        </button>
+        {canManageRoles && (
+          <button
+            onClick={() => setActiveTab('roles')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+              activeTab === 'roles'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>{t('tab_roles', 'Roles & RBAC Permissions')} ({roles.length})</span>
+          </button>
+        )}
 
-        <button
-          onClick={() => setActiveTab('org')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-            activeTab === 'org'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span>{t('tab_org', 'Departments & Positions')} ({departments.length} • {positions.length})</span>
-        </button>
+        {canManageOrg && (
+          <button
+            onClick={() => setActiveTab('org')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+              activeTab === 'org'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>{t('tab_org', 'Departments & Positions')} ({departments.length} • {positions.length})</span>
+          </button>
+        )}
       </div>
 
       {/* ------------------------------------------------------------------------ */}

@@ -39,9 +39,9 @@ export const NAV_TABS = {
 
 const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cameraStatus }) => {
   const { t } = useI18n();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isSuperAdmin, isAdmin, isHR, isManager, isITSupport, hasPermission } = useAuth();
 
-  const menuItems = [
+  const allMenuItems = [
     {
       id: NAV_TABS.DASHBOARD,
       label: t('nav_dashboard'),
@@ -49,6 +49,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: Activity,
       badge: isWsConnected ? 'LIVE' : 'OFFLINE',
       badgeColor: isWsConnected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+      allowed: true,
     },
     {
       id: NAV_TABS.HR_HUB,
@@ -57,6 +58,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: Users,
       badge: 'HR & IAM',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+      allowed: isHR || isAdmin || hasPermission(['user:read', 'user:create', 'rbac:manage', 'org:manage']),
     },
     {
       id: NAV_TABS.HELPDESK,
@@ -65,26 +67,30 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: LifeBuoy,
       badge: 'ITIL',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      allowed: true,
     },
     {
       id: NAV_TABS.REQUESTS,
       label: t('nav_requests'),
       subLabel: t('nav_requests_sub'),
       icon: FileCheck,
+      allowed: true,
     },
     {
       id: NAV_TABS.ATTENDANCE,
       label: t('nav_attendance'),
       subLabel: t('nav_attendance_sub'),
       icon: Clock,
+      allowed: true,
     },
     {
       id: NAV_TABS.DEVICES,
       label: t('nav_devices'),
       subLabel: t('nav_devices_sub'),
       icon: Video,
-      badge: 'HRM',
+      badge: 'CCTV',
       badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      allowed: isAdmin || isITSupport || isManager || hasPermission(['camera:manage']),
     },
     {
       id: NAV_TABS.ANALYTICS,
@@ -93,6 +99,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: TrendingUp,
       badge: 'BI',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+      allowed: isAdmin || isHR || isManager || hasPermission(['hrm:manage', 'attendance:manage']),
     },
     {
       id: NAV_TABS.HEALTH,
@@ -101,8 +108,11 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: Server,
       badge: 'API',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      allowed: isAdmin || isSuperAdmin,
     },
   ];
+
+  const menuItems = allMenuItems.filter((item) => item.allowed);
 
   const defaultCamName = cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : t('switch_to_webcam');
   const sourceName = cameraStatus?.camera?.device_id || defaultCamName;

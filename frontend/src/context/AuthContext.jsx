@@ -159,6 +159,35 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = Boolean(token);
 
+  // Role & Permission evaluation helpers
+  const userRoles = React.useMemo(() => {
+    if (!currentUser?.roles) return [];
+    return currentUser.roles.map((r) => (typeof r === 'string' ? r : r.name || ''));
+  }, [currentUser]);
+
+  const userPermissions = React.useMemo(() => {
+    if (!currentUser?.permissions) return [];
+    return currentUser.permissions.map((p) => (typeof p === 'string' ? p : p.code || ''));
+  }, [currentUser]);
+
+  const isSuperAdmin = Boolean(currentUser?.is_superuser || userRoles.includes('superadmin') || currentUser?.username === 'admin');
+  const isAdmin = isSuperAdmin || userRoles.includes('admin');
+  const isHR = isAdmin || userRoles.includes('hr_manager') || userPermissions.includes('hrm:manage') || userPermissions.includes('user:create');
+  const isManager = isHR || userRoles.includes('dept_manager') || userRoles.includes('manager') || userPermissions.includes('attendance:manage');
+  const isITSupport = isAdmin || userRoles.includes('it_support') || userPermissions.includes('camera:manage') || userPermissions.includes('helpdesk:admin');
+
+  const hasRole = useCallback((roles) => {
+    if (isSuperAdmin) return true;
+    const required = Array.isArray(roles) ? roles : [roles];
+    return required.some((r) => userRoles.includes(r));
+  }, [isSuperAdmin, userRoles]);
+
+  const hasPermission = useCallback((permissions) => {
+    if (isSuperAdmin || isAdmin) return true;
+    const required = Array.isArray(permissions) ? permissions : [permissions];
+    return required.some((p) => userPermissions.includes(p));
+  }, [isSuperAdmin, isAdmin, userPermissions]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -170,6 +199,15 @@ export const AuthProvider = ({ children }) => {
         loginWithFace,
         logout,
         refreshProfile,
+        userRoles,
+        userPermissions,
+        isSuperAdmin,
+        isAdmin,
+        isHR,
+        isManager,
+        isITSupport,
+        hasRole,
+        hasPermission,
       }}
     >
       {children}

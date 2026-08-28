@@ -573,6 +573,11 @@ const en = {
   helpdesk_ai_diagnosing: 'AI is analyzing...',
   helpdesk_ai_toast_diagnosed: 'AI Agent completed diagnosis and posted action steps to Timeline!',
   helpdesk_ai_auto_resolved_tag: 'AI Responded',
+
+  // RBAC Access Denied
+  access_denied_title: '403 • Restricted Access',
+  access_denied_desc: 'Your account does not have sufficient permissions to access this module. Please contact your System Administrator to request role authorization.',
+  btn_back_to_dashboard: 'Back to Dashboard',
 };
 
 export default en;

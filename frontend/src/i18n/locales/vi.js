@@ -573,6 +573,11 @@ const vi = {
   helpdesk_ai_diagnosing: 'AI đang phân tích...',
   helpdesk_ai_toast_diagnosed: 'AI Agent đã hoàn tất chẩn đoán và cập nhật hướng dẫn vào Timeline!',
   helpdesk_ai_auto_resolved_tag: 'Đã phản hồi bởi AI',
+
+  // RBAC Access Denied
+  access_denied_title: '403 • Truy Cập Bị Giới Hạn',
+  access_denied_desc: 'Tài khoản của bạn không có đủ quyền hạn để truy cập phân hệ này. Vui lòng liên hệ Quản trị viên hệ thống (Admin) để được phân quyền tương ứng.',
+  btn_back_to_dashboard: 'Quay về Bàn làm việc (Dashboard)',
 };
 
 export default vi;
