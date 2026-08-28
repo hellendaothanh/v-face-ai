@@ -87,23 +87,82 @@ const UserProfileManager = () => {
           email: email,
         });
 
-        // Search Face AI employee by user_code / username
-        const code = user.user_code || user.username;
-        if (code) {
+        // Multi-field lookup for Face AI Employee (user_code, username, email, full_name)
+        const candidates = [
+          user.user_code,
+          user.username,
+          user.email,
+          user.profile?.full_name || user.full_name
+        ].filter(Boolean);
+
+        let matched = null;
+        for (const term of candidates) {
           try {
-            const empRes = await api.getEmployees({ search: code, page: 1, page_size: 10 });
-            const empList = empRes?.data?.items || (Array.isArray(empRes) ? empRes : []);
-            const matched = empList.find(
-              (e) => (e.employee_code || '').toUpperCase() === code.toUpperCase()
-            );
-            if (matched) {
-              setLinkedEmployee(matched);
-              const count = matched.face_features ? matched.face_features.length : (matched.face_features_count || 0);
-              setFaceCount(count);
-            }
-          } catch (empErr) {
-            console.warn('Face AI lookup notice:', empErr);
+            const empRes = await api.getEmployees({ search: term, page: 1, page_size: 20 });
+            const empList = empRes?.data?.items || empRes?.items || (Array.isArray(empRes) ? empRes : []);
+            matched = empList.find((e) => {
+              const codeMatch = e.employee_code && (
+                e.employee_code.toUpperCase() === (user.user_code || '').toUpperCase() ||
+                e.employee_code.toUpperCase() === (user.username || '').toUpperCase()
+              );
+              const emailMatch = e.email && user.email && e.email.toLowerCase() === user.email.toLowerCase();
+              const nameMatch = e.full_name && (user.profile?.full_name || user.full_name) &&
+                e.full_name.trim().toLowerCase() === (user.profile?.full_name || user.full_name).trim().toLowerCase();
+              return Boolean(codeMatch || emailMatch || nameMatch);
+            });
+            if (matched) break;
+          } catch (e) {
+            // continue fallback
           }
+        }
+
+        // If still not matched, fetch the first page of employees to match locally
+        if (!matched) {
+          try {
+            const allEmpRes = await api.getEmployees({ page: 1, page_size: 100 });
+            const allList = allEmpRes?.data?.items || allEmpRes?.items || (Array.isArray(allEmpRes) ? allEmpRes : []);
+            matched = allList.find((e) => {
+              const codeMatch = e.employee_code && (
+                e.employee_code.toUpperCase() === (user.user_code || '').toUpperCase() ||
+                e.employee_code.toUpperCase() === (user.username || '').toUpperCase()
+              );
+              const emailMatch = e.email && user.email && e.email.toLowerCase() === user.email.toLowerCase();
+              const nameMatch = e.full_name && (user.profile?.full_name || user.full_name) &&
+                e.full_name.trim().toLowerCase() === (user.profile?.full_name || user.full_name).trim().toLowerCase();
+              return Boolean(codeMatch || emailMatch || nameMatch);
+            });
+          } catch (fetchErr) {
+            console.warn('Face AI global lookup notice:', fetchErr);
+          }
+        }
+
+        if (matched) {
+          setLinkedEmployee(matched);
+          let count = Number(
+            matched.registered_faces_count ?? 
+            (matched.face_features ? matched.face_features.length : (matched.face_features_count ?? 0))
+          );
+
+          // If detail has face features array, verify exact count
+          if (matched.id) {
+            try {
+              const detailRes = await api.getEmployeeDetail(matched.id);
+              const detail = detailRes?.data || detailRes;
+              if (detail) {
+                if (detail.face_features && Array.isArray(detail.face_features)) {
+                  count = detail.face_features.length;
+                } else if (typeof detail.registered_faces_count === 'number') {
+                  count = detail.registered_faces_count;
+                }
+              }
+            } catch (dErr) {
+              console.warn('Face AI detail count lookup notice:', dErr);
+            }
+          }
+          setFaceCount(count);
+        } else {
+          setLinkedEmployee(null);
+          setFaceCount(0);
         }
       }
     } catch (err) {

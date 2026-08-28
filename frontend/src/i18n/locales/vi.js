@@ -64,6 +64,13 @@ const vi = {
   face_login_no_camera: 'Không tìm thấy camera hoặc quyền truy cập camera bị từ chối.',
   face_login_tip: 'Đảm bảo gương mặt ở giữa khung hình và đủ ánh sáng.',
   face_login_retry: 'Thử lại',
+  face_login_failed_title: 'Đăng nhập Face ID Thất Bại',
+  face_login_failed_desc: 'Hệ thống không thể xác thực khuôn mặt của bạn.',
+  face_login_err_not_registered: 'Khuôn mặt chưa được đăng ký trong hệ thống hoặc không khớp với nhân sự nào.',
+  face_login_err_no_face: 'Không tìm thấy khuôn mặt trong khung hình. Vui lòng nhìn thẳng vào camera.',
+  face_login_err_spoof: 'Phát hiện hình ảnh giả mạo hoặc video tái tạo (Anti-Spoofing Alert).',
+  face_login_err_low_confidence: 'Độ khớp sinh trắc học không đạt ngưỡng an toàn.',
+  face_login_err_tip: 'Vui lòng kiểm tra lại góc nhìn, đủ ánh sáng hoặc chuyển sang đăng nhập bằng Mật khẩu.',
 
   // Navigation Tabs
   nav_menu: 'Menu Quản Trị',
@@ -596,10 +603,19 @@ const vi = {
   confirm_new_password: 'Xác nhận mật khẩu mới',
   btn_change_password: 'Cập Nhật Mật Khẩu',
   updating_password: 'Đang cập nhật mật khẩu...',
-  password_change_success: 'Đổi mật khẩu bảo mật thành công!',
   pwd_too_short: 'Mật khẩu mới phải có tối thiểu 6 ký tự.',
   pwd_mismatch: 'Mật khẩu xác nhận không khớp với mật khẩu mới.',
   pwd_same_as_old: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
+
+  // Face ID Failure Feedback Keys
+  face_login_failed_title: 'Đăng Nhập Face ID Thất Bại',
+  face_login_err_no_face: 'Không tìm thấy khuôn mặt trong khung hình. Vui lòng nhìn thẳng vào camera.',
+  face_login_err_low_confidence: 'Độ khớp sinh trắc học không đạt ngưỡng an toàn.',
+  face_login_err_not_registered: 'Khuôn mặt chưa được đăng ký trong hệ thống hoặc không khớp với bất kỳ nhân sự nào.',
+  face_login_err_spoof: 'Phát hiện hình ảnh giả mạo hoặc video tái tạo (Anti-Spoofing Alert).',
+  face_login_err_tip: 'Vui lòng nhìn thẳng vào camera, đủ ánh sáng hoặc chuyển sang đăng nhập bằng Mật khẩu.',
+  face_login_retry: 'Thử lại ngay',
+  face_login_use_pwd: 'Đăng nhập bằng Mật khẩu',
 };
 
 export default vi;

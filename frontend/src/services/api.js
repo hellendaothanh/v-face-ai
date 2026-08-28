@@ -16,13 +16,22 @@ const apiClient = axios.create({
 const extractErrorMessage = (error, defaultMsg) => {
   const data = error.response?.data;
   if (!data) return error.message || defaultMsg;
+  if (typeof data === 'string' && data) return data;
   if (typeof data.message === 'string' && data.message) return data.message;
   if (typeof data.detail === 'string' && data.detail) return data.detail;
+  if (Array.isArray(data.detail)) {
+    return data.detail.map((d) => d.msg || d.message || JSON.stringify(d)).join('; ');
+  }
   if (typeof data.detail === 'object' && data.detail !== null) {
-    return data.detail.message || JSON.stringify(data.detail);
+    if (data.detail.message) return data.detail.message;
+    if (data.detail.detail) return data.detail.detail;
+    return JSON.stringify(data.detail);
   }
   if (typeof data.message === 'object' && data.message !== null) {
     return data.message.message || JSON.stringify(data.message);
+  }
+  if (error.response?.status === 401) {
+    return 'Xác thực không thành công hoặc khuôn mặt chưa được đăng ký trong hệ thống.';
   }
   return error.message || defaultMsg;
 };
@@ -31,7 +40,11 @@ apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Face AI Backend.');
-    return Promise.reject(new Error(errorMsg));
+    const err = new Error(errorMsg);
+    err.code = error.response?.data?.detail?.code || error.response?.data?.code || (error.response?.status === 401 ? 'UNAUTHORIZED' : 'ERROR');
+    err.data = error.response?.data;
+    err.status = error.response?.status;
+    return Promise.reject(err);
   }
 );
 
@@ -59,8 +72,12 @@ coreUserClient.interceptors.request.use((config) => {
 coreUserClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Core User Service.');
-    return Promise.reject(new Error(errorMsg));
+    const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Core User IAM.');
+    const err = new Error(errorMsg);
+    err.code = error.response?.data?.detail?.code || error.response?.data?.code || (error.response?.status === 401 ? 'UNAUTHORIZED' : 'ERROR');
+    err.data = error.response?.data;
+    err.status = error.response?.status;
+    return Promise.reject(err);
   }
 );
 

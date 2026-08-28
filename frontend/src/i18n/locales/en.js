@@ -64,6 +64,13 @@ const en = {
   face_login_no_camera: 'Camera not found or access permission denied.',
   face_login_tip: 'Ensure your face is centered in the frame with good lighting.',
   face_login_retry: 'Retry',
+  face_login_failed_title: 'Face ID Login Failed',
+  face_login_failed_desc: 'System could not verify your facial biometrics.',
+  face_login_err_not_registered: 'Face is not registered in system or does not match any personnel.',
+  face_login_err_no_face: 'No face detected in camera frame. Please look directly at the camera.',
+  face_login_err_spoof: 'Spoof attempt or screen replay detected (Anti-Spoofing Alert).',
+  face_login_err_low_confidence: 'Biometric confidence score is below safety threshold.',
+  face_login_err_tip: 'Please check your lighting, face angle, or switch to Password login.',
 
   // Navigation Tabs
   nav_menu: 'Management Menu',
@@ -596,10 +603,19 @@ const en = {
   confirm_new_password: 'Confirm New Password',
   btn_change_password: 'Update Password',
   updating_password: 'Updating password...',
-  password_change_success: 'Security password changed successfully!',
   pwd_too_short: 'New password must be at least 6 characters long.',
   pwd_mismatch: 'Confirm password does not match new password.',
   pwd_same_as_old: 'New password cannot be identical to current password.',
+
+  // Face ID Failure Feedback Keys
+  face_login_failed_title: 'Face ID Login Failed',
+  face_login_err_no_face: 'No face detected in camera frame. Please look directly at the camera.',
+  face_login_err_low_confidence: 'Biometric match confidence score is below safety threshold.',
+  face_login_err_not_registered: 'Face is not registered in the system or does not match any active personnel.',
+  face_login_err_spoof: 'Spoof attempt or screen replay detected (Anti-Spoofing Alert).',
+  face_login_err_tip: 'Please look directly at camera, ensure proper lighting, or switch to Password login.',
+  face_login_retry: 'Retry Face ID',
+  face_login_use_pwd: 'Sign In with Password',
 };
 
 export default en;
