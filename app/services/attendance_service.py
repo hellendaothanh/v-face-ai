@@ -91,10 +91,10 @@ class AttendanceService:
 
         for filename, file_bytes in image_files:
             try:
-                # Extract single face with strict 1-face requirement
+                # Extract single face (dominant primary face)
                 extracted: ExtractedFace = face_engine.extract_single_face(
                     image_bytes=file_bytes,
-                    require_single_face=True
+                    require_single_face=False
                 )
 
                 # Check if image is blurry

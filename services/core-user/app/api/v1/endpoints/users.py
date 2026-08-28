@@ -5,7 +5,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_permissions
-from app.core.exceptions import DuplicateException, NotFoundException
+from app.core.exceptions import DuplicateException, ForbiddenException, NotFoundException
 from app.core.security import get_password_hash
 from app.database.session import get_db
 from app.models.organization import Department, Position
@@ -196,3 +196,19 @@ async def update_user_profile(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete User")
+async def delete_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permissions(["user:delete"]))
+):
+    """Delete a user account and associated profile."""
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundException("User not found")
+    await db.delete(user)
+    await db.commit()

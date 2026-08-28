@@ -1055,17 +1055,17 @@ const UnifiedHRHub = () => {
                         {item.faceCount >= 5 ? (
                           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
                             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                            <span>Đã Xác Thực (5/5 512D)</span>
+                            <span>{t('status_face_verified_5', 'Đã Xác Thực (5/5 512D)')}</span>
                           </div>
                         ) : item.faceCount > 0 ? (
                           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                             <Check className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Đã đăng ký ({item.faceCount}/5 góc)</span>
+                            <span>{t('status_face_registered_partial', 'Đã đăng ký ({count}/5 góc)').replace('{count}', item.faceCount)}</span>
                           </div>
                         ) : (
                           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
                             <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Chưa có mẫu Face AI</span>
+                            <span>{t('status_no_face_model', 'Chưa có mẫu Face AI')}</span>
                           </div>
                         )}
                       </td>
@@ -2185,7 +2185,7 @@ const UnifiedHRHub = () => {
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-between px-6 z-10">
                           <div className="flex flex-col items-center space-y-1.5 animate-bounce bg-purple-950/85 p-3.5 rounded-2xl border-2 border-purple-400 shadow-2xl">
                             <ArrowLeft className="w-8 h-8 text-purple-300" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">QUAY TRÁI</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_turn_left', 'QUAY TRÁI')}</span>
                           </div>
                           <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-purple-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.4)]" />
                         </div>
@@ -2196,7 +2196,7 @@ const UnifiedHRHub = () => {
                           <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-blue-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.4)]" />
                           <div className="flex flex-col items-center space-y-1.5 animate-bounce bg-blue-950/85 p-3.5 rounded-2xl border-2 border-blue-400 shadow-2xl">
                             <ArrowRight className="w-8 h-8 text-blue-300" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">QUAY PHẢI</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_turn_right', 'QUAY PHẢI')}</span>
                           </div>
                         </div>
                       )}
@@ -2206,7 +2206,7 @@ const UnifiedHRHub = () => {
                           <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-amber-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.4)]" />
                           <div className="absolute bottom-3.5 flex items-center space-x-2 animate-bounce bg-amber-950/85 px-4 py-2 rounded-2xl border-2 border-amber-400 shadow-2xl">
                             <ArrowDown className="w-5 h-5 text-amber-300" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">HƠI CÚI CẰM XUỐNG</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_tilt_down', 'HƠI CÚI CẰM XUỐNG')}</span>
                           </div>
                         </div>
                       )}
@@ -2216,9 +2216,9 @@ const UnifiedHRHub = () => {
                           <div className="absolute top-14 flex items-center space-x-2 animate-bounce bg-emerald-950/85 px-4 py-2 rounded-2xl border-2 border-emerald-400 shadow-2xl">
                             <ArrowUp className="w-5 h-5 text-emerald-300" />
                             <Sparkles className="w-4 h-4 text-amber-300" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">NGẨNG LÊN & CƯỜI TƯƠI ✨</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_look_up_smile', 'NGẨNG LÊN & CƯỜI TƯƠI ✨')}</span>
                           </div>
-                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-emerald-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(16,185,129,0.4)]" />
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-emerald-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.4)]" />
                         </div>
                       )}
                     </>
@@ -2341,7 +2341,7 @@ const UnifiedHRHub = () => {
                 {uploadResult.success && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-emerald-500/20">
                     <p className="text-[11px] text-emerald-300/80">
-                      Hệ thống đã lưu 5 vector 512 chiều vào PostgreSQL pgvector. Hãy kiểm tra xác thực trực tiếp trước camera:
+                      {t('result_pgvector_note', 'Hệ thống đã lưu 5 vector 512 chiều vào PostgreSQL pgvector. Hãy kiểm tra xác thực trực tiếp trước camera:')}
                     </p>
                     <button
                       type="button"
@@ -2350,7 +2350,7 @@ const UnifiedHRHub = () => {
                       className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-cyan-500/20 flex-shrink-0 disabled:opacity-50"
                     >
                       {isVerifyingFace ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 text-cyan-200" />}
-                      <span>{isVerifyingFace ? 'Đang so khớp...' : '🔍 Kiểm Tra & Xác Thực Ngay'}</span>
+                      <span>{isVerifyingFace ? t('verifying_matching', 'Đang so khớp...') : t('btn_verify_now', '🔍 Kiểm Tra & Xác Thực Ngay')}</span>
                     </button>
                   </div>
                 )}
@@ -2373,8 +2373,8 @@ const UnifiedHRHub = () => {
                     )}
                     <span>
                       {verifyResult.is_verified
-                        ? `🎉 XÁC THỰC THÀNH CÔNG: Khớp ${verifyResult.confidence_percent}%`
-                        : `❌ XÁC THỰC THẤT BẠI: Độ tin cậy ${verifyResult.confidence_percent || 0}%`}
+                        ? t('result_verify_success_title', '🎉 XÁC THỰC THÀNH CÔNG: Khớp {percent}%').replace('{percent}', verifyResult.confidence_percent)
+                        : t('result_verify_fail_title', '❌ XÁC THỰC THẤT BẠI: Độ tin cậy {percent}%').replace('{percent}', verifyResult.confidence_percent || 0)}
                     </span>
                   </div>
                   <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-900/80 border border-slate-700">
@@ -2383,8 +2383,10 @@ const UnifiedHRHub = () => {
                 </div>
                 <p className="text-[11px] text-slate-300">
                   {verifyResult.is_verified
-                    ? `Khuôn mặt trực tiếp khớp chính xác với hồ sơ nhân sự của ${verifyResult.full_name} (${verifyResult.employee_code}). Nhân viên đã sẵn sàng để chấm công tự động!`
-                    : 'Khuôn mặt hiện tại không khớp với 5 mẫu vector đã lưu. Vui lòng nhìn thẳng vào camera và thử xác thực lại.'}
+                    ? t('result_verify_success_desc', 'Khuôn mặt trực tiếp khớp chính xác với hồ sơ nhân sự của {name} ({code}). Nhân viên đã sẵn sàng để chấm công tự động!')
+                        .replace('{name}', verifyResult.full_name)
+                        .replace('{code}', verifyResult.employee_code)
+                    : t('result_verify_fail_desc', 'Khuôn mặt hiện tại không khớp với 5 mẫu vector đã lưu. Vui lòng nhìn thẳng vào camera và thử xác thực lại.')}
                 </p>
               </div>
             )}
@@ -2407,7 +2409,7 @@ const UnifiedHRHub = () => {
                   title="Chụp 1 khung hình camera và kiểm tra độ khớp ngay"
                 >
                   {isVerifyingFace ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 text-cyan-300" />}
-                  <span>Kiểm Tra Xác Thực</span>
+                  <span>{t('btn_verify_short', 'Kiểm Tra Xác Thực')}</span>
                 </button>
 
                 <button
