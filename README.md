@@ -148,10 +148,35 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
   - **3-Consecutive-Frame Counter**: Filters out transient movement artifacts and passing pedestrians.
   - **60-Second Cooldown Debounce**: Prevents siren alarm spamming and preserves WebSocket bandwidth.
 
-### 4.7. Attendance History & Multi-Filter BI Analytics
-- **Advanced Multi-Criteria Filtering**: Filter attendance records by Employee Code/Name, Department, Custom Date Ranges, Attendance Type (`CHECK_IN` / `CHECK_OUT`), and Confidence Thresholds.
-- **Data Export**: Direct CSV/Excel export for HR payroll and compliance reporting.
-- **Interactive BI Visualizations (Recharts)**: Weekly punctuality trends, departmental lateness breakdown, and peak hourly traffic density charts.
+### 4.8. My Account Self-Service & Secure Password Management
+- **Full-Screen Profile Workspace ("My Account")**: Dedicated left-sidebar navigation tab allowing all authenticated users to manage their personal profile and credentials.
+- **Hero Identity Banner**: Features initials avatar, Username, Employee/User Code, Department & Position badges, RBAC role chips (`superadmin`, `admin`, `hr_manager`, etc.), and live Face AI biometric vector counters (`5/5 templates`).
+- **Profile Self-Service**: Full Name and Phone Number self-updates with automatic dual-sync between Core User IAM and Face AI Employee roster, while protecting immutable system fields (Email, User Code).
+- **Self-Service Password Change**:
+  - Secure old password verification.
+  - New password length validation ($\ge 6$ chars) with confirm password matching.
+  - Eye visibility toggles and one-way `bcrypt` password hashing.
+
+### 4.9. Enterprise Zero-Trust Defense-in-Depth Authorization (RBAC & ABAC)
+- **3-Layer Security Architecture**:
+  - **Layer 1 (Gateway / Core IAM)**: Signature validation, Token expiry, and active account verification.
+  - **Layer 2 (Atomic RBAC Guards)**: 14 atomic permission codes verified via FastAPI dependency factories (`RequirePermission(...)`, `require_permissions(...)`).
+  - **Layer 3 (ABAC Row-Level Security Scoping)**:
+    - `Superadmin` and `HR Manager`: Unrestricted organization-wide query access.
+    - `Department Manager`: Queries automatically scoped to `department_id == current_user.department_id`, **completely preventing cross-department data exposure**.
+- **Anti-Privilege Escalation Matrix**:
+  - Non-superadmins cannot create or edit roles granting permissions they do not possess.
+  - Subordinate accounts cannot assign `superadmin` role to other users.
+  - System default roles (`superadmin`) are permanently locked and cannot be deleted or stripped of privileges.
+  - Strict self-deletion protection prevents users from accidentally deleting their own active session.
+
+### 4.10. Smart Floating "Scroll to Top" Action Button
+- **Glassmorphism & Neon Glow Design**: Circular floating button (`fixed bottom-7 right-7 z-50`) with an indigo ambient glow.
+- **SVG Circular Scroll Progress Meter**: Dynamically traces page scroll percentage (0% to 100%) in an animated glowing ring.
+- **Smart Visibility & Micro-Animations**:
+  - Automatically hidden at top of viewport; smoothly fades and zooms in when scrolled beyond `240px`.
+  - Tooltip on hover displaying `XX% • Back to top`.
+  - Native smooth scrolling behavior returning the user to the top with a single click.
 
 ---
 

@@ -198,6 +198,7 @@ const vi = {
   header_analytics_sub: 'Biểu đồ trực quan xu hướng đúng giờ, mật độ check-in theo khung giờ và thống kê đi muộn theo phòng ban',
   header_health_title: 'Kiểm Tra Tình Trạng API & Hệ Thống Microservices',
   header_health_sub: 'Giám sát trực tiếp trạng thái, độ trễ và Swagger Docs của các Microservices',
+  btn_scroll_to_top: 'Lên đầu trang',
 
   // Camera & Stream Controls
   turn_on_camera: 'Bật Camera',

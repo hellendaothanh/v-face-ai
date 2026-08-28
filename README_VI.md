@@ -148,10 +148,35 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
   - **Bộ lọc 3 khung hình liên tiếp (3-Frame Counter)**: Ngăn chặn cảnh báo giả do người đi lướt qua hoặc bóng mờ chuyển động.
   - **Bộ đệm Cooldown 60 giây (Debounce Anti-Spam)**: Tránh spam còi hú báo động liên tục và tối ưu băng thông WebSocket.
 
-### 4.7. Lịch Sử & Báo Cáo Chấm Công Đa Tiêu Chí (Attendance History & Reporting)
-- **Bộ lọc tìm kiếm nâng cao**: Lọc theo Mã/Tên nhân viên, Phòng ban, Khoảng ngày tùy chọn (Date Range), Loại điểm danh (`CHECK_IN` / `CHECK_OUT`), và Ngưỡng độ tin cậy.
-- **Xuất dữ liệu báo cáo (Export Data)**: Hỗ trợ trích xuất nhật ký điểm danh phục vụ tổng hợp công và tính lương cho phòng Nhân sự.
-- **Biểu đồ trực quan hóa BI (Recharts)**: Biểu đồ đường tính đúng giờ theo tuần (Weekly Punctuality), biểu đồ cột tỷ lệ đi muộn theo phòng ban (Department Lateness), và biểu đồ mật độ lưu lượng theo giờ (Hourly Density).
+### 4.8. Quản Lý Tài Khoản Cá Nhân & Đổi Mật Khẩu Tự Phục Vụ (My Account Self-Service)
+- **Giao diện toàn màn hình trực quan ("Tài Khoản Của Tôi")**: Dành riêng một tab trên thanh điều hướng Sidebar cho phép mọi người dùng đã đăng nhập tự quản lý hồ sơ cá nhân.
+- **Thẻ định danh nổi bật (Hero Identity Banner)**: Hiển thị avatar ký tự viết tắt, Tên tài khoản, Mã nhân viên/User code, Huy hiệu chức danh phòng ban, các huy hiệu vai trò RBAC (`superadmin`, `admin`, `hr_manager`, v.v.), và đồng hồ đếm số lượng vector Face AI đã nạp (`5/5 mẫu`).
+- **Tự cập nhật thông tin cá nhân**: Cho phép chỉnh sửa Họ và tên, Số điện thoại với cơ chế tự động đồng bộ 2 chiều giữa Core User IAM và Face AI Employee. Khóa các trường nhạy cảm như Email và Mã nhân viên để đảm bảo toàn vẹn dữ liệu.
+- **Tự đổi mật khẩu bảo mật (Self-service Password Change)**:
+  - Xác thực mật khẩu cũ an toàn.
+  - Kiểm tra độ dài mật khẩu mới (tối thiểu 6 ký tự) và so khớp mật khẩu xác nhận.
+  - Hỗ trợ nút bật/tắt ẩn hiện mật khẩu và mã hóa một chiều bằng thuật toán `bcrypt`.
+
+### 4.9. Phân Quyền Đa Lớp Chuẩn Doanh Nghiệp Zero-Trust (RBAC & ABAC Data Scoping)
+- **Mô hình bảo mật 3 lớp (Defense-in-Depth Authorization)**:
+  - **Lớp 1 (Gateway / Core IAM)**: Kiểm tra chữ ký số JWT, thời hạn Token (Expiration), và trạng thái tài khoản kích hoạt.
+  - **Lớp 2 (Hạt nhân Atomic RBAC)**: Quản lý quyền theo 14 mã quyền nguyên tử (`RequirePermission(...)`, `require_permissions(...)`). Tự động trích xuất các quyền từ các vai trò gán vào User.
+  - **Lớp 3 (Phân vùng dữ liệu ABAC Row-Level Security)**:
+    - `Superadmin` và `HR Manager`: Toàn quyền tra cứu hồ sơ nhân sự trên toàn hệ thống.
+    - `Trưởng Phòng (Department Manager)`: Hệ thống tự động khóa phạm vi truy vấn `department_id == current_user.department_id`, **ngăn chặn tuyệt đối việc xem dữ liệu nhân viên thuộc phòng ban khác**.
+- **Ma trận chống leo thang đặc quyền (Anti-Privilege Escalation)**:
+  - Người dùng không có quyền quản trị tối cao không thể tạo hoặc chỉnh sửa Role chứa các quyền vượt quá quyền hạn của chính họ.
+  - Ngăn chặn người dùng cấp dưới tự ý gán vai trò `superadmin` cho tài khoản khác.
+  - Khóa bất biến vai trò hệ thống mặc định (`superadmin` không thể bị sửa hoặc xóa).
+  - Chống người dùng tự xóa tài khoản của chính mình và chống tài khoản cấp dưới xóa tài khoản Superadmin.
+
+### 4.10. Tiện Ích Giao Diện Nút Cuộn Lên Đầu Trang Thông Minh (Smart Up-to-Top Button)
+- **Thiết kế Glassmorphism & Neon Glow**: Nút nổi tròn bo góc mềm mại (`fixed bottom-7 right-7 z-50`) với viền dạ quang Indigo phản chiếu trên nền tối.
+- **Vòng tròn SVG đo lường tiến độ cuộn trang (Scroll Progress Meter)**: Đo lường chính xác phần trăm trang đã cuộn và hiển thị vòng cung sáng quanh icon mũi tên.
+- **Cơ chế ẩn/hiện thông minh & Vi tương tác (Micro-animations)**:
+  - Tự động ẩn khi ở đầu trang và chỉ hiển thị khi cuộn xuống quá `240px`.
+  - Hiển thị Tooltip Badge báo tiến độ `% • Lên đầu trang` khi rê chuột.
+  - Hiệu ứng cuộn mượt mà (`smooth scroll`) đưa người dùng về đầu trang ngay lập tức khi click.
 
 ---
 

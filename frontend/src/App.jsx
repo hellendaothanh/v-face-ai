@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar, { NAV_TABS } from './components/Sidebar';
 import Header from './components/Header';
 import RealtimeDashboard from './components/RealtimeDashboard';
@@ -10,6 +10,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SystemHealth from './components/SystemHealth';
 import HelpdeskManager from './components/HelpdeskManager';
 import UserProfileManager from './components/UserProfileManager';
+import ScrollToTop from './components/ScrollToTop';
 import Login from './components/Login';
 import api from './services/api';
 import { useI18n } from './i18n/I18nContext';
@@ -32,6 +33,7 @@ function App() {
   const [isApiConnected, setIsApiConnected] = useState(null); // null = checking, true = online, false = offline
   const [apiError, setApiError] = useState('');
   const [cameraStatus, setCameraStatus] = useState(null);
+  const mainContentRef = useRef(null);
 
   // Fetch camera diagnostics and check backend API health
   const fetchCameraStatus = useCallback(async () => {
@@ -152,7 +154,7 @@ function App() {
           onRefreshCamera={fetchCameraStatus}
         />
 
-        <main className="flex-1 p-8 pb-16 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main ref={mainContentRef} className="flex-1 p-8 pb-16 overflow-y-auto max-w-7xl w-full mx-auto">
           {currentTab === NAV_TABS.DASHBOARD && (
             <RealtimeDashboard
               isWsConnected={isWsConnected}
@@ -206,6 +208,9 @@ function App() {
           )}
         </main>
       </div>
+
+      {/* Floating Back to Top Action Button */}
+      <ScrollToTop targetRef={mainContentRef} />
     </div>
   );
 }

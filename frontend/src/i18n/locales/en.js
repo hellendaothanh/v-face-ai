@@ -198,6 +198,7 @@ const en = {
   header_analytics_sub: 'Visual insights on punctuality trends, hourly arrival density, and departmental compliance',
   header_health_title: 'System & Microservices Health Diagnostics',
   header_health_sub: 'Live endpoint polling, latency measurements, and direct Swagger API documentation access',
+  btn_scroll_to_top: 'Back to top',
 
   // Camera & Stream Controls
   turn_on_camera: 'Turn On Camera',
