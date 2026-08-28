@@ -197,6 +197,7 @@ class E2ETestRunner:
         self.assert_true(user_res.status_code in [200, 201], f"Create Core User IAM Account (phuchau_{unique_id})", user_res.text)
         user_data = user_res.json().get("data", user_res.json())
         self.test_user_id = user_data.get("id")
+        self.test_username = f"phuchau_{unique_id}"
 
         # 3. Update Employee Profile
         update_payload = {
@@ -321,6 +322,50 @@ class E2ETestRunner:
             self.assert_true(bool(me_data.get("username")), f"Authenticated User Profile verified: {me_data.get('username')}")
 
     # ------------------------------------------------------------------------
+    # Module 9: My Account Profile Update & Password Change Self-Service
+    # ------------------------------------------------------------------------
+    def test_my_account_profile_and_password(self):
+        print(f"\n{INFO_ICON}--- Module 9: My Account Profile Update & Password Change ---")
+        
+        # 1. Update own profile
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        profile_res = requests.put(
+            f"{CORE_USER_URL}/users/{self.test_user_id}/profile",
+            json={"full_name": "Phuc Hau Updated", "phone_number": "0912999888"},
+            headers=headers
+        )
+        self.assert_true(profile_res.status_code == 200, "Update Personal Profile (PUT /users/{id}/profile)", f"{profile_res.status_code} {profile_res.text}")
+
+        # 2. Verify Profile was updated via GET /auth/me
+        me_res = requests.get(f"{CORE_USER_URL}/auth/me", headers=headers)
+        self.assert_true(me_res.status_code == 200, "Verify Updated Profile (GET /auth/me)")
+
+        # 3. Test Change Password
+        # Login as the test user created in module 4
+        test_user_login = requests.post(
+            f"{CORE_USER_URL}/auth/login",
+            json={"username": self.test_username, "password": "Password123!"}
+        )
+        self.assert_true(test_user_login.status_code == 200, "Test User Login with initial password")
+        test_user_token = test_user_login.json().get("access_token")
+        test_user_headers = {"Authorization": f"Bearer {test_user_token}"}
+
+        # Change Password to NewPassword456!
+        change_pwd_res = requests.post(
+            f"{CORE_USER_URL}/auth/change-password",
+            json={"old_password": "Password123!", "new_password": "NewPassword456!"},
+            headers=test_user_headers
+        )
+        self.assert_true(change_pwd_res.status_code == 200, "Change Password (POST /auth/change-password)", f"{change_pwd_res.status_code} {change_pwd_res.text}")
+
+        # Re-login with New Password
+        relogin_res = requests.post(
+            f"{CORE_USER_URL}/auth/login",
+            json={"username": self.test_username, "password": "NewPassword456!"}
+        )
+        self.assert_true(relogin_res.status_code == 200, "Re-login verified with New Password")
+
+    # ------------------------------------------------------------------------
     # Teardown / Cleanup
     # ------------------------------------------------------------------------
     def cleanup(self):
@@ -368,6 +413,7 @@ class E2ETestRunner:
             self.test_face_biometrics_registration()
             self.test_face_verification_and_checkin()
             self.test_face_id_login()
+            self.test_my_account_profile_and_password()
             self.test_helpdesk()
         finally:
             self.cleanup()

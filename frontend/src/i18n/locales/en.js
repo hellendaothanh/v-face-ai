@@ -578,6 +578,27 @@ const en = {
   access_denied_title: '403 • Restricted Access',
   access_denied_desc: 'Your account does not have sufficient permissions to access this module. Please contact your System Administrator to request role authorization.',
   btn_back_to_dashboard: 'Back to Dashboard',
+
+  // My Account & Profile Management Keys
+  nav_my_account: 'My Account',
+  nav_my_account_sub: 'Personal Profile & Password Security',
+  header_my_account_title: 'Account & Personal Profile',
+  header_my_account_sub: 'Manage enterprise identity, contact information, and security credentials',
+  personal_info_title: 'Personal Information',
+  personal_info_sub: 'Update display name and contact phone number',
+  btn_save_profile: 'Save Profile Changes',
+  profile_save_success: 'Personal profile updated successfully!',
+  change_password_title: 'Security & Password',
+  change_password_sub: 'Protect your account with a strong and secure password',
+  current_password: 'Current Password',
+  new_password: 'New Password (Min 6 characters)',
+  confirm_new_password: 'Confirm New Password',
+  btn_change_password: 'Update Password',
+  updating_password: 'Updating password...',
+  password_change_success: 'Security password changed successfully!',
+  pwd_too_short: 'New password must be at least 6 characters long.',
+  pwd_mismatch: 'Confirm password does not match new password.',
+  pwd_same_as_old: 'New password cannot be identical to current password.',
 };
 
 export default en;

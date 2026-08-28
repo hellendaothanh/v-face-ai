@@ -578,6 +578,27 @@ const vi = {
   access_denied_title: '403 • Truy Cập Bị Giới Hạn',
   access_denied_desc: 'Tài khoản của bạn không có đủ quyền hạn để truy cập phân hệ này. Vui lòng liên hệ Quản trị viên hệ thống (Admin) để được phân quyền tương ứng.',
   btn_back_to_dashboard: 'Quay về Bàn làm việc (Dashboard)',
+
+  // My Account & Profile Management Keys
+  nav_my_account: 'Tài Khoản Của Tôi',
+  nav_my_account_sub: 'Hồ sơ cá nhân & Đổi mật khẩu',
+  header_my_account_title: 'Tài Khoản & Hồ Sơ Cá Nhân',
+  header_my_account_sub: 'Quản lý thông tin định danh doanh nghiệp và đổi mật khẩu bảo mật',
+  personal_info_title: 'Thông Tin Cá Nhân',
+  personal_info_sub: 'Cập nhật họ tên hiển thị và số điện thoại liên hệ',
+  btn_save_profile: 'Lưu Thay Đổi Hồ Sơ',
+  profile_save_success: 'Cập nhật thông tin cá nhân thành công!',
+  change_password_title: 'Bảo Mật & Đổi Mật Khẩu',
+  change_password_sub: 'Bảo vệ tài khoản bằng mật khẩu có độ phức tạp cao',
+  current_password: 'Mật khẩu hiện tại',
+  new_password: 'Mật khẩu mới (Tối thiểu 6 ký tự)',
+  confirm_new_password: 'Xác nhận mật khẩu mới',
+  btn_change_password: 'Cập Nhật Mật Khẩu',
+  updating_password: 'Đang cập nhật mật khẩu...',
+  password_change_success: 'Đổi mật khẩu bảo mật thành công!',
+  pwd_too_short: 'Mật khẩu mới phải có tối thiểu 6 ký tự.',
+  pwd_mismatch: 'Mật khẩu xác nhận không khớp với mật khẩu mới.',
+  pwd_same_as_old: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
 };
 
 export default vi;

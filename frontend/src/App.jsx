@@ -9,6 +9,7 @@ import DeviceManagement from './components/DeviceManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SystemHealth from './components/SystemHealth';
 import HelpdeskManager from './components/HelpdeskManager';
+import UserProfileManager from './components/UserProfileManager';
 import Login from './components/Login';
 import api from './services/api';
 import { useI18n } from './i18n/I18nContext';
@@ -60,6 +61,11 @@ function App() {
         return {
           title: t('header_dashboard_title'),
           subtitle: t('header_dashboard_sub'),
+        };
+      case NAV_TABS.MY_ACCOUNT:
+        return {
+          title: t('header_my_account_title') || 'Tài Khoản & Hồ Sơ Cá Nhân',
+          subtitle: t('header_my_account_sub') || 'Quản lý thông tin định danh doanh nghiệp và đổi mật khẩu bảo mật',
         };
       case NAV_TABS.HR_HUB:
       case 'EMPLOYEES':
@@ -158,6 +164,8 @@ function App() {
               onNavigateToEmployees={() => setCurrentTab(NAV_TABS.HR_HUB)}
             />
           )}
+
+          {currentTab === NAV_TABS.MY_ACCOUNT && <UserProfileManager />}
 
           {currentTab === NAV_TABS.HELPDESK && <HelpdeskManager />}
 

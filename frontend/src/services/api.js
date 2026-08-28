@@ -146,8 +146,8 @@ export const api = {
 
   // Auth & IAM (Core User Service)
   login: (username, password) => coreUserClient.post('/auth/login', { username, password }),
-  getMe: () => coreUserClient.get('/auth/me'),
   changePassword: (data) => coreUserClient.post('/auth/change-password', data),
+  updateMyProfile: (userId, data) => coreUserClient.put(`/users/${userId}/profile`, data),
 
   // Users & Profiles
   getCoreUsers: (params = {}) => coreUserClient.get('/users', { params }),

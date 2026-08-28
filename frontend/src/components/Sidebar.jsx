@@ -19,13 +19,15 @@ import {
   LogOut,
   LifeBuoy,
   BookOpen,
-  Headphones
+  Headphones,
+  UserCog,
 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
 
 export const NAV_TABS = {
   DASHBOARD: 'DASHBOARD',
+  MY_ACCOUNT: 'MY_ACCOUNT',
   HR_HUB: 'HR_HUB',
   EMPLOYEES: 'HR_HUB',
   CORE_USER: 'HR_HUB',
@@ -49,6 +51,15 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: Activity,
       badge: isWsConnected ? 'LIVE' : 'OFFLINE',
       badgeColor: isWsConnected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+      allowed: true,
+    },
+    {
+      id: NAV_TABS.MY_ACCOUNT,
+      label: t('nav_my_account') || 'Tài Khoản Của Tôi',
+      subLabel: t('nav_my_account_sub') || 'Hồ sơ cá nhân & Đổi mật khẩu',
+      icon: UserCog,
+      badge: 'ME',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
       allowed: true,
     },
     {
