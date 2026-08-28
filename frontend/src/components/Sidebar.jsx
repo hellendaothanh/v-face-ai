@@ -26,6 +26,7 @@ export const NAV_TABS = {
   ATTENDANCE: 'ATTENDANCE',
   DEVICES: 'DEVICES',
   ANALYTICS: 'ANALYTICS',
+  HEALTH: 'HEALTH',
 };
 
 const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cameraStatus }) => {
@@ -73,6 +74,14 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
       icon: TrendingUp,
       badge: 'BI',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    },
+    {
+      id: NAV_TABS.HEALTH,
+      label: t('nav_health'),
+      subLabel: t('nav_health_sub'),
+      icon: Server,
+      badge: 'API',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     },
   ];
 

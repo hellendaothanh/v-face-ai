@@ -57,6 +57,8 @@ const vi = {
   nav_devices_sub: 'Camera RTSP & Đa luồng',
   nav_analytics: 'Phân tích & Thống kê',
   nav_analytics_sub: 'Biểu đồ xu hướng & BI Charts',
+  nav_health: 'Kiểm tra Tình trạng API',
+  nav_health_sub: 'Trạng thái Microservices & Độ trễ',
 
   // Header Titles
   header_dashboard_title: 'Dashboard Giám Sát Realtime',
@@ -71,6 +73,8 @@ const vi = {
   header_devices_sub: 'Cấu hình đa luồng RTSP / Webcam, bật/tắt thiết bị thời gian thực và phân quyền Cổng Vào/Ra',
   header_analytics_title: 'Dashboard Phân Tích & Báo Cáo Chuyên Sâu (HRM BI)',
   header_analytics_sub: 'Biểu đồ trực quan xu hướng đúng giờ, mật độ check-in theo khung giờ và thống kê đi muộn theo phòng ban',
+  header_health_title: 'Kiểm Tra Tình Trạng API & Hệ Thống Microservices',
+  header_health_sub: 'Giám sát trực tiếp trạng thái, độ trễ và Swagger Docs của các Microservices',
 
   // Camera & Stream Controls
   turn_on_camera: 'Bật Camera',

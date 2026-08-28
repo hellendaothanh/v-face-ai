@@ -7,6 +7,7 @@ import AttendanceHistory from './components/AttendanceHistory';
 import RequestManagement from './components/RequestManagement';
 import DeviceManagement from './components/DeviceManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import SystemHealth from './components/SystemHealth';
 import api from './services/api';
 import { useI18n } from './i18n/I18nContext';
 
@@ -72,6 +73,11 @@ function App() {
           title: t('header_analytics_title'),
           subtitle: t('header_analytics_sub'),
         };
+      case NAV_TABS.HEALTH:
+        return {
+          title: t('header_health_title') || 'Kiểm Tra Tình Trạng API & Hệ Thống',
+          subtitle: t('header_health_sub') || 'Giám sát trực tiếp trạng thái, độ trễ và Swagger Docs của các Microservices',
+        };
       default:
         return { title: 'V-Face System', subtitle: 'AI Attendance & HRM System' };
     }
@@ -123,6 +129,8 @@ function App() {
           {currentTab === NAV_TABS.DEVICES && <DeviceManagement />}
 
           {currentTab === NAV_TABS.ANALYTICS && <AnalyticsDashboard />}
+
+          {currentTab === NAV_TABS.HEALTH && <SystemHealth />}
         </main>
       </div>
     </div>

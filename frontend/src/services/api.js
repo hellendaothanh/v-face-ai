@@ -74,6 +74,10 @@ export const api = {
   captureLiveSnapshot: () => apiClient.post('/camera/snapshot'),
   registerFaceFromLiveCamera: (employeeId) =>
     apiClient.post(`/camera/register-face/${employeeId}`),
+
+  // API Health & Diagnostics APIs
+  getBackendHealth: () => axios.get('http://localhost:8000/health', { timeout: 5000 }).then(res => res.data),
+  getCoreUserHealth: () => axios.get('http://localhost:8001/health', { timeout: 5000 }).then(res => res.data),
 };
 
 export default api;
