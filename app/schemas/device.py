@@ -28,8 +28,8 @@ class DeviceUpdate(BaseModel):
 
 class DeviceResponse(DeviceBase):
     id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     is_connected: Optional[bool] = Field(default=False, description="Tình trạng kết nối luồng camera hiện tại")
     fps: Optional[float] = Field(default=0.0, description="Tốc độ khung hình xử lý hiện tại")
     processed_count: Optional[int] = Field(default=0, description="Số lượng lượt nhận diện thành công của thiết bị")

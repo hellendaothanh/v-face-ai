@@ -21,8 +21,12 @@ async def list_devices(
     """
     Lấy danh sách tất cả các thiết bị Camera trong hệ thống kèm trạng thái kết nối thời gian thực.
     """
-    res = await db.execute(select(Device).order_by(Device.created_at.asc()))
-    devices = res.scalars().all()
+    try:
+        res = await db.execute(select(Device).order_by(Device.created_at.asc()))
+        devices = res.scalars().all()
+    except Exception as e:
+        logger.error(f"Error querying devices from database: {e}")
+        devices = []
 
     telemetry_map = camera_manager.get_all_statuses()
 

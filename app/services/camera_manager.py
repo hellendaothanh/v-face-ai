@@ -77,20 +77,20 @@ class DeviceWorker:
 
     def get_status(self) -> dict:
         """Returns live telemetry for this camera."""
-        reader_stat = self.stream_reader.get_status()
+        reader_stat = self.stream_reader.get_status() if self.stream_reader and hasattr(self.stream_reader, "get_status") else {}
         return {
             "device_id": str(self.device_id),
             "device_name": self.device_name,
             "rtsp_url": self.rtsp_url,
             "location": self.location,
-            "purpose": self.purpose.value,
+            "purpose": self.purpose.value if hasattr(self.purpose, "value") else str(self.purpose),
             "is_active": self.is_active,
             "is_connected": reader_stat.get("is_connected", False),
             "fps": reader_stat.get("fps", 0.0),
-            "processed_frames": self.processor.processed_frames,
-            "successful_checkins": self.processor.successful_checkins_count,
-            "detected_faces": self.processor.detected_faces_count,
-            "stranger_alerts": self.processor.stranger_alerts_count,
+            "processed_frames": getattr(self.processor, "processed_frames", 0),
+            "successful_checkins": getattr(self.processor, "successful_checkins_count", 0),
+            "detected_faces": getattr(self.processor, "detected_faces_count", 0),
+            "stranger_alerts": getattr(self.processor, "stranger_alerts_count", 0),
         }
 
 
@@ -214,6 +214,10 @@ class CameraManager:
             if worker:
                 return worker.get_status()
         return None
+
+    def get_device_status(self, device_id: uuid.UUID) -> Optional[dict]:
+        """Alias for get_device_telemetry."""
+        return self.get_device_telemetry(device_id)
 
     def get_all_statuses(self) -> Dict[str, dict]:
         """Returns telemetry dictionary for all registered workers."""

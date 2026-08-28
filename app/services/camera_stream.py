@@ -182,6 +182,20 @@ class CameraStreamReader:
 
         self._release_cap()
 
+    def get_status(self) -> dict:
+        """
+        Returns runtime status and telemetry of the camera stream reader.
+        """
+        return {
+            "device_id": self.device_id,
+            "source_type": self.source_type,
+            "is_running": self._is_running,
+            "is_connected": self.is_connected,
+            "fps": self.fps,
+            "total_frames_read": self.total_frames_read,
+            "last_frame_time": self._last_frame_time,
+        }
+
     def get_latest_frame(self) -> Tuple[bool, Optional[np.ndarray], float]:
         """
         Retrieves the latest available frame without blocking.

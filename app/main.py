@@ -73,7 +73,13 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://localhost:8001",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -84,6 +90,7 @@ app.add_middleware(
 async def vface_exception_handler(request: Request, exc: VFaceException):
     return JSONResponse(
         status_code=exc.status_code,
+        headers={"Access-Control-Allow-Origin": "*"},
         content={
             "success": False,
             "message": exc.detail,
@@ -97,10 +104,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled Exception on {request.method} {request.url}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        headers={"Access-Control-Allow-Origin": "*"},
         content={
             "success": False,
-            "message": str(exc),
-            "data": None
+            "message": f"Đã xảy ra lỗi máy chủ nội bộ: {str(exc)}",
+            "data": str(exc) if settings.DEBUG else None
         }
     )
 

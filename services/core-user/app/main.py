@@ -41,7 +41,13 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://localhost:8001",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +59,7 @@ app.add_middleware(
 async def core_user_exception_handler(request: Request, exc: CoreUserException):
     return JSONResponse(
         status_code=exc.status_code,
+        headers={"Access-Control-Allow-Origin": "*"},
         content={
             "success": False,
             "message": exc.detail,
