@@ -76,7 +76,8 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
     },
   ];
 
-  const sourceName = cameraStatus?.camera?.device_id || (cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : 'Camera máy tính');
+  const defaultCamName = cameraStatus?.camera?.source_type === 'RTSP' ? 'Tapo C200' : t('switch_to_webcam');
+  const sourceName = cameraStatus?.camera?.device_id || defaultCamName;
   const isCamRunning = !!cameraStatus?.is_running;
   const isCamConnected = !!cameraStatus?.camera?.is_connected;
 

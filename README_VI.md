@@ -138,6 +138,34 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 
 ---
 
-## 6. 📄 Bản Quyền & Đóng Góp
+## 6. 🧪 Kiểm Thử Tự Động (Playwright E2E Testing)
 
-Phát triển với ❤️ vì mục tiêu tự động hóa và quản trị thông minh cho doanh nghiệp. Sử dụng các công nghệ mã nguồn mở [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/) và [React](https://react.dev/).
+Dự án tích hợp bộ kiểm thử tự động toàn diện bằng Playwright để kiểm soát chất lượng và tránh lỗi logic trước khi deploy:
+- **Kiểm thử Luồng Giao Diện (Navigation & CRUD)**: Đảm bảo chuyển đổi mượt mà qua các Tab mà không phát sinh lỗi JavaScript (`ReferenceError`, `TypeError`).
+- **Kiểm tra Tính Toàn Vẹn Ngôn Ngữ (i18n Integrity)**: Đảm bảo khi chọn Tiếng Anh thì không bị lọt bất kỳ chuỗi Tiếng Việt nào.
+- **Kiểm toán Bảo Mật & Rò rỉ Thông tin (Security & Secret Leak Audit)**: Quét mã nguồn và file cấu hình để đảm bảo không hardcode mật khẩu, link RTSP riêng tư hay API keys lên Git.
+
+```powershell
+# Chạy toàn bộ test tự động
+.\service.ps1 test
+
+# Hoặc chạy trên Linux/macOS
+./service.sh test
+
+# Chạy giao diện tương tác trực quan (Interactive Mode)
+cd frontend
+npm run test:e2e:ui
+```
+
+---
+
+## 7. 🔒 Bảo Mật & Kiểm Soát Mã Nguồn Git
+
+- **File Môi Trường**: Tất cả file `.env`, `.env.*`, `secrets.json`, chứng chỉ SSL (`*.pem`, `*.key`, `*.cert`) và logs/ảnh upload đều được cấu hình trong `.gitignore` để ngăn chặn rò rỉ lên GitHub.
+- **Dữ liệu Mẫu**: Chỉ sử dụng `.env.example` và địa chỉ URL giả định (`rtsp://admin:password@192.168.1.100:554/stream1`) cho các ví dụ cấu hình.
+
+---
+
+## 8. 📄 Bản Quyền & Đóng Góp
+
+Phát triển với ❤️ vì mục tiêu tự động hóa và quản trị thông minh cho doanh nghiệp. Sử dụng các công nghệ mã nguồn mở [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [Playwright](https://playwright.dev/) và [React](https://react.dev/).

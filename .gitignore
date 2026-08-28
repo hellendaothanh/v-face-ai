@@ -1,21 +1,80 @@
+# Environment & Secrets (Never commit credentials, API keys, or passwords)
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.secrets
+secrets.json
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+env/
 venv/
-.env
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Service manager temporary files
+# Service manager temporary files & logs
 .pids/
 logs/
+*.log
 uploads/
+scratch/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
-# Node
+# Node & Frontend
 node_modules/
-dist/
-frontend/dist/
 frontend/node_modules/
+frontend/dist/
+dist/
+.npm
+.eslintcache
+
+# Database & Vectors
+*.db
+*.sqlite
+*.sqlite3
+postgres_data/
 
 # IDE / OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

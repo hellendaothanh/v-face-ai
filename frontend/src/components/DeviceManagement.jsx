@@ -184,14 +184,14 @@ const DeviceManagement = () => {
     },
     {
       name: 'Tapo C200 (IP RTSP)',
-      url: 'rtsp://hautph:H%40utph1983%21%40%23@192.168.1.8:554/stream1',
+      url: 'rtsp://admin:password@192.168.1.100:554/stream1',
       location: 'Main Lobby',
       purpose: 'BOTH',
     },
     {
       name: 'Hikvision / Dahua (Exit Gate B)',
-      url: 'rtsp://admin:admin123@192.168.1.101:554/stream1',
-      location: 'Customs / Exit B',
+      url: 'rtsp://admin:password@192.168.1.101:554/stream1',
+      location: 'Exit Gate B',
       purpose: 'CHECK_OUT',
     },
   ];

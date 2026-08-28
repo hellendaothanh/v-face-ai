@@ -7,7 +7,7 @@
 [CmdletBinding()]
 param (
     [Parameter(Position = 0)]
-    [ValidateSet("start", "stop", "restart", "status", "logs", "help")]
+    [ValidateSet("start", "stop", "restart", "status", "test", "logs", "help")]
     [string]$Command = "help",
 
     [Parameter(Position = 1)]
@@ -570,8 +570,17 @@ function Show-Usage {
     Write-Host "  .\service.ps1 start frontend         # Start Frontend only (Port 5173)"
     Write-Host "  .\service.ps1 stop frontend          # Stop Frontend only"
     Write-Host "  .\service.ps1 status                 # Check status of all ecosystem services"
+    Write-Host "  .\service.ps1 test                   # Run automated Playwright E2E tests"
     Write-Host "  .\service.ps1 logs core-user         # Stream Core User service logs"
     Write-Host "  .\service.ps1 logs backend           # Stream Face AI Backend logs"
+}
+
+function Run-E2ETests {
+    Write-Host "`n🚀 Running Playwright E2E Tests for V-Face Ecosystem..." -ForegroundColor Cyan
+    $frontendDir = Join-Path $PROJECT_ROOT "frontend"
+    Push-Location $frontendDir
+    npx playwright test
+    Pop-Location
 }
 
 switch ($Command) {
@@ -604,6 +613,9 @@ switch ($Command) {
     }
     "status" {
         Get-ServiceStatus
+    }
+    "test" {
+        Run-E2ETests
     }
     "logs" {
         Show-Logs $Target

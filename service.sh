@@ -508,24 +508,27 @@ case "$COMMAND" in
                 ;;
         esac
         ;;
-    status)
-        status
+    test)
+        echo -e "${CYAN}🚀 Running Playwright E2E Tests for V-Face Ecosystem...${NC}"
+        cd "${PROJECT_ROOT}/frontend" || exit 1
+        npx playwright test
         ;;
     logs)
         view_logs "$TARGET"
         ;;
     *)
-        echo -e "${BOLD}Usage: $0 {start|stop|restart|status|logs} [all|core-user|backend|frontend|db]${NC}"
+        echo -e "${BOLD}Usage: $0 {start|stop|restart|status|test|logs} [all|core-user|backend|frontend|db]${NC}"
         echo ""
         echo "Examples:"
         echo "  $0 start                  # Start DB, Core User, Face AI & Frontend"
         echo "  $0 stop                   # Stop all services"
         echo "  $0 restart                # Restart all services"
+        echo "  $0 test                   # Run Playwright E2E Tests"
         echo "  $0 start core-user        # Start Core User Service only (Port 8001)"
         echo "  $0 stop core-user         # Stop Core User Service only"
         echo "  $0 start backend          # Start Face AI Backend only (Port 8000)"
         echo "  $0 stop backend           # Stop Face AI Backend only"
-        echo "  $0 start frontend         # Start Frontend only (Port 5173)"
+        echo "  $0 start frontend         # Start Frontend only (Port 3000)"
         echo "  $0 stop frontend          # Stop Frontend only"
         echo "  $0 status                 # Check status of all services"
         echo "  $0 logs core-user         # Stream Core User logs"

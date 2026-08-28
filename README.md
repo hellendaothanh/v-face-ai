@@ -139,7 +139,35 @@ V-Face provides unified service management scripts for both **Windows PowerShell
 
 ---
 
-## 6. ⚙️ Environment Configuration
+## 6. 🧪 Automated E2E Testing (Playwright)
+
+The project includes an enterprise-grade automated testing suite using Playwright:
+- **UI & Flow Verification (`e2e/dashboard.spec.js`)**: Tests seamless tab switching, live dashboards, and ensures zero runtime errors (`ReferenceError`, `TypeError`).
+- **English Localization Integrity (`e2e/i18n.spec.js`)**: Guarantees zero Vietnamese strings appear in English mode.
+- **Security & Secret Leak Audit (`e2e/security.spec.js`)**: Verifies `.gitignore` rules and ensures credentials/private RTSP URLs are never committed to Git.
+
+```powershell
+# Run all automated tests on Windows
+.\service.ps1 test
+
+# Or on Linux / macOS
+./service.sh test
+
+# Interactive UI Mode
+cd frontend
+npm run test:e2e:ui
+```
+
+---
+
+## 7. 🔒 Security & Git Control
+
+- **Environment Isolation**: `.env`, `.env.*`, `secrets.json`, private keys (`*.pem`, `*.key`), database files, and camera snapshots/logs are fully git-ignored.
+- **Credential Hygiene**: Public templates (`.env.example`) strictly use dummy placeholders.
+
+---
+
+## 8. ⚙️ Environment Configuration
 
 ### Root Face AI Service (`.env`)
 ```env
