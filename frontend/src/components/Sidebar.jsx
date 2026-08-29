@@ -5,7 +5,6 @@ import {
   Clock, 
   Camera, 
   ShieldCheck, 
-  Sparkles, 
   Radio, 
   Server, 
   Wifi, 
@@ -275,7 +274,7 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
 
         <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
           <span className="flex items-center space-x-1">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
             <span>AI ArcFace Core</span>
           </span>
           <span>v1.4.0</span>

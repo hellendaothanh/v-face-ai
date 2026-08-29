@@ -13,7 +13,6 @@ import {
   PieChart as PieIcon,
   CheckCircle2,
   Building2,
-  Zap,
   Activity,
   Layers
 } from 'lucide-react';

@@ -125,7 +125,7 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 
 ### 4.4. 1-Click Biometric Face ID Login (`app/` - Port 8000 & `services/core-user` - Port 8001)
 - **Multi-Mode Authentication**: Users can authenticate using traditional username/password or instant **1-Click Face ID**.
-- **Interactive Sci-Fi Biometric HUD**: Live webcam stream with animated neon oval target frame, radar scanner line, and automatic camera activation.
+- **Interactive Enterprise Biometric HUD**: Live webcam stream with animated oval alignment target frame, scanner indicator, and automatic camera activation.
 - **3-Layer Security Pipeline**:
   1. **Anti-Spoofing Liveness Detection (MiniFASNetV2 ONNX)**: Discards printed photos, screens, and masks ($<0.35$ confidence threshold).
   2. **512D ArcFace Extraction & Multi-Template pgvector Matching**: Retrieves the closest facial embedding from the 5 registered angles (`<=>` Cosine Distance).

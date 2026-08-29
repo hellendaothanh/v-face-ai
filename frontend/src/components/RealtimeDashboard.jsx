@@ -5,8 +5,6 @@ import {
   Clock, 
   Camera, 
   UserCheck, 
-  Cpu, 
-  Zap, 
   RefreshCw, 
   Radio, 
   ShieldAlert, 
@@ -23,7 +21,6 @@ import {
   UserX,
   ShieldX,
   ShieldCheck,
-  Sparkles,
   Maximize2,
   Minimize2,
   Columns,
@@ -591,7 +588,7 @@ const RealtimeDashboard = ({
                     <div className="flex items-center justify-end space-x-1.5">
                       {log.auto_learned && (
                         <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          <Sparkles className="w-2.5 h-2.5" />
+                          <RefreshCw className="w-2.5 h-2.5" />
                           <span>{t('auto_learned_badge')}</span>
                         </span>
                       )}

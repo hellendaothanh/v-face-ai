@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Sparkles,
+  Scan,
   Save,
   RefreshCw,
   Camera,
@@ -355,7 +355,7 @@ const UserProfileManager = () => {
             </div>
 
             <div className="flex items-center space-x-2 text-xs text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <Scan className="w-4 h-4 text-cyan-400" />
               <span>Face AI 512D:</span>
               <span className={`font-mono font-bold ${faceCount > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                 {faceCount > 0 ? `${faceCount}/5 mẫu đã nạp` : 'Chưa có mẫu'}

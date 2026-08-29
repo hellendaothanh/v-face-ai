@@ -13,8 +13,6 @@ import {
   AlertCircle,
   Camera,
   Upload,
-  Zap,
-  Sparkles,
   UserPlus,
   Trash2,
   Mail,
@@ -181,10 +179,10 @@ const UnifiedHRHub = () => {
     {
       id: 'up_smile',
       step: 5,
-      title: t('angle_5_title', 'Góc 5: Ngẩng Lên & Cười Tự Nhiên ✨'),
+      title: t('angle_5_title', 'Góc 5: Ngẩng Lên & Cười Tự Nhiên'),
       desc: t('angle_5_desc', 'Hơi ngẩng cằm lên và cười tươi tự nhiên để nhận diện biểu cảm'),
-      badge: t('angle_5_badge', 'Ngẩng & Cười ✨'),
-      instruction: t('angle_5_instruction', 'HƠI NGẨNG CẰM & CƯỜI TỰ NHIÊN ✨'),
+      badge: t('angle_5_badge', 'Ngẩng & Cười'),
+      instruction: t('angle_5_instruction', 'HƠI NGẨNG CẰM & CƯỜI TỰ NHIÊN'),
       guideType: 'up',
       icon: ArrowUp,
       themeColor: 'from-emerald-500 to-teal-500',
@@ -2123,7 +2121,7 @@ const UnifiedHRHub = () => {
                     regMode === 'backend_cam' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5 text-cyan-300" />
+                  <Camera className="w-3.5 h-3.5 text-cyan-300" />
                   <span>{t('capture_from_camera', 'Direct Camera (Backend)')}</span>
                 </button>
 
@@ -2230,8 +2228,7 @@ const UnifiedHRHub = () => {
                         <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
                           <div className="absolute top-14 flex items-center space-x-2 animate-bounce bg-emerald-950/85 px-4 py-2 rounded-2xl border-2 border-emerald-400 shadow-2xl">
                             <ArrowUp className="w-5 h-5 text-emerald-300" />
-                            <Sparkles className="w-4 h-4 text-amber-300" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_look_up_smile', 'NGẨNG LÊN & CƯỜI TƯƠI ✨')}</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_look_up_smile', 'NGẨNG LÊN & CƯỜI TỰ NHIÊN')}</span>
                           </div>
                           <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-emerald-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.4)]" />
                         </div>
@@ -2434,7 +2431,7 @@ const UnifiedHRHub = () => {
                   className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 disabled:opacity-50 flex items-center space-x-2"
                 >
                   {isUploadingFaces && <RefreshCw className="w-4 h-4 animate-spin" />}
-                  <Sparkles className="w-4 h-4" />
+                  <ShieldCheck className="w-4 h-4" />
                   <span>{t('save_5_vectors_btn', 'Trích Xuất & Lưu 5 Vector 512D')}</span>
                 </button>
               </div>

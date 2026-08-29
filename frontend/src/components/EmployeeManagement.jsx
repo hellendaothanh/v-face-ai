@@ -8,7 +8,6 @@ import {
   X, 
   AlertCircle, 
   RefreshCw,
-  Sparkles,
   Camera,
   Aperture,
   Video,
@@ -21,7 +20,6 @@ import {
   ArrowDown,
   ShieldCheck,
   RotateCcw,
-  Zap,
   Target,
   Compass
 } from 'lucide-react';
@@ -624,7 +622,7 @@ const EmployeeManagement = () => {
                 <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-indigo-300 flex items-center space-x-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
                       <span>{t('link_iam_user_title', 'Liên Kết Dữ Liệu Từ Core User & IAM')}</span>
                     </span>
                     <span className="text-[11px] text-slate-400 font-mono">
@@ -793,7 +791,7 @@ const EmployeeManagement = () => {
             {/* Modal Header */}
             <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-                <Sparkles className="w-6 h-6" />
+                <Camera className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center space-x-2">
@@ -821,7 +819,7 @@ const EmployeeManagement = () => {
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5 text-cyan-300" />
+                  <Camera className="w-3.5 h-3.5 text-cyan-300" />
                   <span>{t('capture_from_camera')}</span>
                 </button>
 
@@ -1103,7 +1101,7 @@ const EmployeeManagement = () => {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4" />
+                      <ShieldCheck className="w-4 h-4" />
                       <span>{t('save_and_extract_vectors')} ({readyPhotosCount}/5)</span>
                     </>
                   )}

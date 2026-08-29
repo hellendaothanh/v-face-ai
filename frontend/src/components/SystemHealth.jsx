@@ -5,13 +5,11 @@ import {
   CheckCircle2, 
   XCircle, 
   RefreshCw, 
-  Cpu, 
   Database, 
   Radio, 
   ShieldCheck, 
   Clock, 
   ExternalLink,
-  Zap,
   Layers
 } from 'lucide-react';
 import api from '../services/api';
@@ -215,7 +213,7 @@ const SystemHealth = () => {
             </h3>
           </div>
           <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-            <Cpu className="w-6 h-6" />
+            <Server className="w-6 h-6" />
           </div>
         </div>
 

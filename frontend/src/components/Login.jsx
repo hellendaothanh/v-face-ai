@@ -6,18 +6,18 @@ import {
   LogIn, 
   Eye, 
   EyeOff, 
-  Sparkles, 
-  Cpu, 
   Activity, 
   AlertCircle, 
   KeyRound, 
-  CheckCircle2,
-  XCircle,
-  ShieldAlert,
-  Scan,
-  Camera,
-  RefreshCw,
-  Zap
+  CheckCircle2, 
+  XCircle, 
+  ShieldAlert, 
+  Scan, 
+  Camera, 
+  RefreshCw, 
+  Info,
+  UserCheck,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -43,6 +43,25 @@ const Login = () => {
   // Common States
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'error', title = '', tip = '') => {
+    setToast({
+      id: Date.now(),
+      message,
+      type,
+      title: title || (type === 'error' ? (t('face_login_failed_title') || 'Thông báo lỗi') : (t('common_success') || 'Thành công')),
+      tip
+    });
+  }, [t]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -134,8 +153,11 @@ const Login = () => {
 
     try {
       await login(username.trim(), password);
+      showToast(t('login_success') || 'Đăng nhập thành công!', 'success', t('login_success_title') || 'Thành công');
     } catch (err) {
-      setErrorMsg(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.');
+      const msg = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.';
+      setErrorMsg(msg);
+      showToast(msg, 'error', t('login_failed') || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);
     }
@@ -150,7 +172,9 @@ const Login = () => {
 
     const video = videoRef.current;
     if (!video.videoWidth || !video.videoHeight) {
-      setErrorMsg('Camera đang khởi động, vui lòng bấm lại sau 1 giây.');
+      const msg = 'Camera đang khởi động, vui lòng bấm lại sau 1 giây.';
+      setErrorMsg(msg);
+      showToast(msg, 'error', 'Camera chưa sẵn sàng');
       return;
     }
 
@@ -176,7 +200,9 @@ const Login = () => {
       
       if (result && result.success) {
         setDetectedEmployee(result.employee);
-        setFaceStatus((t('face_login_success') || 'Đăng nhập thành công! Chào mừng') + ` ${result.employee?.full_name || ''}`);
+        const welcomeMsg = (t('face_login_success') || 'Đăng nhập thành công! Chào mừng') + ` ${result.employee?.full_name || ''}`;
+        setFaceStatus(welcomeMsg);
+        showToast(welcomeMsg, 'success', t('face_login_success_title') || 'Xác thực sinh trắc thành công!');
       }
     } catch (err) {
       console.error('Face login error:', err);
@@ -222,6 +248,7 @@ const Login = () => {
         code: code
       });
       setFaceStatus('');
+      showToast(localizedMsg, 'error', localizedTitle, localizedTip);
     } finally {
       setLoading(false);
     }
@@ -238,64 +265,39 @@ const Login = () => {
       {/* Hidden Snapshot Canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Full-Screen Center Failure Modal Dialog */}
-      {faceLoginError && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md glass-panel p-6 sm:p-8 rounded-3xl border border-rose-500/50 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 shadow-[0_0_50px_rgba(244,63,94,0.3)] space-y-5 animate-in zoom-in-95 duration-200">
-            {/* Header Icon */}
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-16 h-16 rounded-3xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center shadow-xl shadow-rose-500/30 animate-pulse">
-                <ShieldAlert className="w-8 h-8" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-white tracking-wide">
-                  {faceLoginError.title}
-                </h2>
-                <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  {faceLoginError.code || 'BIOMETRIC_MISMATCH'}
-                </span>
-              </div>
-            </div>
-
-            {/* Error Message Box */}
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-200 text-xs space-y-2">
-              <p className="font-semibold text-sm leading-relaxed text-center">
-                {faceLoginError.message}
-              </p>
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400 flex items-start space-x-2">
-                <span className="text-amber-400 flex-shrink-0">💡</span>
-                <span>{faceLoginError.tip}</span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFaceLoginError(null);
-                  setErrorMsg('');
-                }}
-                className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center space-x-2 border border-slate-700 shadow-md transition-all hover:scale-105 active:scale-95"
-              >
-                <RefreshCw className="w-4 h-4 text-cyan-400" />
-                <span>{t('face_login_retry') || 'Thử lại ngay'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFaceLoginError(null);
-                  setErrorMsg('');
-                  setActiveTab('password');
-                }}
-                className="py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95"
-              >
-                <KeyRound className="w-4 h-4 text-indigo-200" />
-                <span>{t('face_login_use_pwd') || 'Đăng nhập Mật khẩu'}</span>
-              </button>
-            </div>
+      {/* Floating Alert Toast Notification */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-[9999] max-w-md w-[calc(100%-3rem)] sm:w-auto p-4 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border-2 border-rose-500/80 text-white shadow-[0_10px_40px_rgba(244,63,94,0.4)] flex items-start space-x-3.5 transition-all duration-300">
+          <div className={`p-2.5 rounded-xl flex-shrink-0 ${
+            toast.type === 'error' 
+              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse' 
+              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+          }`}>
+            {toast.type === 'error' ? <ShieldAlert className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
           </div>
+          <div className="flex-1 min-w-0 pr-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold tracking-wide text-white">
+                {toast.title}
+              </h4>
+            </div>
+            <p className="text-xs text-rose-200 mt-0.5 leading-relaxed font-semibold">
+              {toast.message}
+            </p>
+            {toast.tip && (
+              <p className="text-[11px] text-slate-300 mt-1 leading-normal flex items-start space-x-1">
+                <Info className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                <span>{toast.tip}</span>
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -383,11 +385,22 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Error Message */}
+          {/* Prominent Form Error Banner */}
           {errorMsg && (
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start space-x-2.5">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
+            <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/60 text-rose-200 text-xs flex items-start space-x-3 shadow-xl shadow-rose-950/50 transition-all duration-300">
+              <ShieldAlert className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5 animate-pulse" />
+              <div className="space-y-1">
+                <div className="font-bold text-rose-300 text-xs uppercase tracking-wide">
+                  {faceLoginError?.title || t('face_login_failed_title') || 'Thông Báo Lỗi'}
+                </div>
+                <div className="leading-relaxed font-semibold text-rose-100">{errorMsg}</div>
+                {faceLoginError?.tip && (
+                  <div className="text-[11px] text-slate-300 pt-1 font-normal flex items-start space-x-1">
+                    <Info className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <span>{faceLoginError.tip}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -516,20 +529,23 @@ const Login = () => {
 
                     {/* Prominent Failure Modal Overlay on Error */}
                     {faceLoginError && (
-                      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md p-5 flex flex-col items-center justify-center text-center space-y-3 z-20 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="w-13 h-13 p-3 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-400 flex items-center justify-center shadow-xl shadow-rose-500/25 animate-bounce">
+                      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md p-5 flex flex-col items-center justify-center text-center space-y-3 z-20 transition-all duration-300">
+                        <div className="w-12 h-12 p-2.5 rounded-2xl bg-rose-500/20 border-2 border-rose-500/50 text-rose-400 flex items-center justify-center shadow-xl shadow-rose-500/30 animate-pulse">
                           <XCircle className="w-7 h-7" />
                         </div>
                         <div className="space-y-1 max-w-xs px-2">
-                          <h3 className="text-sm font-bold text-white tracking-wide">
+                          <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                             {faceLoginError.title}
                           </h3>
-                          <p className="text-xs text-rose-300 font-medium leading-relaxed">
+                          <p className="text-xs text-rose-200 font-semibold leading-relaxed">
                             {faceLoginError.message}
                           </p>
-                          <p className="text-[10px] text-slate-400 leading-tight pt-1">
-                            {faceLoginError.tip}
-                          </p>
+                          {faceLoginError.tip && (
+                            <p className="text-[11px] text-slate-300 leading-tight pt-1 flex items-center justify-center space-x-1">
+                              <Info className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                              <span>{faceLoginError.tip}</span>
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2 pt-1 w-full max-w-xs">
                           <button
@@ -579,24 +595,27 @@ const Login = () => {
               {/* Status Message */}
               {faceStatus && (
                 <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs flex items-center justify-center space-x-2 animate-pulse">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <Activity className="w-4 h-4 text-cyan-400" />
                   <span>{faceStatus}</span>
                 </div>
               )}
 
               {/* Persistent Failure Alert Box Under Viewport */}
               {faceLoginError && (
-                <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex flex-col space-y-2 text-left animate-in fade-in duration-200 shadow-lg shadow-rose-950/40">
+                <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/50 text-rose-300 text-xs flex flex-col space-y-2 text-left shadow-lg shadow-rose-950/40 transition-all duration-300">
                   <div className="flex items-center space-x-2 text-rose-400 font-bold">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 animate-pulse" />
                     <span>{faceLoginError.title}</span>
                   </div>
-                  <p className="text-xs text-rose-200 pl-6 leading-relaxed font-medium">
+                  <p className="text-xs text-rose-200 pl-6 leading-relaxed font-semibold">
                     {faceLoginError.message}
                   </p>
-                  <p className="text-[11px] text-slate-400 pl-6 leading-tight">
-                    💡 {faceLoginError.tip}
-                  </p>
+                  {faceLoginError.tip && (
+                    <p className="text-[11px] text-slate-300 pl-6 leading-tight font-normal flex items-center space-x-1">
+                      <Info className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                      <span>{faceLoginError.tip}</span>
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -654,7 +673,7 @@ const Login = () => {
                 className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 text-left transition-all group"
               >
                 <div className="font-bold text-[11px] text-cyan-300 flex items-center space-x-1">
-                  <Zap className="w-3 h-3 text-cyan-400" />
+                  <Scan className="w-3 h-3 text-cyan-400" />
                   <span>Face ID</span>
                 </div>
                 <div className="text-[10px] text-slate-500 font-mono">1-Click Login</div>

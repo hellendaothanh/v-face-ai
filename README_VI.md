@@ -125,7 +125,7 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 
 ### 4.4. Đăng Nhập Sinh Trắc Học Face ID 1-Chạm (`app/` - Port 8000 & `services/core-user` - Port 8001)
 - **Đăng nhập đa phương thức**: Cho phép người dùng chuyển đổi linh hoạt giữa Mật khẩu truyền thống và **Face ID AI 1-Chạm**.
-- **Giao diện HUD Sci-Fi tương tác cao**: Khung quét webcam trực tiếp với khung oval neon căn chỉnh khuôn mặt, hiệu ứng laser quét radar và kích hoạt camera mượt mà.
+- **Giao diện HUD Sinh trắc học Trực quan**: Khung quét webcam trực tiếp với khung oval căn chỉnh khuôn mặt, vạch quét quang học và kích hoạt camera mượt mà.
 - **Quy trình bảo mật 3 lớp**:
   1. **Chống giả mạo Anti-Spoofing Liveness (MiniFASNetV2 ONNX)**: Tự động loại bỏ ảnh in giấy, màn hình điện thoại và video tái tạo (ngưỡng tin cậy $<0.35$).
   2. **Trích xuất 512D ArcFace & So khớp đa mẫu pgvector**: Tìm kiếm vector có khoảng cách Cosine Distance (`<=>`) gần nhất trong 5 góc mặt đã đăng ký.

@@ -80,7 +80,6 @@ export const AuthProvider = ({ children }) => {
   }, [refreshProfile]);
 
   const login = async (username, password) => {
-    setIsLoading(true);
     try {
       const res = await api.login(username, password);
       const accessToken = res?.access_token || res?.data?.access_token;
@@ -105,13 +104,10 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Không nhận được access token từ máy chủ.');
     } catch (err) {
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const loginWithFace = async (imageBlob) => {
-    setIsLoading(true);
     try {
       const res = await api.faceLogin(imageBlob);
       const tokenData = res?.data?.tokens || res?.tokens;
@@ -145,8 +141,6 @@ export const AuthProvider = ({ children }) => {
       throw new Error(res?.message || 'Không nhận được access token từ hệ thống xác thực khuôn mặt.');
     } catch (err) {
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
