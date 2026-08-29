@@ -180,14 +180,17 @@ The **Unified HR Hub** centralizes workforce operations, 512D facial biometrics,
   - **3-Consecutive-Frame Counter**: Filters out transient movement artifacts and passing pedestrians.
   - **60-Second Cooldown Debounce**: Prevents siren alarm spamming and preserves WebSocket bandwidth.
 
-### 4.7. Header Quick Controls & Multi-Device Stream Switcher
-- **Quick Source Switcher**: Instant one-click toggle in the top navigation header between `[PC Webcam]` (Integrated Laptop Camera) and `[IP Cam]` (RTSP stream from Tapo C200, Hikvision, Dahua).
-- **Global Stream Power Control**: One-click `[Turn On Camera]` / `[Turn Off Camera]` master toggle without navigating away from the current view.
-- **Real-Time Backend Latency & Health Indicator**: Displays live API roundtrip ping (ms), WebSocket streaming status, and active camera source telemetry directly in the global header.
+### 4.7. Context-Aware Header Quick Controls
+- **Context-Aware Camera Controls**: The top navigation header automatically displays camera streaming controls (`[PC Webcam] / [IP Cam]` source switcher and `[Turn On / Off Camera]` toggle button) **exclusively on camera-monitoring workspaces** (Realtime Dashboard), while keeping the header streamlined and clean across administrative, report, payroll, and settings tabs.
+- **Global Identity & Language Controls**: Fast language switching (`[EN] / [VI]`), active API health indicator dot, user initials avatar, and one-click secure logout.
 
-### 4.8. My Account Self-Service & Secure Password Management
-- **Full-Screen Profile Workspace ("My Account")**: Dedicated left-sidebar navigation tab allowing all authenticated users to manage their personal profile and credentials.
+### 4.8. My Account Self-Service, Biometrics Hub & Password Management
+- **Full-Screen Profile Workspace ("My Account")**: Dedicated left-sidebar navigation tab allowing all authenticated users to manage their personal profile, credentials, and biometrics.
 - **Hero Identity Banner**: Features initials avatar, Username, Employee/User Code, Department & Position badges, RBAC role chips (`superadmin`, `admin`, `hr_manager`, etc.), and live Face AI biometric vector counters (`5/5 templates`).
+- **Self-Service Biometric Face AI Hub (Independent Verification & Enrollment)**:
+  - **Live Face Verification Modal**: Employees can independently verify their own facial biometrics in front of their webcam, testing match accuracy against pgvector with instant confidence % and cosine similarity metrics (`POST /api/v1/employees/{id}/verify-face`) without HR intervention.
+  - **Self-Service 5-Angle Face Enrollment**: Guided 5-angle capture (Frontal 0°, Tilt Up +15°, Tilt Down -15°, Turn Left -30°, and Turn Right +30°) allowing personnel to enroll or refresh their 512D facial templates anytime.
+  - **1-Click Profile Link**: Automatically links unassociated IAM accounts to Face AI biometric records.
 - **Profile Self-Service**: Full Name and Phone Number self-updates with automatic dual-sync between Core User IAM and Face AI Employee roster, while protecting immutable system fields (Email, User Code).
 - **Self-Service Password Change**:
   - Secure old password verification.

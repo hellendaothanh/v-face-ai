@@ -715,6 +715,21 @@ const vi = {
   btn_test_auto_match: 'Kiểm Tra Khớp Ca',
   toast_report_download_success: 'Khởi tạo và tải xuống báo cáo thành công!',
   toast_ott_dispatched: 'Đã bắn thông báo OTT mẫu thành công qua kênh {channel}!',
+  self_biometrics_title: 'Sinh Trắc Học & Tự Xác Thực Khuôn Mặt',
+  self_biometrics_sub: 'Quản lý 5 mẫu vector 512D và chủ động kiểm tra độ khớp nhận diện trước camera',
+  self_verify_modal_title: 'Tự Kiểm Tra Xác Thực Khuôn Mặt Trực Tiếp',
+  self_verify_modal_sub: 'Đứng trước camera máy tính để so khớp trực tiếp với 5 vector 512D đã nạp trong kho pgvector',
+  self_verify_btn: 'Tự Kiểm Tra Xác Thực',
+  self_register_face_btn: 'Tự Cập Nhật 5 Góc Mặt',
+  self_link_employee_btn: 'Tạo & Liên Kết Hồ Sơ Face AI',
+  self_link_employee_desc: 'Tài khoản của bạn chưa được liên kết với hồ sơ nhận diện Face AI. Bấm nút bên dưới để tạo hồ sơ ngay lập tức.',
+  self_biometric_ready_title: 'Hồ Sơ Sinh Trắc Học Đã Sẵn Sàng',
+  self_biometric_ready_desc: 'Đã nạp {count}/5 mẫu vector 512D vào kho dữ liệu pgvector. Bạn đã sẵn sàng để chấm công tự động và đăng nhập Face ID 1-chạm.',
+  self_biometric_not_ready_title: 'Chưa Nạp Đủ Mẫu Góc Mặt',
+  self_biometric_not_ready_desc: 'Hồ sơ chưa có đủ 5 góc mặt để AI nhận diện tối ưu. Hãy tự nạp 5 góc mặt bên dưới.',
+  snap_camera_now: 'Chụp Ảnh Ngay',
+  self_verify_success_title: '🎉 XÁC THỰC THÀNH CÔNG: Độ Tin Cậy {percent}%',
+  self_verify_fail_title: '❌ XÁC THỰC CHƯA KHỚP: Độ Tin Cậy {percent}%',
 };
 
 export default vi;

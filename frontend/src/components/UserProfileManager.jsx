@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   User,
   Shield,
@@ -21,10 +21,24 @@ import {
   ShieldCheck,
   Calendar,
   BadgeCheck,
+  CameraOff,
+  Upload,
+  UserCheck,
+  Sparkles,
+  Link,
+  ChevronRight,
 } from 'lucide-react';
 import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
+
+const ANGLES_CONFIG = [
+  { id: 'front', label: '1. Chính diện (0°)', desc: 'Nhìn thẳng vào camera, giữ khuôn mặt cân đối', badge: 'Chính diện 0°' },
+  { id: 'up', label: '2. Ngẩng lên (+15°)', desc: 'Ngẩng cằm lên nhẹ khoảng 15 độ', badge: 'Ngẩng +15°' },
+  { id: 'down', label: '3. Cúi xuống (-15°)', desc: 'Cúi cằm xuống nhẹ khoảng 15 độ', badge: 'Cúi -15°' },
+  { id: 'left', label: '4. Nghiêng trái (-30°)', desc: 'Xoay mặt sang bên trái khoảng 30 độ', badge: 'Nghiêng trái -30°' },
+  { id: 'right', label: '5. Nghiêng phải (+30°)', desc: 'Xoay mặt sang bên phải khoảng 30 độ', badge: 'Nghiêng phải +30°' },
+];
 
 const UserProfileManager = () => {
   const { t } = useI18n();
@@ -52,6 +66,7 @@ const UserProfileManager = () => {
   // Face AI Linked Status
   const [linkedEmployee, setLinkedEmployee] = useState(null);
   const [faceCount, setFaceCount] = useState(0);
+  const [isLinkingEmployee, setIsLinkingEmployee] = useState(false);
 
   // --------------------------------------------------------------------------
   // 2. PASSWORD STATE
@@ -68,7 +83,32 @@ const UserProfileManager = () => {
   const [passwordError, setPasswordError] = useState('');
 
   // --------------------------------------------------------------------------
-  // 3. LOAD CURRENT PROFILE & FACE AI LINK
+  // 3. SELF-SERVICE BIOMETRICS MODALS
+  // --------------------------------------------------------------------------
+  // Live Verification Modal State
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null);
+  const [verifyStream, setVerifyStream] = useState(null);
+  const verifyVideoRef = useRef(null);
+
+  // 5-Angle Face Enrollment Modal State
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [activeAngleIndex, setActiveAngleIndex] = useState(0);
+  const [anglePhotos, setAnglePhotos] = useState({
+    front: null,
+    up: null,
+    down: null,
+    left: null,
+    right: null,
+  });
+  const [enrollStream, setEnrollStream] = useState(null);
+  const enrollVideoRef = useRef(null);
+  const [isSavingVectors, setIsSavingVectors] = useState(false);
+  const [enrollSuccessResult, setEnrollSuccessResult] = useState(null);
+
+  // --------------------------------------------------------------------------
+  // 4. LOAD CURRENT PROFILE & FACE AI LINK
   // --------------------------------------------------------------------------
   const loadUserData = useCallback(async () => {
     setProfileLoading(true);
@@ -185,7 +225,246 @@ const UserProfileManager = () => {
   }, [loadUserData]);
 
   // --------------------------------------------------------------------------
-  // 4. HANDLE PROFILE SUBMIT
+  // 5. LINK / CREATE FACE AI EMPLOYEE PROFILE
+  // --------------------------------------------------------------------------
+  const handleCreateAndLinkEmployee = async () => {
+    if (!currentUser) return;
+    setIsLinkingEmployee(true);
+    try {
+      const code = currentUser.user_code || currentUser.username?.toUpperCase() || `EMP_${Date.now().toString().slice(-4)}`;
+      const payload = {
+        employee_code: code,
+        full_name: profileForm.full_name || currentUser.full_name || currentUser.username,
+        email: currentUser.email || `${code.toLowerCase()}@vface.ai`,
+        phone_number: profileForm.phone_number || currentUser.phone_number || null,
+        department: currentUser.department?.name || currentUser.department || 'Ban Điều Hành',
+        position: currentUser.position?.name || currentUser.position || 'Nhân viên',
+      };
+      const res = await api.createEmployee(payload);
+      const newEmp = res?.data || res;
+      setLinkedEmployee(newEmp);
+      setFaceCount(0);
+      showToast('Đã tạo và liên kết hồ sơ Face AI thành công!');
+      await loadUserData();
+    } catch (err) {
+      showToast(`Không thể tạo hồ sơ: ${err.message}`, 'error');
+    } finally {
+      setIsLinkingEmployee(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // 6. LIVE VERIFICATION WEBCAM HANDLERS
+  // --------------------------------------------------------------------------
+  const startVerifyCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      setVerifyStream(stream);
+      if (verifyVideoRef.current) {
+        verifyVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.warn('Cannot open user webcam:', err);
+      showToast('Không thể mở camera. Vui lòng cấp quyền truy cập trình duyệt.', 'error');
+    }
+  };
+
+  const stopVerifyCamera = () => {
+    if (verifyStream) {
+      verifyStream.getTracks().forEach(track => track.stop());
+      setVerifyStream(null);
+    }
+  };
+
+  const openVerifyModal = () => {
+    setVerifyResult(null);
+    setShowVerifyModal(true);
+    setTimeout(() => startVerifyCamera(), 100);
+  };
+
+  const closeVerifyModal = () => {
+    stopVerifyCamera();
+    setShowVerifyModal(false);
+    setVerifyResult(null);
+  };
+
+  const handleCaptureAndVerify = async () => {
+    if (!linkedEmployee?.id) {
+      showToast('Chưa có hồ sơ Face AI liên kết', 'error');
+      return;
+    }
+    setIsVerifying(true);
+    setVerifyResult(null);
+
+    try {
+      let fileToSend = null;
+
+      // 1. Capture snapshot from video element if active
+      if (verifyVideoRef.current && verifyStream) {
+        const video = verifyVideoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+        fileToSend = new File([blob], `self_verify_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      } else {
+        // Fallback: Get direct snapshot blob from backend camera
+        const blob = await api.getDirectCameraSnapshotBlob();
+        fileToSend = new File([blob], `self_verify_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      }
+
+      const formData = new FormData();
+      formData.append('image', fileToSend);
+
+      const res = await api.verifyEmployeeFace(linkedEmployee.id, formData);
+      const data = res?.data || res;
+      setVerifyResult(data);
+
+      if (res?.success || data?.is_verified) {
+        showToast(`✅ Khớp thành công: ${data.confidence_percent}% (Cosine: ${data.similarity_score})`);
+      } else {
+        showToast(`❌ Chưa khớp (Độ tin cậy: ${data.confidence_percent || 0}%)`, 'error');
+      }
+    } catch (err) {
+      setVerifyResult({
+        is_verified: false,
+        error: err.message || 'Lỗi xử lý so khớp khuôn mặt.',
+      });
+      showToast(err.message || 'Lỗi so khớp khuôn mặt', 'error');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // 7. 5-ANGLE ENROLLMENT WEBCAM & UPLOAD HANDLERS
+  // --------------------------------------------------------------------------
+  const startEnrollCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      setEnrollStream(stream);
+      if (enrollVideoRef.current) {
+        enrollVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.warn('Cannot open user webcam:', err);
+      showToast('Không thể mở camera. Vui lòng cấp quyền truy cập trình duyệt.', 'error');
+    }
+  };
+
+  const stopEnrollCamera = () => {
+    if (enrollStream) {
+      enrollStream.getTracks().forEach(track => track.stop());
+      setEnrollStream(null);
+    }
+  };
+
+  const openEnrollModal = () => {
+    setAnglePhotos({
+      front: null,
+      up: null,
+      down: null,
+      left: null,
+      right: null,
+    });
+    setEnrollSuccessResult(null);
+    setActiveAngleIndex(0);
+    setShowEnrollModal(true);
+    setTimeout(() => startEnrollCamera(), 100);
+  };
+
+  const closeEnrollModal = () => {
+    stopEnrollCamera();
+    setShowEnrollModal(false);
+    setEnrollSuccessResult(null);
+  };
+
+  const handleSnapCurrentAngle = () => {
+    if (!enrollVideoRef.current || !enrollStream) {
+      showToast('Camera chưa sẵn sàng', 'error');
+      return;
+    }
+    const video = enrollVideoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+    const activeAngleKey = ANGLES_CONFIG[activeAngleIndex].id;
+    setAnglePhotos(prev => ({
+      ...prev,
+      [activeAngleKey]: dataUrl
+    }));
+
+    showToast(`Đã chụp góc: ${ANGLES_CONFIG[activeAngleIndex].badge}`);
+    if (activeAngleIndex < ANGLES_CONFIG.length - 1) {
+      setActiveAngleIndex(activeAngleIndex + 1);
+    }
+  };
+
+  const handleFileUploadForAngle = (e, angleKey) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAnglePhotos(prev => ({
+        ...prev,
+        [angleKey]: event.target.result
+      }));
+      showToast(`Đã tải ảnh cho góc: ${angleKey}`);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave5AnglesVectors = async () => {
+    if (!linkedEmployee?.id) {
+      showToast('Chưa có hồ sơ nhân sự Face AI', 'error');
+      return;
+    }
+
+    const readyCount = Object.values(anglePhotos).filter(Boolean).length;
+    if (readyCount < 5) {
+      showToast('Vui lòng chụp hoặc tải đủ 5 góc ảnh khuôn mặt', 'error');
+      return;
+    }
+
+    setIsSavingVectors(true);
+    setEnrollSuccessResult(null);
+
+    try {
+      const formData = new FormData();
+      for (const angle of ANGLES_CONFIG) {
+        const dataUrl = anglePhotos[angle.id];
+        if (dataUrl) {
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          formData.append('photos', blob, `${angle.id}_${Date.now()}.jpg`);
+        }
+      }
+
+      const res = await api.registerEmployeeFace(linkedEmployee.id, formData);
+      const data = res?.data || res;
+      setEnrollSuccessResult(data);
+      setFaceCount(5);
+      showToast('🎉 Đã nạp thành công 5 vector 512D vào PostgreSQL pgvector!');
+      await loadUserData();
+    } catch (err) {
+      showToast(err.message || 'Lỗi trích xuất vector khuôn mặt', 'error');
+    } finally {
+      setIsSavingVectors(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // 8. HANDLE PROFILE SUBMIT
   // --------------------------------------------------------------------------
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -197,14 +476,12 @@ const UserProfileManager = () => {
     setIsSavingProfile(true);
 
     try {
-      // 1. Update Core User profile
       const payload = {
         full_name: profileForm.full_name.trim(),
         phone_number: profileForm.phone_number.trim() || null,
       };
       await api.updateMyProfile(targetUserId, payload);
 
-      // 2. Sync to Face AI Employee if linked
       if (linkedEmployee?.id) {
         try {
           await api.updateEmployee(linkedEmployee.id, {
@@ -218,35 +495,28 @@ const UserProfileManager = () => {
       }
 
       await refreshProfile();
-      await loadUserData();
-      showToast(t('profile_save_success', 'Cập nhật thông tin cá nhân thành công!'));
+      showToast(t('profile_update_success', 'Cập nhật thông tin hồ sơ thành công!'));
     } catch (err) {
-      const msg = err.response?.data?.detail || err.message || 'Lỗi khi lưu thông tin cá nhân';
-      showToast(msg, 'error');
+      showToast(err.message || 'Cập nhật hồ sơ thất bại', 'error');
     } finally {
       setIsSavingProfile(false);
     }
   };
 
   // --------------------------------------------------------------------------
-  // 5. HANDLE PASSWORD CHANGE
+  // 9. HANDLE PASSWORD CHANGE
   // --------------------------------------------------------------------------
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setPasswordError('');
 
     if (passwordForm.new_password.length < 6) {
-      setPasswordError(t('pwd_too_short', 'Mật khẩu mới phải có tối thiểu 6 ký tự.'));
+      setPasswordError(t('password_min_length', 'Mật khẩu mới phải có ít nhất 6 ký tự.'));
       return;
     }
 
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setPasswordError(t('pwd_mismatch', 'Mật khẩu xác nhận không khớp với mật khẩu mới.'));
-      return;
-    }
-
-    if (passwordForm.old_password === passwordForm.new_password) {
-      setPasswordError(t('pwd_same_as_old', 'Mật khẩu mới không được trùng với mật khẩu hiện tại.'));
+      setPasswordError(t('password_mismatch', 'Mật khẩu xác nhận không khớp với mật khẩu mới.'));
       return;
     }
 
@@ -274,6 +544,7 @@ const UserProfileManager = () => {
   const userCode = currentUser?.user_code || currentUser?.username || 'NV000';
   const deptName = currentUser?.department?.name || currentUser?.department || 'Chưa xếp phòng ban';
   const posName = currentUser?.position?.name || currentUser?.position || 'Nhân viên';
+  const readyPhotosCount = Object.values(anglePhotos).filter(Boolean).length;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -295,7 +566,6 @@ const UserProfileManager = () => {
       {/* 1. HERO IDENTITY CARD                                                  */}
       {/* ---------------------------------------------------------------------- */}
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 shadow-2xl relative overflow-hidden">
-        {/* Background glow orb */}
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
@@ -366,7 +636,106 @@ const UserProfileManager = () => {
       </div>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* 2-COLUMN MAIN EDITORS (Personal Info & Security)                       */}
+      {/* 2. SELF-SERVICE BIOMETRIC FACE AI HUB (NEW ENTERPRISE FEATURE)          */}
+      {/* ---------------------------------------------------------------------- */}
+      <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 bg-slate-900/40 relative overflow-hidden space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-sm">
+              <Scan className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white tracking-wide flex items-center space-x-2">
+                <span>{t('self_biometrics_title') || 'Sinh Trắc Học & Tự Xác Thực Khuôn Mặt'}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                  Self-Service AI
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                {t('self_biometrics_sub') || 'Quản lý 5 mẫu vector 512D và chủ động kiểm tra độ khớp nhận diện trước camera'}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center space-x-2.5 flex-shrink-0">
+            {linkedEmployee ? (
+              <>
+                <button
+                  type="button"
+                  onClick={openVerifyModal}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-cyan-600/20 transition-all hover:scale-[1.02]"
+                >
+                  <Camera className="w-4 h-4 text-cyan-200" />
+                  <span>{t('self_verify_btn') || 'Tự Kiểm Tra Xác Thực'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openEnrollModal}
+                  className="px-4 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 font-bold text-xs flex items-center space-x-2 transition-all"
+                >
+                  <Sparkles className="w-4 h-4 text-indigo-300" />
+                  <span>{t('self_register_face_btn') || 'Tự Cập Nhật 5 Góc Mặt'}</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCreateAndLinkEmployee}
+                disabled={isLinkingEmployee}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50"
+              >
+                {isLinkingEmployee ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Link className="w-4 h-4" />}
+                <span>{t('self_link_employee_btn') || 'Tạo & Liên Kết Hồ Sơ Face AI'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Biometric Status Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <span className="text-[11px] text-slate-400 block font-medium">Trạng thái hồ sơ Face AI</span>
+            <div className="flex items-center space-x-2 pt-0.5">
+              {linkedEmployee ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-emerald-300">Đã liên kết ({linkedEmployee.employee_code})</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-amber-300">Chưa liên kết Face AI</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <span className="text-[11px] text-slate-400 block font-medium">Vector Đặc Trưng (512D)</span>
+            <div className="flex items-center space-x-2 pt-0.5">
+              <Scan className="w-4 h-4 text-cyan-400" />
+              <span className={`text-xs font-bold font-mono ${faceCount >= 5 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {faceCount} / 5 mẫu góc nạp
+              </span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <span className="text-[11px] text-slate-400 block font-medium">Khả năng Điểm Danh & Face ID</span>
+            <div className="flex items-center space-x-2 pt-0.5">
+              <ShieldCheck className="w-4 h-4 text-purple-400" />
+              <span className={`text-xs font-bold ${faceCount > 0 ? 'text-purple-300' : 'text-slate-500'}`}>
+                {faceCount > 0 ? 'Sẵn sàng hoạt động (Active)' : 'Cần nạp mẫu khuôn mặt'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* 3. 2-COLUMN MAIN EDITORS (Personal Info & Security)                    */}
       {/* ---------------------------------------------------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
@@ -612,6 +981,279 @@ const UserProfileManager = () => {
           </form>
         </div>
       </div>
+
+      {/* ====================================================================== */}
+      {/* MODAL 1: SELF-SERVICE LIVE FACE VERIFICATION MODAL                     */}
+      {/* ====================================================================== */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 max-w-xl w-full space-y-5 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Scan className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-wide">
+                    {t('self_verify_modal_title') || 'Tự Kiểm Tra Xác Thực Khuôn Mặt Trực Tiếp'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {t('self_verify_modal_sub') || 'Đứng trước camera máy tính để so khớp trực tiếp với 5 vector 512D'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeVerifyModal}
+                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Video Viewport with HUD Overlay */}
+            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center shadow-inner">
+              <video
+                ref={verifyVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
+
+              {/* Target Face Oval HUD */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="w-44 h-56 rounded-full border-2 border-dashed border-cyan-400/60 flex items-center justify-center animate-pulse">
+                  <span className="text-[10px] font-mono text-cyan-300 bg-slate-950/80 px-2 py-0.5 rounded-full border border-cyan-500/40">
+                    Đặt mặt vào khung
+                  </span>
+                </div>
+              </div>
+
+              {/* Top info badge */}
+              <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[10px] font-mono text-cyan-300 flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span>Live Webcam Stream</span>
+              </div>
+            </div>
+
+            {/* Live Verification Result Box */}
+            {verifyResult && (
+              <div className={`p-4 rounded-2xl border text-xs space-y-2 animate-in fade-in duration-200 ${
+                verifyResult.is_verified
+                  ? 'bg-gradient-to-r from-emerald-950/70 to-cyan-950/70 border-emerald-400 shadow-xl text-white'
+                  : 'bg-rose-950/60 border-rose-500 text-rose-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 font-bold text-sm">
+                    {verifyResult.is_verified ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-rose-400" />
+                    )}
+                    <span>
+                      {verifyResult.is_verified
+                        ? (t('self_verify_success_title') || '🎉 XÁC THỰC THÀNH CÔNG: Độ Tin Cậy {percent}%').replace('{percent}', verifyResult.confidence_percent)
+                        : (t('self_verify_fail_title') || '❌ XÁC THỰC CHƯA KHỚP: Độ Tin Cậy {percent}%').replace('{percent}', verifyResult.confidence_percent || 0)}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-900/80 border border-slate-700">
+                    Sim: {verifyResult.similarity_score || '--'} (Ngưỡng: {verifyResult.threshold || 0.6})
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  {verifyResult.is_verified
+                    ? `Khuôn mặt trực tiếp khớp chính xác với hồ sơ ${verifyResult.full_name} (${verifyResult.employee_code}). Bạn đã sẵn sàng để chấm công tự động!`
+                    : 'Khuôn mặt chưa khớp với vector đã nạp. Vui lòng nhìn thẳng vào camera và thử lại.'}
+                </p>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={closeVerifyModal}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Đóng
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCaptureAndVerify}
+                disabled={isVerifying}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-cyan-500/20 disabled:opacity-50 transition-all hover:scale-[1.02]"
+              >
+                {isVerifying ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Đang so khớp vector...</span>
+                  </>
+                ) : (
+                  <>
+                    <Scan className="w-4 h-4 text-cyan-200" />
+                    <span>Chụp & Kiểm Tra Ngay</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================== */}
+      {/* MODAL 2: SELF-SERVICE 5-ANGLE FACE ENROLLMENT MODAL                    */}
+      {/* ====================================================================== */}
+      {showEnrollModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 max-w-2xl w-full space-y-5 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-wide">
+                    Tự Cập Nhật 5 Mẫu Góc Mặt (Self-Service 512D)
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Chụp hoặc tải ảnh 5 góc mặt để AI nhận diện chuẩn xác nhất từ mọi góc độ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeEnrollModal}
+                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Webcam Live Capture Area */}
+            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center shadow-inner">
+              <video
+                ref={enrollVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
+
+              {/* Instructions Overlay */}
+              <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-white">
+                <span className="font-bold text-cyan-300">{ANGLES_CONFIG[activeAngleIndex]?.label}: </span>
+                <span className="text-slate-300 text-[11px]">{ANGLES_CONFIG[activeAngleIndex]?.desc}</span>
+              </div>
+
+              {/* Capture Button Overlay */}
+              <div className="absolute bottom-3 inset-x-0 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleSnapCurrentAngle}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-2 shadow-xl shadow-cyan-500/30 transition-all hover:scale-105"
+                >
+                  <Camera className="w-4 h-4 text-cyan-200" />
+                  <span>Chụp Góc Này ({ANGLES_CONFIG[activeAngleIndex]?.badge})</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 5 Angles Thumbnail Slots */}
+            <div className="grid grid-cols-5 gap-2.5">
+              {ANGLES_CONFIG.map((angle, idx) => {
+                const photo = anglePhotos[angle.id];
+                const isActive = activeAngleIndex === idx;
+                return (
+                  <div
+                    key={angle.id}
+                    onClick={() => setActiveAngleIndex(idx)}
+                    className={`p-2 rounded-2xl border cursor-pointer transition-all flex flex-col items-center text-center space-y-1 relative ${
+                      isActive
+                        ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg'
+                        : photo
+                        ? 'bg-emerald-500/10 border-emerald-500/30'
+                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-full aspect-square rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center relative border border-slate-800">
+                      {photo ? (
+                        <>
+                          <img src={photo} alt={angle.label} className="w-full h-full object-cover" />
+                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px]">
+                            ✓
+                          </div>
+                        </>
+                      ) : (
+                        <Camera className="w-5 h-5 text-slate-600" />
+                      )}
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-300 truncate w-full block">
+                      {angle.badge}
+                    </span>
+                    <label className="text-[9px] text-cyan-400 hover:underline cursor-pointer">
+                      Tải ảnh
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileUploadForAngle(e, angle.id)}
+                      />
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Success Banner */}
+            {enrollSuccessResult && (
+              <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-400 text-white text-xs space-y-1 animate-in fade-in duration-200">
+                <div className="flex items-center space-x-2 font-bold text-sm text-emerald-300">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <span>Nạp 5 Vector 512D Thành Công!</span>
+                </div>
+                <p className="text-[11px] text-emerald-200/80">
+                  Đã lưu trữ {enrollSuccessResult.total_registered || 5} vector sinh trắc học vào kho PostgreSQL pgvector.
+                </p>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={closeEnrollModal}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Đóng
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <span className="text-xs text-slate-400 font-mono">
+                  {readyPhotosCount}/5 góc sẵn sàng
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSave5AnglesVectors}
+                  disabled={readyPhotosCount < 5 || isSavingVectors}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-emerald-600/30 disabled:opacity-50 transition-all hover:scale-[1.02]"
+                >
+                  {isSavingVectors ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Đang trích xuất vector...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Trích Xuất & Lưu 5 Vector 512D</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

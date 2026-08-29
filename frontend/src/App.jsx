@@ -158,6 +158,7 @@ function App() {
           isWsConnected={isWsConnected}
           cameraStatus={cameraStatus}
           onRefreshCamera={fetchCameraStatus}
+          showCameraControls={currentTab === NAV_TABS.DASHBOARD}
         />
 
         <main ref={mainContentRef} className="flex-1 p-8 pb-16 overflow-y-auto max-w-7xl w-full mx-auto">

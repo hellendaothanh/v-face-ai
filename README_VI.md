@@ -180,14 +180,17 @@ Phân hệ **Unified HR Hub** tập trung hóa toàn bộ nghiệp vụ quản t
   - **Bộ lọc 3 khung hình liên tiếp (3-Frame Counter)**: Ngăn chặn cảnh báo giả do người đi lướt qua hoặc bóng mờ chuyển động.
   - **Bộ đệm Cooldown 60 giây (Debounce Anti-Spam)**: Tránh spam còi hú báo động liên tục và tối ưu băng thông WebSocket.
 
-### 4.7. Thanh Điều Khiển Nhanh Header & Chuyển Nguồn Camera
-- **Nút chuyển đổi nhanh nguồn cấp video**: Header toàn cục cho phép chuyển nhanh bằng 1 click giữa `[PC Webcam]` (Camera tích hợp) và `[IP Cam]` (Luồng RTSP IP Camera Tapo C200, Hikvision, Dahua).
-- **Công tắc nguồn Camera toàn cục**: Nút bật/tắt luồng camera nhanh `[Bật Camera]` / `[Tắt Camera]` ngay trên Header mà không cần chuyển trang.
-- **Đồng hồ đo độ trễ & Trạng thái dịch vụ trực tiếp**: Hiển thị ping API phản hồi (ms), kết nối WebSocket thời gian thực và telemetry nguồn video trực tiếp trên Header.
+### 4.7. Thanh Điều Khiển Header Thông Minh & Tinh Gọn Theo Ngữ Cảnh
+- **Cơ chế hiển thị Camera theo ngữ cảnh**: Thanh Header chỉ tự động hiển thị cụm điều khiển Camera (`[PC Webcam] / [IP Cam]` và nút `[Bật / Tắt Camera]`) **duy nhất tại màn hình Giám sát Chấm công (Realtime Dashboard)**, đồng thời tự động ẩn đi trên các màn hình quản trị, báo cáo, ca kíp & tiền lương để giữ giao diện luôn thoáng mắt và tập trung.
+- **Tiện ích định danh & Ngôn ngữ toàn cục**: Đổi nhanh ngôn ngữ (`[EN] / [VI]`), đèn LED báo trạng thái kết nối máy chủ API thời gian thực, avatar người dùng và nút Đăng xuất 1-chạm.
 
-### 4.8. Quản Lý Tài Khoản Cá Nhân & Đổi Mật Khẩu Tự Phục Vụ (My Account Self-Service)
-- **Giao diện toàn màn hình trực quan ("Tài Khoản Của Tôi")**: Dành riêng một tab trên thanh điều hướng Sidebar cho phép mọi người dùng đã đăng nhập tự quản lý hồ sơ cá nhân.
+### 4.8. Quản Lý Hồ Sơ Cá Nhân, Sinh Trắc Học Tự Phục Vụ & Mật Khẩu (My Account Self-Service)
+- **Giao diện toàn màn hình trực quan ("Tài Khoản Của Tôi")**: Dành riêng một tab trên thanh điều hướng Sidebar cho phép mọi người dùng đã đăng nhập tự quản lý hồ sơ cá nhân và sinh trắc học.
 - **Thẻ định danh nổi bật (Hero Identity Banner)**: Hiển thị avatar ký tự viết tắt, Tên tài khoản, Mã nhân viên/User code, Huy hiệu chức danh phòng ban, các huy hiệu vai trò RBAC (`superadmin`, `admin`, `hr_manager`, v.v.), và đồng hồ đếm số lượng vector Face AI đã nạp (`5/5 mẫu`).
+- **Phân hệ Sinh Trắc Học & Tự Xác Thực Khuôn Mặt (Self-Service Face AI Hub)**:
+  - **Modal Tự Kiểm Tra Xác Thực Trực Tiếp**: Nhân viên có thể tự bật webcam cá nhân để kiểm tra độ khớp sinh trắc học với 5 vector 512D lưu trong PostgreSQL pgvector (`POST /api/v1/employees/{id}/verify-face`) mà không cần nhờ HR hỗ trợ.
+  - **Modal Tự Nạp 5 Mẫu Góc Mặt**: Hướng dẫn 5 góc xoay mặt chuẩn (Chính diện 0°, Ngẩng +15°, Cúi -15°, Nghiêng trái -30°, Nghiêng phải +30°) giúp nhân viên tự chụp webcam hoặc tải ảnh để cập nhật mẫu mặt mọi lúc.
+  - **Tự động liên kết hồ sơ Face AI**: Cung cấp nút tạo và liên kết nhanh hồ sơ sinh trắc học cho tài khoản Core User IAM mới.
 - **Tự cập nhật thông tin cá nhân**: Cho phép chỉnh sửa Họ và tên, Số điện thoại với cơ chế tự động đồng bộ 2 chiều giữa Core User IAM và Face AI Employee. Khóa các trường nhạy cảm như Email và Mã nhân viên để đảm bảo toàn vẹn dữ liệu.
 - **Tự đổi mật khẩu bảo mật (Self-service Password Change)**:
   - Xác thực mật khẩu cũ an toàn.

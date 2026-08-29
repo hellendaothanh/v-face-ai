@@ -715,6 +715,21 @@ const en = {
   btn_test_auto_match: 'Test Auto-Match',
   toast_report_download_success: 'Report generated and downloaded successfully!',
   toast_ott_dispatched: 'OTT alert dispatched successfully to {channel}!',
+  self_biometrics_title: 'Biometrics & Self-Service Face Verification',
+  self_biometrics_sub: 'Manage your 512D facial vectors and independently verify match confidence in front of the camera',
+  self_verify_modal_title: 'Self-Service Live Face Verification',
+  self_verify_modal_sub: 'Position yourself in front of the camera to verify your face against the 512D vectors stored in pgvector',
+  self_verify_btn: 'Verify My Face Now',
+  self_register_face_btn: 'Self-Update 5 Face Angles',
+  self_link_employee_btn: 'Create & Link Face AI Profile',
+  self_link_employee_desc: 'Your account is not yet linked to a Face AI biometric profile. Click below to create one instantly.',
+  self_biometric_ready_title: 'Biometric Profile is Ready',
+  self_biometric_ready_desc: '{count}/5 512D vector embeddings enrolled in PostgreSQL pgvector. You are fully enabled for AI attendance and 1-Click Face ID login.',
+  self_biometric_not_ready_title: 'Incomplete Biometric Enrollment',
+  self_biometric_not_ready_desc: 'You have not enrolled all 5 facial angles. Self-enroll your 5 angles below for optimal recognition accuracy.',
+  snap_camera_now: 'Capture Photo Now',
+  self_verify_success_title: '🎉 VERIFICATION SUCCESS: Confidence {percent}%',
+  self_verify_fail_title: '❌ VERIFICATION FAILED: Confidence {percent}%',
 };
 
 export default en;

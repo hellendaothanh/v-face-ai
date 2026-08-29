@@ -13,7 +13,14 @@ import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
 
-const Header = ({ title, subtitle, isApiConnected, cameraStatus, onRefreshCamera }) => {
+const Header = ({ 
+  title, 
+  subtitle, 
+  isApiConnected, 
+  cameraStatus, 
+  onRefreshCamera,
+  showCameraControls = false 
+}) => {
   const { language, setLanguage, t } = useI18n();
   const { currentUser, logout } = useAuth();
   const [isTogglingCamera, setIsTogglingCamera] = useState(false);
@@ -84,54 +91,59 @@ const Header = ({ title, subtitle, isApiConnected, cameraStatus, onRefreshCamera
           <span className="hidden sm:inline text-[11px]">{isApiConnected ? t('online') : t('offline')}</span>
         </div>
 
-        {/* Camera Source Selector (Compact Dropdown/Pill) */}
-        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
-          <button
-            onClick={() => handleSwitchSource('WEBCAM')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-              selectedSource === 'WEBCAM'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            PC Webcam
-          </button>
-          <button
-            onClick={() => handleSwitchSource('RTSP')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-              selectedSource === 'RTSP'
-                ? 'bg-cyan-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            IP Cam
-          </button>
-        </div>
+        {/* Camera Controls: Only rendered when showCameraControls is true */}
+        {showCameraControls && (
+          <>
+            {/* Camera Source Selector (Compact Dropdown/Pill) */}
+            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs animate-in fade-in duration-200">
+              <button
+                onClick={() => handleSwitchSource('WEBCAM')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  selectedSource === 'WEBCAM'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                PC Webcam
+              </button>
+              <button
+                onClick={() => handleSwitchSource('RTSP')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  selectedSource === 'RTSP'
+                    ? 'bg-cyan-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                IP Cam
+              </button>
+            </div>
 
-        {/* Camera Start/Stop Button */}
-        <button
-          onClick={handleToggleCamera}
-          disabled={isTogglingCamera || isApiConnected === false}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${
-            isCamRunning
-              ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 shadow-rose-500/10'
-              : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/20'
-          }`}
-        >
-          {isTogglingCamera ? (
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-          ) : isCamRunning ? (
-            <>
-              <CameraOff className="w-3.5 h-3.5 text-rose-400" />
-              <span className="hidden sm:inline">{t('turn_off_camera')}</span>
-            </>
-          ) : (
-            <>
-              <Camera className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('turn_on_camera')}</span>
-            </>
-          )}
-        </button>
+            {/* Camera Start/Stop Button */}
+            <button
+              onClick={handleToggleCamera}
+              disabled={isTogglingCamera || isApiConnected === false}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm animate-in fade-in duration-200 ${
+                isCamRunning
+                  ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 shadow-rose-500/10'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/20'
+              }`}
+            >
+              {isTogglingCamera ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : isCamRunning ? (
+                <>
+                  <CameraOff className="w-3.5 h-3.5 text-rose-400" />
+                  <span className="hidden sm:inline">{t('turn_off_camera')}</span>
+                </>
+              ) : (
+                <>
+                  <Camera className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{t('turn_on_camera')}</span>
+                </>
+              )}
+            </button>
+          </>
+        )}
 
         {/* Language Switcher (Compact) */}
         <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-[11px]">
