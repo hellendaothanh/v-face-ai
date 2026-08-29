@@ -8,7 +8,7 @@
 
 </div>
 
-**V-Face Pro** is an enterprise-grade microservices ecosystem designed for intelligent workforce management, identity access control, and multi-service expansion (Face AI Attendance, HRM, Helpdesk). Built with **FastAPI** (Python 3.13) and **React 19 + Tailwind CSS**, powered by **PostgreSQL 16 with pgvector** (512-dimensional ArcFace embeddings), **InsightFace (buffalo_l)**, **MiniFASNetV2 Anti-Spoofing**, **Multi-Threaded Camera Manager**, **Stranger Threat Detection**, and a standalone **Core User & IAM Service (Port 8001)** for unified enterprise authentication, granular RBAC, and organization hierarchy.
+**V-Face Pro** is an enterprise-grade microservices ecosystem designed for intelligent workforce management, identity access control, and multi-service expansion (Face AI Attendance, HRM, Helpdesk). Built with **FastAPI** (Python 3.13) and **React 19 + Tailwind CSS**, powered by the **AI ArcFace Core v1.4.0** engine (**InsightFace buffalo_l** with 512-dimensional vector embeddings, **PostgreSQL 16 with pgvector HNSW indexing**), **MiniFASNetV2 Anti-Spoofing Liveness**, **Multi-Threaded Camera Manager**, **Stranger Threat Detection**, and a standalone **Core User & IAM Service (Port 8001)** for unified enterprise authentication, granular RBAC, and organization hierarchy.
 
 ---
 
@@ -43,6 +43,13 @@
 │ • HNSW Vector Index (<=>), Attendance  │   │ • AI Weights: InsightFace & MiniFASNet    │
 └────────────────────────────────────────┘   └───────────────────────────────────────────┘
 ```
+
+<div align="center">
+
+![Realtime Dashboard Workspace](docs/screenshots/dashboard.png)
+*Figure 1: V-Face Pro Live Attendance Dashboard & Camera Surveillance Workspace*
+
+</div>
 
 ---
 
@@ -132,21 +139,51 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
   3. **Microservice IAM Token Proxy**: Calls Core User IAM Service (`POST /api/v1/auth/face-token`) to issue standard JWT access & refresh tokens.
 - **Personalized Onboarding**: Automatically redirects user to the Dashboard with personalized greetings upon successful face recognition.
 
-### 4.5. 5-Angle Biometric Registration & Live Verification Modal
-- **Multi-Angle Registration (5 Templates per Employee)**: Captures Frontal (0°), Tilt Up (+15°), Tilt Down (-15°), Turn Left (-30°), and Turn Right (+30°) with dynamic visual direction indicators.
-- **Live Biometric Verification Modal**: Allows immediate verification of registered face templates with real-time confidence scores and vector cosine distance metrics (`POST /api/v1/employees/{id}/verify-face`).
+<div align="center">
 
-### 4.6. Face AI Attendance & Camera Monitoring (`app/` - Port 8000)
-- **InsightFace ArcFace 512D**: Sub-second face recognition powered by pgvector cosine distance and HNSW vector indexing.
+![1-Click Biometric Face ID Login](docs/screenshots/login_face_id.png)
+*Figure 2: 1-Click Biometric Face ID Login with Live Optical Liveness HUD & Language Switcher*
+
+</div>
+
+### 4.5. Unified HR & Biometrics Management Hub (`UnifiedHRHub` - Port 3000 & Port 8001)
+
+The **Unified HR Hub** centralizes workforce operations, 512D facial biometrics, and Zero-Trust IAM access control across 3 dedicated workspace tabs:
+
+<div align="center">
+
+![Unified HR & Biometrics Management Hub](docs/screenshots/hr_hub.png)
+*Figure 3: Unified HR & Biometrics Hub (Personnel Roster, 512D Vector Embeddings & IAM Sync)*
+
+</div>
+
+#### Tab 1: Personnel & Face AI 512D Roster
+- **Employee Directory**: Instant search, department filtering, employment status, and IAM account linkage.
+- **5-Angle Face Enrollment (5 Templates / Employee)**: Guided 5-angle capture (Frontal 0°, Tilt Up +15°, Tilt Down -15°, Turn Left -30°, and Turn Right +30°).
+- **Live Biometric Verification Modal**: Instant face-match test against pgvector embeddings with real-time confidence scores and cosine similarity metrics (`POST /api/v1/employees/{id}/verify-face`).
+
+#### Tab 2: RBAC Roles & Granular Permissions
+- **14 Atomic Permissions Matrix**: Fine-grained access control across modules (`User`, `Attendance`, `Camera`, `RBAC`, `Organization`, `Helpdesk`).
+- **Anti-Privilege Escalation**: Prevents subordinate privilege escalation and locks immutable system roles (`superadmin`).
+
+#### Tab 3: Organizational Structure (Departments & Positions)
+- **Hierarchy Management**: Department and job position management with employee counts and structural mapping.
+
+### 4.6. Face AI Attendance & Camera Monitoring (AI ArcFace Core v1.4.0 - Port 8000)
+- **AI ArcFace Core v1.4.0 Engine**: Powered by **InsightFace (buffalo_l)** producing 512-dimensional vector embeddings, paired with **PostgreSQL 16 pgvector HNSW indexing** for sub-second recognition.
 - **Continuous Self-Learning (Auto Face Update)**: Dynamically extracts and enriches auxiliary facial templates when check-in confidence $\ge 95\%$.
 - **Flexible Camera View Modes**:
   - **3 Viewport Layouts**: `Standard` (4:3 crisp), `Wide` (16:9 widescreen), and `Cinema` (21:9 ultra-wide).
-  - **Quick Video Stream Switcher**: Instant one-click toggle between built-in Laptop Webcam and IP Cameras (Tapo C200, Hikvision, Dahua).
   - **HUD Bounding Box Overlay & Fullscreen**: Real-time on-screen identity tags displaying Name, User Code, Similarity %, and Check-in status.
 - **Stranger Threat Alert with Anti-Spam Debounce**:
   - **Threat Detection Threshold**: Flags unrecognized faces with match confidence $< 70\%$.
   - **3-Consecutive-Frame Counter**: Filters out transient movement artifacts and passing pedestrians.
   - **60-Second Cooldown Debounce**: Prevents siren alarm spamming and preserves WebSocket bandwidth.
+
+### 4.7. Header Quick Controls & Multi-Device Stream Switcher
+- **Quick Source Switcher**: Instant one-click toggle in the top navigation header between `[PC Webcam]` (Integrated Laptop Camera) and `[IP Cam]` (RTSP stream from Tapo C200, Hikvision, Dahua).
+- **Global Stream Power Control**: One-click `[Turn On Camera]` / `[Turn Off Camera]` master toggle without navigating away from the current view.
+- **Real-Time Backend Latency & Health Indicator**: Displays live API roundtrip ping (ms), WebSocket streaming status, and active camera source telemetry directly in the global header.
 
 ### 4.8. My Account Self-Service & Secure Password Management
 - **Full-Screen Profile Workspace ("My Account")**: Dedicated left-sidebar navigation tab allowing all authenticated users to manage their personal profile and credentials.
@@ -170,7 +207,11 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
   - System default roles (`superadmin`) are permanently locked and cannot be deleted or stripped of privileges.
   - Strict self-deletion protection prevents users from accidentally deleting their own active session.
 
-### 4.10. Smart Floating "Scroll to Top" Action Button
+### 4.10. Full Internationalization & Multilingual Support (i18n)
+- **Bi-Directional Language Switching**: Instant toggle between **English (`[EN]`)** and **Vietnamese (`[VI]`)** via the header language switcher and login screen toggle.
+- **Comprehensive Localization**: Covers 100% of UI strings, form labels, table columns, biometric HUD guidance messages, error notifications, and date/time formatting.
+
+### 4.11. Smart Floating "Scroll to Top" Action Button
 - **Glassmorphism & Neon Glow Design**: Circular floating button (`fixed bottom-7 right-7 z-50`) with an indigo ambient glow.
 - **SVG Circular Scroll Progress Meter**: Dynamically traces page scroll percentage (0% to 100%) in an animated glowing ring.
 - **Smart Visibility & Micro-Animations**:
@@ -277,6 +318,41 @@ Run the all-inclusive microservices E2E test suite covering Zero-Trust security,
 
 ---
 
-## 8. License & Acknowledgments
+## 8. Enterprise Feature Roadmap
+
+The V-Face Pro architecture is designed for continuous enterprise capability expansion across four strategic milestones:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           V-FACE PRO ENTERPRISE ROADMAP                                │
+├──────────────────────────┬──────────────────────────┬───────────────────────────────────┤
+│ Phase 1: Biometrics & AI │ Phase 2: HRM & Payroll   │ Phase 3: Access Control & IoT     │
+│ • PPE / Mask Detection   │ • Multi-Shift Scheduling │ • Turnstile / Barrier Gate Relay  │
+│ • Gesture Liveness Check │ • Automated Payroll Calc │ • Wiegand & MQTT IoT Protocols    │
+│ • Multi-Face Batch RTSP  │ • Export Excel & PDF     │ • TensorRT Edge Box (Jetson)      │
+└──────────────────────────┴──────────────────────────┴───────────────────────────────────┘
+```
+
+### Phase 1: Advanced AI & Biometrics (Face AI Hub Expansion)
+- **PPE Compliance & Mask Detection (YOLOv8 / MobileNet)**: Real-time detection of surgical masks, safety helmets, and protective eyewear for factory floors, cleanrooms, and construction sites with compliance logging.
+- **Interactive Gesture Liveness (Challenge-Response)**: Multi-modal active anti-spoofing requiring micro-gestures (e.g., eye blink sequence, head nod, or natural smile) to eliminate high-definition video playback and deepfake spoofing.
+- **Multi-Face Batch Attendance (High-Density RTSP)**: Parallel batch facial extraction and pgvector multi-matching for up to 10 simultaneous faces per frame on turnstile camera streams.
+- **Demographics & Mood Analytics**: Passive workplace sentiment scoring and aggregate age/gender distributions for smart office analytics.
+
+### Phase 2: Enterprise HRM, Shift Scheduling & Automated Payroll
+- **Complex Multi-Shift Roster**: Support for rotating shifts, overnight shifts, flexible work hours, grace periods, and automated shift swapping workflows.
+- **Automated Payroll Engine**: Instant timesheet computation linking attendance logs, approved overtime (OT), late deductions, and leave balances directly into customizable payroll formulas with Excel / PDF export.
+
+### Phase 3: Smart Access Control & IoT Hardware Integration
+- **Turnstile / Barrier Gate Relay Integration**: Direct hardware triggering via Relay Modules, MQTT brokers, and Wiegand 26/34 controllers for automated physical door unlocking upon valid biometric verification.
+- **Edge AI Box Deployment**: Optimized TensorRT / OpenVINO inference pipelines packaged for low-power edge gateways (NVIDIA Jetson Orin Nano, Raspberry Pi 5).
+
+### Phase 4: Mobile & PWA Self-Service Workforce App
+- **Geofenced Mobile Check-in**: GPS boundary radius enforcement and corporate Wi-Fi BSSID validation for field engineers and remote workforce check-in.
+- **Push Notification Center**: Instant mobile alerts for leave approval updates, shift assignments, and anomalous check-in warnings.
+
+---
+
+## 9. License & Acknowledgments
 
 This project is built on open-source technologies: [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [Playwright](https://playwright.dev/), and [React](https://react.dev/).

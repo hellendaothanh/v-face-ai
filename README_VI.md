@@ -8,7 +8,7 @@
 
 </div>
 
-**V-Face Pro** là hệ sinh thái Microservices chuẩn Enterprise phục vụ chuyển đổi số doanh nghiệp toàn diện. Hệ thống kết hợp giữa **FastAPI Backend (Python 3.13)** và **React 19 + Tailwind CSS**, tích hợp **PostgreSQL 16 pgvector** (Vector 512D ArcFace), mô hình AI **InsightFace (buffalo_l)**, công nghệ chống gian lận **Anti-Spoofing MiniFASNetV2**, **Phát hiện người lạ (Stranger Alert)**, **Quản lý đa Camera RTSP**, và microservice độc lập **Core User & IAM Service (Port 8001)** làm nền tảng xác thực tập trung, phân quyền RBAC đa cấp, quản lý cơ cấu tổ chức và sẵn sàng tích hợp các phân hệ **HRM** và **Helpdesk**.
+**V-Face Pro** là hệ sinh thái Microservices chuẩn Enterprise phục vụ chuyển đổi số doanh nghiệp toàn diện. Hệ thống kết hợp giữa **FastAPI Backend (Python 3.13)** và **React 19 + Tailwind CSS**, vận hành trên nền tảng động cơ **AI ArcFace Core v1.4.0** (mô hình **InsightFace buffalo_l** trích xuất vector 512D, cơ sở dữ liệu **PostgreSQL 16 pgvector HNSW Index**), công nghệ chống gian lận **Anti-Spoofing MiniFASNetV2 Liveness**, **Phát hiện người lạ (Stranger Alert)**, **Quản lý đa Camera RTSP**, và microservice độc lập **Core User & IAM Service (Port 8001)** làm nền tảng xác thực tập trung, phân quyền RBAC đa cấp, quản lý cơ cấu tổ chức và sẵn sàng tích hợp các phân hệ **HRM** và **Helpdesk**.
 
 ---
 
@@ -43,6 +43,13 @@
 │ • HNSW Vector Index (<=>), Điểm danh   │   │ • Trọng số AI: InsightFace & MiniFASNet   │
 └────────────────────────────────────────┘   └───────────────────────────────────────────┘
 ```
+
+<div align="center">
+
+![Bàn làm việc Giám sát & Chấm công Realtime](docs/screenshots/dashboard.png)
+*Hình 1: Không gian Bàn làm việc Giám sát Điểm danh & Luồng Camera Realtime của V-Face Pro*
+
+</div>
 
 ---
 
@@ -132,21 +139,51 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
   3. **Ủy quyền Token liên microservice**: Gọi tự động sang Core User Service (`POST /api/v1/auth/face-token`) để phát hành cặp JWT Access/Refresh Token chuẩn.
 - **Tự động chuyển hướng**: Khi xác thực thành công, hệ thống chào mừng đích danh nhân viên và chuyển thẳng vào Dashboard.
 
-### 4.5. Đăng Ký Sinh Trắc Học 5 Góc Độ & Modal Xác Minh Trực Tiếp
-- **Thu thập 5 mẫu đa góc độ (5 Templates / Nhân viên)**: Chính diện (0°), Hướng lên (+15°), Hướng xuống (-15°), Nghiêng trái (-30°), và Nghiêng phải (+30°) kèm hướng dẫn chuyển động trực quan.
-- **Modal kiểm tra sinh trắc học trực tiếp (Live Verification Modal)**: Cho phép kiểm tra ngay độ tương đồng % và khoảng cách vector sau khi vừa đăng ký (`POST /api/v1/employees/{id}/verify-face`).
+<div align="center">
 
-### 4.6. Phân Hệ Face AI & Giám Sát Camera Realtime (`app/` - Port 8000)
-- **Nhận diện khuôn mặt ArcFace 512D**: So khớp vector Cosine Similarity siêu tốc qua pgvector HNSW Index.
+![Đăng nhập Sinh trắc học Face ID 1-Chạm](docs/screenshots/login_face_id.png)
+*Hình 2: Đăng nhập Sinh trắc học Face ID 1-Chạm kết hợp HUD Chống giả mạo Liveness & Chuyển ngôn ngữ*
+
+</div>
+
+### 4.5. Trung Tâm Quản Trị Nhân Sự & Sinh Trắc Học Tập Trung (`UnifiedHRHub` - Cổng 3000 & 8001)
+
+Phân hệ **Unified HR Hub** tập trung hóa toàn bộ nghiệp vụ quản trị nhân sự, trích xuất sinh trắc học và phân quyền bảo mật IAM qua 3 tab chức năng trực quan:
+
+<div align="center">
+
+![Trung tâm Quản trị Nhân sự & Sinh trắc học](docs/screenshots/hr_hub.png)
+*Hình 3: Giao diện Trung tâm Quản trị Nhân sự & Sinh trắc học (Hồ sơ, Mẫu Vector 512D & Đồng bộ IAM)*
+
+</div>
+
+#### Tab 1: Hồ Sơ Nhân Sự & Danh Sách Face AI 512D (Personnel & Face AI 512D Roster)
+- **Quản lý danh bạ nhân sự**: Tra cứu hồ sơ nhanh, bộ lọc phòng ban, trạng thái làm việc và liên kết dữ liệu định danh với tài khoản Core User IAM.
+- **Thu thập sinh trắc 5 góc độ (5 Templates / Nhân sự)**: Quy trình thu thập 5 góc mặt tiêu chuẩn (Chính diện 0°, Hướng lên +15°, Hướng xuống -15°, Nghiêng trái -30°, và Nghiêng phải +30°) kèm chỉ dẫn trực quan.
+- **Modal kiểm tra sinh trắc trực tiếp (Live Verification Modal)**: Cho phép chụp thử và so khớp tức thì với kho vector `PostgreSQL pgvector` để kiểm tra độ tin cậy (`confidence %`) và khoảng cách Cosine Similarity (`POST /api/v1/employees/{id}/verify-face`).
+
+#### Tab 2: Vai Trò & Phân Quyền Hạt Nhân RBAC (RBAC Roles & Granular Permissions)
+- **Ma trận 14 mã quyền nguyên tử**: Phân quyền chi tiết theo từng nghiệp vụ (`User`, `Attendance`, `Camera`, `RBAC`, `Organization`, `Helpdesk`).
+- **Bảo mật chống leo thang đặc quyền**: Ngăn chặn tài khoản cấp dưới tự gán quyền quản trị, bảo vệ vai trò hệ thống bất biến (`superadmin`).
+
+#### Tab 3: Cơ Cấu Tổ Chức & Chức Danh (Organizational Structure)
+- **Quản lý sơ đồ tổ chức**: Quản lý danh mục Phòng ban (`Departments`), Chức danh (`Positions`) và theo dõi số lượng nhân sự trực thuộc từng đơn vị.
+
+### 4.6. Phân Hệ Face AI & Giám Sát Camera Realtime (AI ArcFace Core v1.4.0 - Cổng 8000)
+- **Động cơ AI ArcFace Core v1.4.0**: Tích hợp mô hình nhận diện **InsightFace (buffalo_l)** trích xuất vector 512 chiều, kết hợp cơ sở dữ liệu **PostgreSQL 16 pgvector HNSW Index** cho tốc độ so khớp mili-giây.
 - **Cơ chế tự học (Auto Face Update / Continuous Learning)**: Tự động trích xuất và cập nhật vector khuôn mặt phụ trợ khi nhân viên điểm danh đạt độ tin cậy $\ge 95\%$.
 - **Chế độ xem Stream linh hoạt (Camera View Modes)**:
   - **3 Tỉ lệ khung hình**: `Standard` (4:3 chuẩn nét), `Wide` (16:9 mở rộng), và `Cinema` (21:9 màn ảnh rộng).
-  - **Bật/Tắt nhanh nguồn video**: Hỗ trợ chuyển đổi tức thì giữa Webcam máy tính và Camera IP Tapo C200 / Hikvision / Dahua.
   - **HUD Bounding Box & Fullscreen**: Khung nhận diện hiển thị tên, mã nhân viên, độ tương đồng % và trạng thái check-in thời gian thực.
 - **Cơ chế chống Anti-Spam & Debounce cảnh báo người lạ (Stranger Threat)**:
   - **Ngưỡng phát hiện người lạ**: Nhận diện khuôn mặt có độ tương đồng $< 70\%$.
   - **Bộ lọc 3 khung hình liên tiếp (3-Frame Counter)**: Ngăn chặn cảnh báo giả do người đi lướt qua hoặc bóng mờ chuyển động.
   - **Bộ đệm Cooldown 60 giây (Debounce Anti-Spam)**: Tránh spam còi hú báo động liên tục và tối ưu băng thông WebSocket.
+
+### 4.7. Thanh Điều Khiển Nhanh Header & Chuyển Nguồn Camera
+- **Nút chuyển đổi nhanh nguồn cấp video**: Header toàn cục cho phép chuyển nhanh bằng 1 click giữa `[PC Webcam]` (Camera tích hợp) và `[IP Cam]` (Luồng RTSP IP Camera Tapo C200, Hikvision, Dahua).
+- **Công tắc nguồn Camera toàn cục**: Nút bật/tắt luồng camera nhanh `[Bật Camera]` / `[Tắt Camera]` ngay trên Header mà không cần chuyển trang.
+- **Đồng hồ đo độ trễ & Trạng thái dịch vụ trực tiếp**: Hiển thị ping API phản hồi (ms), kết nối WebSocket thời gian thực và telemetry nguồn video trực tiếp trên Header.
 
 ### 4.8. Quản Lý Tài Khoản Cá Nhân & Đổi Mật Khẩu Tự Phục Vụ (My Account Self-Service)
 - **Giao diện toàn màn hình trực quan ("Tài Khoản Của Tôi")**: Dành riêng một tab trên thanh điều hướng Sidebar cho phép mọi người dùng đã đăng nhập tự quản lý hồ sơ cá nhân.
@@ -170,7 +207,11 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
   - Khóa bất biến vai trò hệ thống mặc định (`superadmin` không thể bị sửa hoặc xóa).
   - Chống người dùng tự xóa tài khoản của chính mình và chống tài khoản cấp dưới xóa tài khoản Superadmin.
 
-### 4.10. Tiện Ích Giao Diện Nút Cuộn Lên Đầu Trang Thông Minh (Smart Up-to-Top Button)
+### 4.10. Hỗ Trợ Đa Ngôn Ngữ Toàn Diện (Full i18n Localization)
+- **Chuyển đổi ngôn ngữ tức thì**: Hỗ trợ chuyển đổi 2 chiều mượt mà giữa **Tiếng Việt (`[VI]`)** và **Tiếng Anh (`[EN]`)** tại Header toàn cục và màn hình Đăng nhập.
+- **Bản địa hóa 100% giao diện**: Dịch chuẩn hóa toàn bộ nhãn biểu mẫu, bảng dữ liệu, thông điệp hướng dẫn HUD sinh trắc học, thông báo lỗi toast và định dạng ngày giờ theo vùng địa lý.
+
+### 4.11. Tiện Ích Giao Diện Nút Cuộn Lên Đầu Trang Thông Minh (Smart Up-to-Top Button)
 - **Thiết kế Glassmorphism & Neon Glow**: Nút nổi tròn bo góc mềm mại (`fixed bottom-7 right-7 z-50`) với viền dạ quang Indigo phản chiếu trên nền tối.
 - **Vòng tròn SVG đo lường tiến độ cuộn trang (Scroll Progress Meter)**: Đo lường chính xác phần trăm trang đã cuộn và hiển thị vòng cung sáng quanh icon mũi tên.
 - **Cơ chế ẩn/hiện thông minh & Vi tương tác (Micro-animations)**:
@@ -277,6 +318,41 @@ Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-T
 
 ---
 
-## 8. Bản Quyền & Giấy Phép
+## 8. Lộ Trình Phát Triển Tính Năng Doanh Nghiệp (Feature Roadmap)
+
+Kiến trúc V-Face Pro được định hướng mở rộng linh hoạt theo 4 giai đoạn phát triển chiến lược phục vụ khách hàng Enterprise:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                        V-FACE PRO ENTERPRISE FEATURE ROADMAP                            │
+├──────────────────────────┬──────────────────────────┬───────────────────────────────────┤
+│ Giai đoạn 1: AI & Sinh trắc │ Giai đoạn 2: HRM & Tiền lương│ Giai đoạn 3: Access Control & IoT │
+│ • Nhận diện PPE / Khẩu trang│ • Xếp ca kíp tự động đa ca │ • Điều khiển Relay Cổng Barrier  │
+│ • Liveness bằng cử chỉ   │ • Tính lương tự động hóa │ • Chuẩn giao tiếp Wiegand & MQTT  │
+│ • Batch Multi-Face RTSP  │ • Xuất bảng công Excel/PDF│ • Hộp nhúng Edge Box (TensorRT)  │
+└──────────────────────────┴──────────────────────────┴───────────────────────────────────┘
+```
+
+### Giai đoạn 1: Mở Rộng AI & Sinh Trắc Học Nâng Cao (Face AI Hub Expansion)
+- **Cảnh báo đeo khẩu trang / Đồ bảo hộ (PPE Detection - YOLOv8 / MobileNet)**: Phát hiện nhân viên không đeo khẩu trang, mũ bảo hộ hoặc kính an toàn khi check-in tại các khu vực nhà xưởng, phòng sạch, công trường với cảnh báo vi phạm tức thì.
+- **Liveness Detection nâng cao bằng Cử chỉ (Interactive Challenge-Response)**: Bổ sung lớp kiểm tra chống giả mạo chủ động (yêu cầu chớp mắt, gật đầu nhẹ hoặc mỉm cười theo hiệu lệnh) để triệt tiêu hoàn toàn nguy cơ giả mạo bằng video playback hoặc Deepfake độ nét cao.
+- **Điểm danh đồng thời theo nhóm (Multi-Face Batch Recognition)**: Trích xuất và so khớp pgvector song song nhiều khuôn mặt cùng lúc trong một khung hình RTSP từ camera an ninh góc rộng tại sảnh/lối ra vào cổng xoay (turnstile).
+- **Phân tích nhân khẩu học & Cảm xúc (Emotion & Demographics Analytics)**: Đánh giá tâm trạng nhân viên/khách hàng và thống kê nhóm tuổi/giới tính hỗ trợ phân tích môi trường làm việc.
+
+### Giai đoạn 2: Quản Trị Nhân Sự Nâng Cao, Ca Kíp & Tự Động Hóa Tính Lương
+- **Quản lý ca kíp phức tạp (Multi-Shift Scheduling)**: Hỗ trợ ca xoay vòng, ca đêm, ca gãy, thiết lập thời gian ân hạn đi muộn/về sớm và quy trình đổi ca tự phục vụ.
+- **Động cơ tính lương tự động (Automated Payroll Engine)**: Tổng hợp bảng công tự động từ dữ liệu chấm công, thời gian OT được duyệt, khấu trừ đi muộn và ngày phép; xuất báo cáo bảng lương chuẩn Excel / PDF chỉ với 1 click.
+
+### Giai đoạn 3: Tích Hợp Kiểm Soát Ra Vào Vật Lý & Thiết Bị IoT (Access Control)
+- **Điều khiển Cổng xoay Tripod / Barrier / Cửa từ qua Relay**: Tích hợp module đóng ngắt Relay, giao thức MQTT và bộ điều khiển Wiegand 26/34 để tự động mở khóa cửa vật lý ngay khi xác thực khuôn mặt thành công.
+- **Hộp nhúng AI Gateway (Edge AI Box)**: Đóng gói pipeline suy luận tối ưu TensorRT / OpenVINO chạy trực tiếp trên thiết bị nhúng công suất thấp (NVIDIA Jetson Orin Nano, Raspberry Pi 5).
+
+### Giai đoạn 4: Ứng Dụng Di Động & PWA Tự Phục Vụ (Mobile Workforce App)
+- **Chấm công di động định vị Geofencing**: Khóa tọa độ GPS và nhận diện BSSID mạng Wi-Fi văn phòng dành cho nhân viên kinh doanh thị trường và nhân sự làm việc từ xa.
+- **Trung tâm thông báo đẩy (Push Notifications)**: Nhận thông báo phê duyệt đơn phép, lịch phân ca và cảnh báo điểm danh bất thường ngay trên điện thoại.
+
+---
+
+## 9. Bản Quyền & Giấy Phép
 
 Dự án được xây dựng dựa trên các công nghệ mã nguồn mở: [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [Playwright](https://playwright.dev/) và [React](https://react.dev/).
