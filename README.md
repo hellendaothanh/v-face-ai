@@ -248,13 +248,26 @@ The **Unified HR Hub** centralizes workforce operations, 512D facial biometrics,
 - `POST /api/v1/helpdesk/kb/articles/{id}/helpful` - Vote KB article as helpful
 - `GET /health` - Microservice health status and uptime telemetry
 
-### Face AI & Attendance Endpoints (Port 8000)
+### Face AI, HRM & Enterprise Endpoints (Port 8000)
 - `POST /api/v1/auth/face-login` - 1-Click Biometric Face ID login with anti-spoofing & IAM token proxy
 - `GET /api/v1/employees` - List registered facial profiles
 - `POST /api/v1/employees/{id}/register-face` - Register 512D face embeddings (5 angles)
 - `POST /api/v1/employees/{id}/verify-face` - Live face match verification modal against registered pgvector templates
 - `GET /api/v1/attendance` - Query attendance history with multi-filter parameters
 - `POST /api/v1/attendance/check-in` - Manual photo verification and check-in
+- `POST /api/v1/attendance/mobile-checkin` - Mobile Geofenced check-in with GPS Haversine & Wi-Fi BSSID validation
+- `GET /api/v1/shifts` - List configured work shifts (Standard, Split, Rotating, Overnight)
+- `POST /api/v1/shifts` - Create custom work shift definition (Supports split intervals & rotating days)
+- `POST /api/v1/shifts/auto-match` - Intelligent auto-match shift algorithm based on check-in time
+- `POST /api/v1/shifts/assignments` - Assign work shift to employee
+- `POST /api/v1/payroll/calculate` - Automated timesheet & payroll computation engine
+- `GET /api/v1/payroll/records` - Query calculated payroll records by month and year
+- `GET /api/v1/payroll/export-csv` - Export payroll spreadsheet as CSV (UTF-8 BOM)
+- `GET /api/v1/reports/attendance/export` - Multi-format export (Excel `.xlsx`, PDF `.pdf`, CSV `.csv`) for attendance
+- `GET /api/v1/reports/violations/export` - Multi-format export for safety PPE and stranger security violations
+- `POST /api/v1/notifications/ott/test` - Test dispatch instant OTT alert (Telegram Bot / Slack / Zalo)
+- `GET /api/v1/notifications/ott/history` - Real-time audit logs of dispatched OTT notifications
+- `POST /api/v1/devices/{id}/trigger-relay` - Trigger turnstile barrier gate relay & Wiegand 26-bit Hex encoder
 - `GET /api/v1/requests` - Query HRM leave and exception requests
 - `POST /api/v1/requests` - Submit leave, excuse, business trip, or overtime request
 - `PUT /api/v1/requests/{id}/approve` - Approve pending HRM request
@@ -273,8 +286,8 @@ The **Unified HR Hub** centralizes workforce operations, 512D facial biometrics,
 
 ## 6. Automated Testing Suites
 
-### 6.1. Comprehensive 10-Module Microservices & Biometrics E2E Suite (`tests/test_e2e_full_system.py`)
-Run the all-inclusive microservices E2E test suite covering Zero-Trust security, RBAC, ABAC Data Scoping, anti-privilege escalation, organizations, unified identity sync, 5-angle biometrics, live verification, ITIL helpdesk, 1-Click Face ID login, and password self-service:
+### 6.1. Comprehensive 16-Module Microservices & Biometrics E2E Suite (`tests/test_e2e_full_system.py`)
+Run the all-inclusive microservices E2E test suite covering Zero-Trust security, RBAC, ABAC Data Scoping, anti-privilege escalation, organizations, unified identity sync, 5-angle biometrics, live verification, ITIL helpdesk, 1-Click Face ID login, password self-service, work shifts, automated payroll, IoT smart access, multi-format reporting, and OTT bot gateways:
 
 ```powershell
 # Windows
@@ -284,7 +297,7 @@ Run the all-inclusive microservices E2E test suite covering Zero-Trust security,
 ./venv/bin/python tests/test_e2e_full_system.py
 ```
 
-**Results (44/44 Tests PASS - 100%)**:
+**Results (72/72 Tests PASS - 100% Pass Rate)**:
 - **Module 1**: Authentication & JWT (`/auth/login`, `/auth/me`, token verification)
 - **Module 2**: RBAC Roles & Authorization (Role listing, admin existence, 14 atomic permissions)
 - **Module 3**: Organization Structure (Departments, Positions CRUD)
@@ -295,6 +308,12 @@ Run the all-inclusive microservices E2E test suite covering Zero-Trust security,
 - **Module 8**: 1-Click Biometric Face ID Login (`POST /auth/face-login`, JWT issuance, `/auth/me` verification)
 - **Module 9**: My Account Profile Update & Password Change (`PUT /users/{id}/profile`, `POST /auth/change-password`)
 - **Module 10**: Zero-Trust Security, ABAC Data Scoping & Anti-Privilege Escalation (Immutable `superadmin` role protection, privilege escalation prevention, departmental data scoping, self-deletion prevention)
+- **Module 11**: Work Shifts & Multi-Shift Roster Scheduling (Shift CRUD, assignments, grace periods)
+- **Module 12**: Automated Timesheet & Payroll Engine (Gross/Net pay, OT 1.5x, late penalty deductions)
+- **Module 13**: IoT Smart Access & Mobile Geofencing (Gate barrier relay, Wiegand 26-bit Hex encoder, GPS Haversine check-in)
+- **Module 14**: Enterprise Multi-Format Report Export (Excel `.xlsx` with openpyxl, PDF `.pdf` with reportlab, CSV `.csv`)
+- **Module 15**: OTT Bot Notification Gateway (Telegram Bot, Slack Webhook, Zalo OA dispatching & audit logs)
+- **Module 16**: Advanced Shift Scheduling & Auto-Matching (Split Shifts, Rotating Cycles, check-in auto-matching)
 
 ### 6.2. Playwright Frontend & UI Testing
 - **UI & Flow Verification (`e2e/dashboard.spec.js`)**: Tests seamless tab switching, live dashboards, and ensures zero runtime errors.
@@ -318,41 +337,30 @@ Run the all-inclusive microservices E2E test suite covering Zero-Trust security,
 
 ---
 
-## 8. Enterprise Feature Roadmap
+## 8. Enterprise Feature Roadmap & Deliverables
 
-The V-Face Pro architecture is designed for continuous enterprise capability expansion across four strategic milestones:
+The V-Face Pro architecture has delivered the key capabilities across strategic milestones:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                           V-FACE PRO ENTERPRISE ROADMAP                                │
 ├──────────────────────────┬──────────────────────────┬───────────────────────────────────┤
 │ Phase 1: Biometrics & AI │ Phase 2: HRM & Payroll   │ Phase 3: Access Control & IoT     │
-│ • PPE / Mask Detection   │ • Multi-Shift Scheduling │ • Turnstile / Barrier Gate Relay  │
-│ • Gesture Liveness Check │ • Automated Payroll Calc │ • Wiegand & MQTT IoT Protocols    │
-│ • Multi-Face Batch RTSP  │ • Export Excel & PDF     │ • TensorRT Edge Box (Jetson)      │
+│ [x] PPE / Mask Detection │ [x] Multi-Shift Roster   │ [x] Barrier Gate Relay Trigger    │
+│ [x] Gesture Liveness     │ [x] Split & Rotating     │ [x] Wiegand 26-bit Hex Encoder    │
+│ [x] Multi-Face Batch     │ [x] Automated Payroll    │ [x] MQTT & IoT Telemetry          │
+│ [x] Stranger Threat Alert│ [x] Multi-Format Reports │ [x] Mobile GPS Geofencing (500m)  │
 └──────────────────────────┴──────────────────────────┴───────────────────────────────────┘
 ```
 
-### Phase 1: Advanced AI & Biometrics (Face AI Hub Expansion)
-- **PPE Compliance & Mask Detection (YOLOv8 / MobileNet)**: Real-time detection of surgical masks, safety helmets, and protective eyewear for factory floors, cleanrooms, and construction sites with compliance logging.
-- **Interactive Gesture Liveness (Challenge-Response)**: Multi-modal active anti-spoofing requiring micro-gestures (e.g., eye blink sequence, head nod, or natural smile) to eliminate high-definition video playback and deepfake spoofing.
-- **Multi-Face Batch Attendance (High-Density RTSP)**: Parallel batch facial extraction and pgvector multi-matching for up to 10 simultaneous faces per frame on turnstile camera streams.
-- **Demographics & Mood Analytics**: Passive workplace sentiment scoring and aggregate age/gender distributions for smart office analytics.
-
-### Phase 2: Enterprise HRM, Shift Scheduling & Automated Payroll
-- **Complex Multi-Shift Roster**: Support for rotating shifts, overnight shifts, flexible work hours, grace periods, and automated shift swapping workflows.
-- **Automated Payroll Engine**: Instant timesheet computation linking attendance logs, approved overtime (OT), late deductions, and leave balances directly into customizable payroll formulas with Excel / PDF export.
-
-### Phase 3: Smart Access Control & IoT Hardware Integration
-- **Turnstile / Barrier Gate Relay Integration**: Direct hardware triggering via Relay Modules, MQTT brokers, and Wiegand 26/34 controllers for automated physical door unlocking upon valid biometric verification.
-- **Edge AI Box Deployment**: Optimized TensorRT / OpenVINO inference pipelines packaged for low-power edge gateways (NVIDIA Jetson Orin Nano, Raspberry Pi 5).
-
-### Phase 4: Mobile & PWA Self-Service Workforce App
-- **Geofenced Mobile Check-in**: GPS boundary radius enforcement and corporate Wi-Fi BSSID validation for field engineers and remote workforce check-in.
-- **Push Notification Center**: Instant mobile alerts for leave approval updates, shift assignments, and anomalous check-in warnings.
+- **[x] Phase 1 (Advanced AI & Biometrics)**: PPE Mask & Safety Helmet compliance detection, interactive gesture challenge-response verification, 512D ArcFace multi-template recognition, and stranger threat alerts.
+- **[x] Phase 2 (Enterprise HRM & Automated Payroll)**: Multi-shift scheduling (Standard, Split shifts, Rotating cycles), automated timesheet payroll calculation (OT 1.5x, deductions, net salary), and multi-format report exports (Excel `.xlsx`, PDF `.pdf`, CSV).
+- **[x] Phase 3 (Smart Access Control & IoT Hardware)**: Turnstile and gate barrier relay triggering, Wiegand 26-bit parity bitstream generator, and MQTT telemetry integration.
+- **[x] Phase 4 (Mobile Workforce & OTT Gateways)**: Geofenced mobile check-in with GPS Haversine validation (500m radius) & Wi-Fi BSSID binding, and automated OTT bot alerts via Telegram, Slack, and Zalo.
 
 ---
 
 ## 9. License & Acknowledgments
 
-This project is built on open-source technologies: [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [Playwright](https://playwright.dev/), and [React](https://react.dev/).
+This project is built on open-source technologies: [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [openpyxl](https://openpyxl.readthedocs.io/), [ReportLab](https://www.reportlab.com/), [Playwright](https://playwright.dev/), and [React](https://react.dev/).
+

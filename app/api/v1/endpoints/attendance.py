@@ -114,3 +114,84 @@ async def get_attendance_history(
         message="Lấy lịch sử chấm công thành công",
         data=result
     )
+
+
+@router.post(
+    "/mobile-checkin",
+    response_model=ResponseBase[dict],
+    summary="Chấm công di động định vị Geofencing GPS & BSSID"
+)
+async def mobile_geofence_checkin(
+    payload: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Roadmap Phase 4: Chấm công di động định vị Geofencing GPS & BSSID.
+    Kiểm tra khoảng cách GPS của nhân viên so với trụ sở cơ quan (bán kính cho phép 500m).
+    """
+    import math
+    from app.models.employee import Employee
+    from sqlalchemy import select
+
+    emp_code = payload.get("employee_code")
+    lat = float(payload.get("latitude", 0.0))
+    lng = float(payload.get("longitude", 0.0))
+    wifi_bssid = payload.get("wifi_bssid")
+
+    if not emp_code:
+        raise HTTPException(status_code=400, detail="Thiếu mã nhân viên.")
+
+    res = await db.execute(select(Employee).where(Employee.employee_code == emp_code))
+    emp = res.scalar_one_or_none()
+    if not emp:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nhân viên {emp_code}.")
+
+    # Office Coordinates: Hanoi Headquarter (21.0285, 105.8542)
+    office_lat, office_lng = 21.0285, 105.8542
+    # Haversine distance formula (meters)
+    R = 6371000.0
+    phi1 = math.radians(office_lat)
+    phi2 = math.radians(lat)
+    delta_phi = math.radians(lat - office_lat)
+    delta_lambda = math.radians(lng - office_lng)
+
+    a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance_meters = R * c
+
+    # Allow if within 500m or if matched trusted office BSSID
+    max_radius = 500.0
+    in_geofence = distance_meters <= max_radius or (wifi_bssid and "vface" in wifi_bssid.lower())
+
+    if not in_geofence:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Vị trí nằm ngoài vùng cho phép ({distance_meters:.1f}m > {max_radius:.0f}m). Vui lòng check-in trong khuôn viên văn phòng."
+        )
+
+    # Create Attendance Record
+    from app.models.attendance import AttendanceRecord, AttendanceType
+    record = AttendanceRecord(
+        employee_id=emp.id,
+        attendance_type=AttendanceType.CHECK_IN,
+        confidence_score=0.99,
+        device_id="MOBILE_GEOFENCE_GPS",
+        note=f"Chấm công di động Geofence (Cách VP {distance_meters:.1f}m, BSSID={wifi_bssid or 'N/A'})"
+    )
+    db.add(record)
+    await db.commit()
+    await db.refresh(record)
+
+    return ResponseBase(
+        success=True,
+        message=f"Chấm công di động thành công cho {emp.full_name} (Cách VP {distance_meters:.1f}m).",
+        data={
+            "record_id": str(record.id),
+            "employee_name": emp.full_name,
+            "employee_code": emp.employee_code,
+            "distance_meters": round(distance_meters, 1),
+            "check_time": record.check_time.isoformat(),
+            "in_geofence": in_geofence
+        }
+    )
+

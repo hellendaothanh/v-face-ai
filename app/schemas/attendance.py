@@ -16,6 +16,12 @@ class AttendanceRecordRead(BaseModel):
     matched_face_id: Optional[uuid.UUID] = None
     device_id: Optional[str] = None
     snapshot_path: Optional[str] = None
+    ppe_compliance: bool = True
+    ppe_violations: Optional[str] = None
+    gesture_verified: bool = False
+    shift_id: Optional[uuid.UUID] = None
+    work_duration_hours: float = 0.0
+    ot_hours: float = 0.0
     note: Optional[str] = None
     employee: Optional[EmployeeRead] = None
 
@@ -32,7 +38,19 @@ class AttendanceCheckInResponse(BaseModel):
     check_time: datetime
     attendance_type: AttendanceType
     confidence_score: float
+    ppe_compliance: bool = True
+    ppe_violations: Optional[str] = None
+    gesture_verified: bool = False
     message: str
+
+
+class MobileCheckInRequest(BaseModel):
+    employee_code: str = Field(..., example="EMP001")
+    latitude: float = Field(..., example=21.028511)
+    longitude: float = Field(..., example=105.854167)
+    wifi_bssid: Optional[str] = Field(None, example="00:11:22:33:44:55")
+    image_base64: Optional[str] = None
+    attendance_type: AttendanceType = Field(default=AttendanceType.AUTO)
 
 
 class AttendanceFilterParams(BaseModel):

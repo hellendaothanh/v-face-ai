@@ -181,6 +181,7 @@ class E2ETestRunner:
         self.assert_true(emp_res.status_code in [200, 201], f"Create Face AI Employee ({emp_code})", emp_res.text)
         emp_data = emp_res.json().get("data", {})
         self.test_emp_id = emp_data.get("id")
+        self.test_emp_code = emp_code
 
         # 2. Create IAM User on Core User Service (Port 8001)
         user_payload = {
@@ -498,6 +499,192 @@ class E2ETestRunner:
     # ------------------------------------------------------------------------
     # Teardown / Cleanup
     # ------------------------------------------------------------------------
+    # Module 11: Work Shifts & Roster Scheduling
+    # ------------------------------------------------------------------------
+    def test_shifts_and_roster(self):
+        print(f"\n{INFO_ICON}--- Module 11: Work Shifts & Roster Scheduling ---")
+        # 1. List configured shifts
+        res = requests.get(f"{FACE_AI_URL}/shifts")
+        self.assert_true(res.status_code == 200, "List Work Shifts (Auto-seeded)", f"{res.status_code}")
+        shifts = res.json()
+        self.assert_true(len(shifts) >= 4, f"At least 4 shifts available (got {len(shifts)})")
+
+        standard_shift = next((s for s in shifts if s.get("shift_code") == "SHIFT_STANDARD"), shifts[0])
+
+        # 2. Create custom work shift
+        custom_code = f"SHIFT_{uuid.uuid4().hex[:4].upper()}"
+        create_res = requests.post(
+            f"{FACE_AI_URL}/shifts",
+            json={
+                "shift_code": custom_code,
+                "shift_name": "Ca Tăng Cường Weekend",
+                "shift_type": "FLEXIBLE",
+                "start_time": "09:00:00",
+                "end_time": "18:00:00",
+                "grace_period_minutes": 20,
+                "work_hours": 8.0
+            }
+        )
+        self.assert_true(create_res.status_code == 201, f"Create Custom Work Shift ({custom_code})", f"{create_res.status_code}")
+
+        # 3. Assign shift to test employee
+        if self.test_emp_id:
+            assign_res = requests.post(
+                f"{FACE_AI_URL}/shifts/assignments",
+                json={
+                    "shift_id": standard_shift["id"],
+                    "employee_id": self.test_emp_id,
+                    "effective_from": "2026-08-01"
+                }
+            )
+            self.assert_true(assign_res.status_code == 201, "Assign Shift to Employee", f"{assign_res.status_code}")
+
+    # ------------------------------------------------------------------------
+    # Module 12: Automated Timesheet & Payroll Engine
+    # ------------------------------------------------------------------------
+    def test_automated_payroll(self):
+        print(f"\n{INFO_ICON}--- Module 12: Automated Timesheet & Payroll Engine ---")
+        # 1. Calculate monthly payroll
+        calc_res = requests.post(
+            f"{FACE_AI_URL}/payroll/calculate",
+            json={"month": 8, "year": 2026}
+        )
+        self.assert_true(calc_res.status_code == 200, "Calculate Monthly Payroll (Aug 2026)", f"{calc_res.status_code}")
+        records = calc_res.json()
+        self.assert_true(isinstance(records, list), "Payroll records returned as list")
+
+        # 2. Export payroll CSV
+        csv_res = requests.get(f"{FACE_AI_URL}/payroll/export-csv?month=8&year=2026")
+        self.assert_true(csv_res.status_code == 200, "Export Payroll CSV / Excel File", f"{csv_res.status_code}")
+        self.assert_true("text/csv" in csv_res.headers.get("content-type", ""), "Content-Type is text/csv")
+
+    # ------------------------------------------------------------------------
+    # Module 13: IoT Smart Access Control & Mobile Geofenced Check-in
+    # ------------------------------------------------------------------------
+    def test_iot_access_and_geofencing(self):
+        print(f"\n{INFO_ICON}--- Module 13: IoT Smart Access & Mobile Geofencing ---")
+        # 1. Trigger IoT Gate Relay & Wiegand encoding
+        relay_res = requests.post(
+            f"{FACE_AI_URL}/devices/GATE_MAIN_01/trigger-relay?duration=3.0&employee_code=TEST_EMP"
+        )
+        self.assert_true(relay_res.status_code == 200, "Trigger IoT Gate Barrier Relay", f"{relay_res.status_code}")
+        relay_data = relay_res.json().get("data", {})
+        self.assert_true("0x" in relay_data.get("wiegand_code", ""), f"Wiegand 26-bit Hex generated: {relay_data.get('wiegand_code')}")
+
+        # 2. Mobile Geofencing Check-in within Office Radius
+        if self.test_emp_code:
+            geo_res = requests.post(
+                f"{FACE_AI_URL}/attendance/mobile-checkin",
+                json={
+                    "employee_code": self.test_emp_code,
+                    "latitude": 21.028511,
+                    "longitude": 105.854167,
+                    "wifi_bssid": "V-FACE_CORP_OFFICE"
+                }
+            )
+            self.assert_true(geo_res.status_code == 200, "Mobile Check-in inside Office Geofence (500m)", f"{geo_res.status_code}")
+
+    # ------------------------------------------------------------------------
+    # Module 14: Multi-Format Report Export (Excel, PDF, CSV)
+    # ------------------------------------------------------------------------
+    def test_multi_format_reports(self):
+        print(f"\n{INFO_ICON}--- Module 14: Enterprise Multi-Format Report Export ---")
+        
+        # 1. Export Attendance in Excel (.xlsx)
+        xlsx_res = requests.get(f"{FACE_AI_URL}/reports/attendance/export?format=xlsx")
+        self.assert_true(xlsx_res.status_code == 200, "Export Attendance Report in Excel (.xlsx) format", f"{xlsx_res.status_code}")
+        self.assert_true("spreadsheetml" in xlsx_res.headers.get("Content-Type", ""), "Content-Type is Excel spreadsheet", xlsx_res.headers.get("Content-Type"))
+        self.assert_true(len(xlsx_res.content) > 1000, f"Excel file size > 1KB (got {len(xlsx_res.content)} bytes)")
+
+        # 2. Export Attendance in PDF (.pdf)
+        pdf_res = requests.get(f"{FACE_AI_URL}/reports/attendance/export?format=pdf")
+        self.assert_true(pdf_res.status_code == 200, "Export Attendance Report in PDF (.pdf) format", f"{pdf_res.status_code}")
+        self.assert_true("application/pdf" in pdf_res.headers.get("Content-Type", ""), "Content-Type is application/pdf", pdf_res.headers.get("Content-Type"))
+        self.assert_true(pdf_res.content.startswith(b"%PDF"), "Binary stream has valid %PDF magic header")
+
+        # 3. Export Attendance in CSV (.csv)
+        csv_res = requests.get(f"{FACE_AI_URL}/reports/attendance/export?format=csv")
+        self.assert_true(csv_res.status_code == 200, "Export Attendance Report in CSV (.csv) format", f"{csv_res.status_code}")
+        self.assert_true(csv_res.content.startswith(b"\xef\xbb\xbf"), "CSV stream contains UTF-8 BOM encoding for Excel compatibility")
+
+        # 4. Export Violations Report (.xlsx)
+        viol_res = requests.get(f"{FACE_AI_URL}/reports/violations/export?format=xlsx")
+        self.assert_true(viol_res.status_code == 200, "Export Security & PPE Violations Report (.xlsx)", f"{viol_res.status_code}")
+
+    # ------------------------------------------------------------------------
+    # Module 15: OTT Notification Bot Gateway (Telegram, Slack, Zalo)
+    # ------------------------------------------------------------------------
+    def test_ott_notification_gateway(self):
+        print(f"\n{INFO_ICON}--- Module 15: OTT Bot Notification Gateway ---")
+        
+        # 1. Dispatch Test Stranger Threat Alert (Telegram)
+        tg_res = requests.post(
+            f"{FACE_AI_URL}/notifications/ott/test",
+            json={
+                "channel": "TELEGRAM",
+                "event_type": "STRANGER_THREAT",
+                "title": "⚠️ CẢNH BÁO AN NINH TEST",
+                "message": "Phát hiện người lạ tại Cổng Chính lúc 08:30"
+            }
+        )
+        self.assert_true(tg_res.status_code == 200, "Dispatch Test OTT Stranger Threat Alert (Telegram)", f"{tg_res.status_code}")
+        tg_data = tg_res.json().get("data", {})
+        self.assert_true(tg_data.get("channel") == "TELEGRAM", "Dispatched channel is TELEGRAM")
+
+        # 2. Dispatch Test PPE Alert (Slack)
+        slack_res = requests.post(
+            f"{FACE_AI_URL}/notifications/ott/test",
+            json={
+                "channel": "SLACK",
+                "event_type": "PPE_VIOLATION",
+                "title": "🛡️ CẢNH BÁO VI PHẠM PPE TEST",
+                "message": "Nhân viên không đeo khẩu trang tại Khu vực kiểm soát"
+            }
+        )
+        self.assert_true(slack_res.status_code == 200, "Dispatch Test OTT PPE Violation Alert (Slack)", f"{slack_res.status_code}")
+
+        # 3. Query OTT Notification History
+        hist_res = requests.get(f"{FACE_AI_URL}/notifications/ott/history?limit=10")
+        self.assert_true(hist_res.status_code == 200, "Retrieve OTT Notification Audit Logs", f"{hist_res.status_code}")
+        logs = hist_res.json().get("data", [])
+        self.assert_true(len(logs) >= 2, f"At least 2 OTT notification logs recorded (got {len(logs)})")
+
+    # ------------------------------------------------------------------------
+    # Module 16: Advanced Shift Scheduling (Split Shift & Auto-Match)
+    # ------------------------------------------------------------------------
+    def test_advanced_shift_scheduling(self):
+        print(f"\n{INFO_ICON}--- Module 16: Advanced Shift Scheduling & Auto-Matching ---")
+        
+        # 1. Create Split Shift (Ca Gãy)
+        split_code = f"SPLIT_{uuid.uuid4().hex[:4].upper()}"
+        split_res = requests.post(
+            f"{FACE_AI_URL}/shifts",
+            json={
+                "shift_code": split_code,
+                "shift_name": "Ca Gãy Nhà Hàng",
+                "shift_type": "SPLIT",
+                "start_time": "10:00:00",
+                "end_time": "21:00:00",
+                "is_split_shift": True,
+                "split_break_start": "14:00:00",
+                "split_break_end": "17:00:00",
+                "work_hours": 7.0,
+                "grace_period_minutes": 15,
+                "allow_auto_match": True
+            }
+        )
+        self.assert_true(split_res.status_code == 201, f"Create Split Shift '{split_code}' (10:00-14:00 & 17:00-21:00)", f"{split_res.status_code}")
+
+        # 2. Test Intelligent Auto-Match Shift based on checkin time 10:10
+        match_res = requests.post(
+            f"{FACE_AI_URL}/shifts/auto-match",
+            json={"checkin_time": "10:10"}
+        )
+        self.assert_true(match_res.status_code == 200, "Auto-Match Shift for 10:10 AM Check-in", f"{match_res.status_code}")
+        match_data = match_res.json()
+        self.assert_true(match_data.get("matched_shift_id") is not None, f"Matched Shift: {match_data.get('shift_name')} ({match_data.get('shift_code')})")
+
+    # ------------------------------------------------------------------------
     def cleanup(self):
         print(f"\n{INFO_ICON}--- Teardown: Clean up test artifacts ---")
         headers = {"Authorization": f"Bearer {self.admin_token}"}
@@ -546,6 +733,12 @@ class E2ETestRunner:
             self.test_my_account_profile_and_password()
             self.test_zero_trust_and_anti_privilege_escalation()
             self.test_helpdesk()
+            self.test_shifts_and_roster()
+            self.test_automated_payroll()
+            self.test_iot_access_and_geofencing()
+            self.test_multi_format_reports()
+            self.test_ott_notification_gateway()
+            self.test_advanced_shift_scheduling()
         finally:
             self.cleanup()
 
@@ -559,3 +752,4 @@ class E2ETestRunner:
 if __name__ == "__main__":
     runner = E2ETestRunner()
     runner.run_all()
+

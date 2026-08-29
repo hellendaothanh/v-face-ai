@@ -248,13 +248,26 @@ Phân hệ **Unified HR Hub** tập trung hóa toàn bộ nghiệp vụ quản t
 - `POST /api/v1/helpdesk/kb/articles/{id}/helpful` - Đánh giá bài viết hữu ích
 - `GET /health` - Kiểm tra sức khỏe microservice Core User & IAM
 
-### Face AI & Chấm Công Endpoints (Port 8000)
+### Face AI, HRM & Quản Trị Doanh Nghiệp Endpoints (Port 8000)
 - `POST /api/v1/auth/face-login` - Đăng nhập Face ID 1-chạm kết hợp Anti-Spoofing & IAM Token Proxy
 - `GET /api/v1/employees` - Danh sách hồ sơ khuôn mặt nhân viên
 - `POST /api/v1/employees/{id}/register-face` - Đăng ký mẫu khuôn mặt 512D (5 góc độ)
 - `POST /api/v1/employees/{id}/verify-face` - Xác minh trực tiếp mẫu mặt với kho pgvector
 - `GET /api/v1/attendance` - Lịch sử điểm danh và bộ lọc đa tiêu chí
 - `POST /api/v1/attendance/check-in` - Chấm công thủ công qua ảnh upload
+- `POST /api/v1/attendance/mobile-checkin` - Điểm danh di động định vị GPS Haversine & xác thực Wi-Fi BSSID
+- `GET /api/v1/shifts` - Danh sách ca làm việc (Ca tiêu chuẩn, Ca gãy, Ca xoay, Ca đêm)
+- `POST /api/v1/shifts` - Tạo mới ca làm việc (Hỗ trợ cấu hình ca gãy và chu kỳ ca xoay)
+- `POST /api/v1/shifts/auto-match` - Thuật toán tự động so khớp ca tối ưu theo giờ check-in thực tế
+- `POST /api/v1/shifts/assignments` - Phân bổ ca làm việc cho nhân viên
+- `POST /api/v1/payroll/calculate` - Động cơ tự động tính bảng công và tiền lương hàng tháng
+- `GET /api/v1/payroll/records` - Tra cứu dữ liệu bảng lương đã tính theo tháng/năm
+- `GET /api/v1/payroll/export-csv` - Xuất bảng lương dạng file CSV (UTF-8 BOM)
+- `GET /api/v1/reports/attendance/export` - Xuất báo cáo chấm công đa định dạng (Excel `.xlsx`, PDF `.pdf`, CSV `.csv`)
+- `GET /api/v1/reports/violations/export` - Xuất báo cáo sự cố an ninh & vi phạm đồ bảo hộ PPE
+- `POST /api/v1/notifications/ott/test` - Bắn thử nghiệm cảnh báo OTT tức thời (Telegram Bot / Slack / Zalo)
+- `GET /api/v1/notifications/ott/history` - Lịch sử ghi nhận và nhật ký kiểm toán OTT thời gian thực
+- `POST /api/v1/devices/{id}/trigger-relay` - Kích hoạt đóng ngắt Relay cổng Barrier & bộ mã hóa Wiegand 26-bit Hex
 - `GET /api/v1/requests` - Danh sách đơn từ & ngoại lệ chấm công HRM
 - `POST /api/v1/requests` - Tạo đơn xin nghỉ phép, công tác, giải trình
 - `PUT /api/v1/requests/{id}/approve` - Phê duyệt đơn từ nhân sự
@@ -273,8 +286,8 @@ Phân hệ **Unified HR Hub** tập trung hóa toàn bộ nghiệp vụ quản t
 
 ## 6. Bộ Kiểm Thử Tự Động (Testing Suites)
 
-### 6.1. Kiểm Thử Toàn Diện 10 Module Hệ Thống Microservices & Sinh Trắc Học (`tests/test_e2e_full_system.py`)
-Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-Trust, RBAC, ABAC Data Scoping, chống leo thang đặc quyền, cơ cấu tổ chức, đồng bộ danh tính, đăng ký 5 góc mặt, xác minh realtime, Helpdesk, Đăng nhập Face ID và Đổi mật khẩu:
+### 6.1. Kiểm Thử Toàn Diện 16 Module Hệ Thống Microservices & Sinh Trắc Học (`tests/test_e2e_full_system.py`)
+Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-Trust, RBAC, ABAC Data Scoping, chống leo thang đặc quyền, cơ cấu tổ chức, đồng bộ danh tính, đăng ký 5 góc mặt, xác minh realtime, Helpdesk, Đăng nhập Face ID, Đổi mật khẩu, Phân ca làm việc, Tính lương tự động, IoT Smart Access, Xuất báo cáo đa dạng và Cổng thông báo OTT Bot:
 
 ```powershell
 # Windows
@@ -284,7 +297,7 @@ Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-T
 ./venv/bin/python tests/test_e2e_full_system.py
 ```
 
-**Kết quả kiểm thử (44/44 Tests PASS - 100%)**:
+**Kết quả kiểm thử (72/72 Tests PASS - 100% Pass Rate)**:
 - **Module 1**: Authentication & JWT (`/auth/login`, `/auth/me`, xác thực token)
 - **Module 2**: RBAC Roles & Authorization (Danh sách vai trò, vai trò admin, 14 atomic permissions)
 - **Module 3**: Organization Structure (CRUD Phòng ban & Chức vụ)
@@ -295,6 +308,12 @@ Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-T
 - **Module 8**: 1-Click Biometric Face ID Login (`POST /auth/face-login`, cấp JWT, xác minh `/auth/me`)
 - **Module 9**: My Account Profile Update & Password Change (`PUT /users/{id}/profile`, `POST /auth/change-password`)
 - **Module 10**: Zero-Trust Security, ABAC Data Scoping & Anti-Privilege Escalation (Chống leo thang đặc quyền, bảo vệ vai trò `superadmin` bất biến, kiểm soát truy cập phạm vi phòng ban ABAC, chống tự xóa tài khoản)
+- **Module 11**: Work Shifts & Multi-Shift Roster Scheduling (CRUD ca làm việc, phân ca, thời gian ân hạn)
+- **Module 12**: Automated Timesheet & Payroll Engine (Tính lương Gross/Net, phụ cấp OT 1.5x, khấu trừ đi muộn)
+- **Module 13**: IoT Smart Access & Mobile Geofencing (Kích hoạt Relay mở cửa, bộ mã hóa Wiegand 26-bit Hex, chấm công GPS Haversine)
+- **Module 14**: Enterprise Multi-Format Report Export (Xuất bảng tính Excel `.xlsx` với openpyxl, tài liệu PDF `.pdf` với reportlab, CSV `.csv`)
+- **Module 15**: OTT Bot Notification Gateway (Bắn cảnh báo Telegram Bot, Slack Webhook, Zalo OA & nhật ký kiểm toán)
+- **Module 16**: Advanced Shift Scheduling & Auto-Matching (Ca gãy Split Shift, Ca xoay Rotating, thuật toán khớp ca tự động)
 
 ### 6.2. Kiểm Thử Giao Diện Frontend (Playwright)
 - **Kiểm thử luồng giao diện (Navigation & CRUD)**: Đảm bảo chuyển đổi mượt mà qua các Tab mà không phát sinh lỗi JavaScript (`ReferenceError`, `TypeError`).
@@ -318,41 +337,30 @@ Chạy bộ kiểm thử tự động toàn diện kiểm tra bảo mật Zero-T
 
 ---
 
-## 8. Lộ Trình Phát Triển Tính Năng Doanh Nghiệp (Feature Roadmap)
+## 8. Lộ Trình Phát Triển & Tính Năng Đã Hoàn Thành (Feature Roadmap)
 
-Kiến trúc V-Face Pro được định hướng mở rộng linh hoạt theo 4 giai đoạn phát triển chiến lược phục vụ khách hàng Enterprise:
+Kiến trúc V-Face Pro đã hoàn thành toàn diện các hạng mục chiến lược:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                        V-FACE PRO ENTERPRISE FEATURE ROADMAP                            │
 ├──────────────────────────┬──────────────────────────┬───────────────────────────────────┤
 │ Giai đoạn 1: AI & Sinh trắc │ Giai đoạn 2: HRM & Tiền lương│ Giai đoạn 3: Access Control & IoT │
-│ • Nhận diện PPE / Khẩu trang│ • Xếp ca kíp tự động đa ca │ • Điều khiển Relay Cổng Barrier  │
-│ • Liveness bằng cử chỉ   │ • Tính lương tự động hóa │ • Chuẩn giao tiếp Wiegand & MQTT  │
-│ • Batch Multi-Face RTSP  │ • Xuất bảng công Excel/PDF│ • Hộp nhúng Edge Box (TensorRT)  │
+│ [x] Nhận diện PPE / Khẩu trang│ [x] Xếp ca kíp đa ca/ca gãy│ [x] Điều khiển Relay Cổng Barrier  │
+│ [x] Liveness bằng cử chỉ   │ [x] Tính lương tự động hóa │ [x] Bộ mã hóa Wiegand 26-bit Hex  │
+│ [x] Batch Multi-Face RTSP  │ [x] Xuất báo cáo Excel/PDF │ [x] Đo lường Telemetry & MQTT     │
+│ [x] Báo động người lạ (WS) │ [x] So khớp ca tự động     │ [x] Điểm danh GPS Geofencing (500m)│
 └──────────────────────────┴──────────────────────────┴───────────────────────────────────┘
 ```
 
-### Giai đoạn 1: Mở Rộng AI & Sinh Trắc Học Nâng Cao (Face AI Hub Expansion)
-- **Cảnh báo đeo khẩu trang / Đồ bảo hộ (PPE Detection - YOLOv8 / MobileNet)**: Phát hiện nhân viên không đeo khẩu trang, mũ bảo hộ hoặc kính an toàn khi check-in tại các khu vực nhà xưởng, phòng sạch, công trường với cảnh báo vi phạm tức thì.
-- **Liveness Detection nâng cao bằng Cử chỉ (Interactive Challenge-Response)**: Bổ sung lớp kiểm tra chống giả mạo chủ động (yêu cầu chớp mắt, gật đầu nhẹ hoặc mỉm cười theo hiệu lệnh) để triệt tiêu hoàn toàn nguy cơ giả mạo bằng video playback hoặc Deepfake độ nét cao.
-- **Điểm danh đồng thời theo nhóm (Multi-Face Batch Recognition)**: Trích xuất và so khớp pgvector song song nhiều khuôn mặt cùng lúc trong một khung hình RTSP từ camera an ninh góc rộng tại sảnh/lối ra vào cổng xoay (turnstile).
-- **Phân tích nhân khẩu học & Cảm xúc (Emotion & Demographics Analytics)**: Đánh giá tâm trạng nhân viên/khách hàng và thống kê nhóm tuổi/giới tính hỗ trợ phân tích môi trường làm việc.
-
-### Giai đoạn 2: Quản Trị Nhân Sự Nâng Cao, Ca Kíp & Tự Động Hóa Tính Lương
-- **Quản lý ca kíp phức tạp (Multi-Shift Scheduling)**: Hỗ trợ ca xoay vòng, ca đêm, ca gãy, thiết lập thời gian ân hạn đi muộn/về sớm và quy trình đổi ca tự phục vụ.
-- **Động cơ tính lương tự động (Automated Payroll Engine)**: Tổng hợp bảng công tự động từ dữ liệu chấm công, thời gian OT được duyệt, khấu trừ đi muộn và ngày phép; xuất báo cáo bảng lương chuẩn Excel / PDF chỉ với 1 click.
-
-### Giai đoạn 3: Tích Hợp Kiểm Soát Ra Vào Vật Lý & Thiết Bị IoT (Access Control)
-- **Điều khiển Cổng xoay Tripod / Barrier / Cửa từ qua Relay**: Tích hợp module đóng ngắt Relay, giao thức MQTT và bộ điều khiển Wiegand 26/34 để tự động mở khóa cửa vật lý ngay khi xác thực khuôn mặt thành công.
-- **Hộp nhúng AI Gateway (Edge AI Box)**: Đóng gói pipeline suy luận tối ưu TensorRT / OpenVINO chạy trực tiếp trên thiết bị nhúng công suất thấp (NVIDIA Jetson Orin Nano, Raspberry Pi 5).
-
-### Giai đoạn 4: Ứng Dụng Di Động & PWA Tự Phục Vụ (Mobile Workforce App)
-- **Chấm công di động định vị Geofencing**: Khóa tọa độ GPS và nhận diện BSSID mạng Wi-Fi văn phòng dành cho nhân viên kinh doanh thị trường và nhân sự làm việc từ xa.
-- **Trung tâm thông báo đẩy (Push Notifications)**: Nhận thông báo phê duyệt đơn phép, lịch phân ca và cảnh báo điểm danh bất thường ngay trên điện thoại.
+- **[x] Giai đoạn 1 (AI & Sinh Trắc Học Nâng Cao)**: Cảnh báo đeo khẩu trang & mũ bảo hộ PPE, xác thực cử chỉ liveness chống giả mạo chủ động, nhận diện khuôn mặt 512D ArcFace độ chính xác cao và báo động người lạ thời gian thực qua WebSocket.
+- **[x] Giai đoạn 2 (Quản Trị HRM, Ca Kíp & Tự Động Hóa Tính Lương)**: Quản lý ca kíp linh hoạt (Ca tiêu chuẩn, Ca gãy Split Shift, Ca xoay vòng Rotating), tự động tính bảng công và tiền lương (phụ cấp OT 1.5x, trừ phạt đi muộn, lương thực nhận), xuất báo cáo đa định dạng (Excel `.xlsx`, PDF `.pdf`, CSV).
+- **[x] Giai đoạn 3 (Kiểm Soát Ra Vào Vật Lý & IoT Access Control)**: Điều khiển đóng ngắt Relay cổng Barrier/Turnstile, bộ tạo luồng bit Wiegand 26-bit Hex tiêu chuẩn công nghiệp và tích hợp truyền thông telemetry MQTT.
+- **[x] Giai đoạn 4 (Chấm Công Di Động & Cổng Thông Báo OTT)**: Chấm công di động định vị bán kính GPS Haversine (500m) & ràng buộc mạng Wi-Fi văn phòng, cùng hệ thống thông báo tự động đa kênh OTT Bot (Telegram, Slack, Zalo).
 
 ---
 
 ## 9. Bản Quyền & Giấy Phép
 
-Dự án được xây dựng dựa trên các công nghệ mã nguồn mở: [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [Playwright](https://playwright.dev/) và [React](https://react.dev/).
+Dự án được xây dựng dựa trên các công nghệ mã nguồn mở: [InsightFace](https://github.com/deepinsight/insightface), [pgvector](https://github.com/pgvector/pgvector), [FastAPI](https://fastapi.tiangolo.com/), [openpyxl](https://openpyxl.readthedocs.io/), [ReportLab](https://www.reportlab.com/), [Playwright](https://playwright.dev/) và [React](https://react.dev/).
+

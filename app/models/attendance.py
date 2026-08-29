@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,6 +10,7 @@ from app.database.base import Base
 
 if TYPE_CHECKING:
     from app.models.employee import Employee
+    from app.models.work_shift import WorkShift
 
 
 class AttendanceType(str, enum.Enum):
@@ -62,6 +63,39 @@ class AttendanceRecord(Base):
         String(255),
         nullable=True
     )
+    # Roadmap Phase 1 & 2 Attributes
+    ppe_compliance: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        comment="True if PPE (mask, helmet) compliance is satisfied or not required"
+    )
+    ppe_violations: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="Comma-separated PPE violations e.g. NO_MASK, NO_HELMET"
+    )
+    gesture_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="True if check-in passed active gesture challenge (blink, smile, nod)"
+    )
+    shift_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("work_shifts.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    work_duration_hours: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False
+    )
+    ot_hours: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False
+    )
     note: Mapped[Optional[str]] = mapped_column(
         Text,
         nullable=True
@@ -71,6 +105,10 @@ class AttendanceRecord(Base):
     employee: Mapped["Employee"] = relationship(
         "Employee",
         back_populates="attendance_records",
+        lazy="selectin"
+    )
+    shift: Mapped[Optional["WorkShift"]] = relationship(
+        "WorkShift",
         lazy="selectin"
     )
 

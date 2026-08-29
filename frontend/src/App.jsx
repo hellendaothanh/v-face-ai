@@ -10,6 +10,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SystemHealth from './components/SystemHealth';
 import HelpdeskManager from './components/HelpdeskManager';
 import UserProfileManager from './components/UserProfileManager';
+import ShiftAndPayrollManager from './components/ShiftAndPayrollManager';
 import ScrollToTop from './components/ScrollToTop';
 import Login from './components/Login';
 import api from './services/api';
@@ -96,15 +97,20 @@ function App() {
           title: t('header_analytics_title'),
           subtitle: t('header_analytics_sub'),
         };
+      case NAV_TABS.SHIFTS_PAYROLL:
+        return {
+          title: t('header_shifts_payroll_title'),
+          subtitle: t('header_shifts_payroll_sub'),
+        };
       case NAV_TABS.HELPDESK:
         return {
-          title: t('header_helpdesk_title') || 'Cổng Dịch Vụ Helpdesk & Service Desk Chuẩn ITIL',
-          subtitle: t('header_helpdesk_sub') || 'Quản lý yêu cầu hỗ trợ (Incident / Service Request), theo dõi SLA tự động và tra cứu cơ sở tri thức KB',
+          title: t('header_helpdesk_title'),
+          subtitle: t('header_helpdesk_sub'),
         };
       case NAV_TABS.HEALTH:
         return {
-          title: t('header_health_title') || 'Kiểm Tra Tình Trạng API & Hệ Thống',
-          subtitle: t('header_health_sub') || 'Giám sát trực tiếp trạng thái, độ trễ và Swagger Docs của các Microservices',
+          title: t('header_health_title'),
+          subtitle: t('header_health_sub'),
         };
       default:
         return { title: 'V-Face System', subtitle: 'AI Attendance & HRM System' };
@@ -170,6 +176,8 @@ function App() {
           {currentTab === NAV_TABS.MY_ACCOUNT && <UserProfileManager />}
 
           {currentTab === NAV_TABS.HELPDESK && <HelpdeskManager />}
+
+          {currentTab === NAV_TABS.SHIFTS_PAYROLL && <ShiftAndPayrollManager />}
 
           {(currentTab === NAV_TABS.HR_HUB || currentTab === 'EMPLOYEES' || currentTab === 'CORE_USER') && (
             (isHR || isAdmin || hasPermission(['user:read', 'user:create', 'rbac:manage', 'org:manage'])) ? (

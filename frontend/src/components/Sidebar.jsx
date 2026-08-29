@@ -20,6 +20,7 @@ import {
   BookOpen,
   Headphones,
   UserCog,
+  CalendarDays,
 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,7 @@ export const NAV_TABS = {
   HR_HUB: 'HR_HUB',
   EMPLOYEES: 'HR_HUB',
   CORE_USER: 'HR_HUB',
+  SHIFTS_PAYROLL: 'SHIFTS_PAYROLL',
   HELPDESK: 'HELPDESK',
   REQUESTS: 'REQUESTS',
   ATTENDANCE: 'ATTENDANCE',
@@ -54,8 +56,8 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
     },
     {
       id: NAV_TABS.MY_ACCOUNT,
-      label: t('nav_my_account') || 'Tài Khoản Của Tôi',
-      subLabel: t('nav_my_account_sub') || 'Hồ sơ cá nhân & Đổi mật khẩu',
+      label: t('nav_my_account'),
+      subLabel: t('nav_my_account_sub'),
       icon: UserCog,
       badge: 'ME',
       badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
@@ -63,17 +65,26 @@ const Sidebar = ({ currentTab, setCurrentTab, isWsConnected, isApiConnected, cam
     },
     {
       id: NAV_TABS.HR_HUB,
-      label: t('nav_hr_hub', 'Quản Trị Nhân Sự & Sinh Trắc'),
-      subLabel: t('nav_hr_hub_sub', 'Hồ sơ, Face AI 512D & IAM'),
+      label: t('nav_hr_hub'),
+      subLabel: t('nav_hr_hub_sub'),
       icon: Users,
       badge: 'HR & IAM',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
       allowed: isHR || isAdmin || hasPermission(['user:read', 'user:create', 'rbac:manage', 'org:manage']),
     },
     {
+      id: NAV_TABS.SHIFTS_PAYROLL,
+      label: t('nav_shifts_payroll'),
+      subLabel: t('nav_shifts_payroll_sub'),
+      icon: CalendarDays,
+      badge: 'HRM',
+      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      allowed: isHR || isAdmin || isManager || hasPermission(['user:read']),
+    },
+    {
       id: NAV_TABS.HELPDESK,
-      label: t('nav_helpdesk') || 'Helpdesk & Service Desk',
-      subLabel: t('nav_helpdesk_sub') || 'ITIL Tickets & Knowledge Base',
+      label: t('nav_helpdesk'),
+      subLabel: t('nav_helpdesk_sub'),
       icon: LifeBuoy,
       badge: 'ITIL',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',

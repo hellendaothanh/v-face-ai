@@ -229,3 +229,28 @@ async def delete_device(
         message=f"Đã xóa thiết bị '{device.device_name}' thành công.",
         data={"id": str(device_id)}
     )
+
+
+@router.post("/{device_id}/trigger-relay", response_model=ResponseBase[dict])
+async def trigger_gate_relay(
+    device_id: str,
+    duration: float = Query(3.0, ge=1.0, le=10.0, description="Thời gian mở rơ-le cửa (giây)"),
+    employee_code: Optional[str] = Query(None, description="Mã nhân viên kích hoạt")
+):
+    """
+    IoT Smart Access: Kích hoạt đóng/ngắt Rơ-le mở cổng Barrier / Khóa từ và phát mã Wiegand 26/34.
+    """
+    from app.services.iot_access_service import iot_access_service
+
+    event = await iot_access_service.trigger_gate_relay(
+        device_id=device_id,
+        gate_name="Cổng Kiểm Soát Ra Vào (Gate Barrier)",
+        employee_code=employee_code,
+        duration_seconds=duration
+    )
+
+    return ResponseBase(
+        success=True,
+        message="Kích hoạt mở rơ-le cổng barrier IoT thành công.",
+        data=event
+    )
