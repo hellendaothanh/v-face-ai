@@ -189,7 +189,7 @@ Phân hệ **Unified HR Hub** tập trung hóa toàn bộ nghiệp vụ quản t
 - **Thẻ định danh nổi bật (Hero Identity Banner)**: Hiển thị avatar ký tự viết tắt, Tên tài khoản, Mã nhân viên/User code, Huy hiệu chức danh phòng ban, các huy hiệu vai trò RBAC (`superadmin`, `admin`, `hr_manager`, v.v.), và đồng hồ đếm số lượng vector Face AI đã nạp (`5/5 mẫu`).
 - **Phân hệ Sinh Trắc Học & Tự Xác Thực Khuôn Mặt (Self-Service Face AI Hub)**:
   - **Modal Tự Kiểm Tra Xác Thực Trực Tiếp**: Nhân viên có thể tự bật webcam cá nhân để kiểm tra độ khớp sinh trắc học với 5 vector 512D lưu trong PostgreSQL pgvector (`POST /api/v1/employees/{id}/verify-face`) mà không cần nhờ HR hỗ trợ.
-  - **Modal Tự Nạp 5 Mẫu Góc Mặt**: Hướng dẫn 5 góc xoay mặt chuẩn (Chính diện 0°, Ngẩng +15°, Cúi -15°, Nghiêng trái -30°, Nghiêng phải +30°) giúp nhân viên tự chụp webcam hoặc tải ảnh để cập nhật mẫu mặt mọi lúc.
+  - **Modal Tự Nạp 5 Mẫu Góc Mặt kèm HUD Hướng Dẫn Tư Thế (Trái - Phải - Lên - Xuống - Chính Diện)**: Hướng dẫn 5 góc xoay mặt chuẩn (Chính diện 0°, Ngẩng +15°, Cúi -15°, Nghiêng trái -30°, Nghiêng phải +30°) với **hệ thống mũi tên điều hướng trực quan động (Lên ⬆️, Xuống ⬇️, Trái ⬅️, Phải ➡️, Tâm Oval 🎯)**, bảng hướng dẫn tư thế chi tiết và thanh điều hướng bước chụp nhanh giúp nhân viên tự chụp webcam hoặc tải ảnh chuẩn xác nhất.
   - **Tự động liên kết hồ sơ Face AI**: Cung cấp nút tạo và liên kết nhanh hồ sơ sinh trắc học cho tài khoản Core User IAM mới.
 - **Tự cập nhật thông tin cá nhân**: Cho phép chỉnh sửa Họ và tên, Số điện thoại với cơ chế tự động đồng bộ 2 chiều giữa Core User IAM và Face AI Employee. Khóa các trường nhạy cảm như Email và Mã nhân viên để đảm bảo toàn vẹn dữ liệu.
 - **Tự đổi mật khẩu bảo mật (Self-service Password Change)**:

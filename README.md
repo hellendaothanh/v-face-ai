@@ -189,7 +189,7 @@ The **Unified HR Hub** centralizes workforce operations, 512D facial biometrics,
 - **Hero Identity Banner**: Features initials avatar, Username, Employee/User Code, Department & Position badges, RBAC role chips (`superadmin`, `admin`, `hr_manager`, etc.), and live Face AI biometric vector counters (`5/5 templates`).
 - **Self-Service Biometric Face AI Hub (Independent Verification & Enrollment)**:
   - **Live Face Verification Modal**: Employees can independently verify their own facial biometrics in front of their webcam, testing match accuracy against pgvector with instant confidence % and cosine similarity metrics (`POST /api/v1/employees/{id}/verify-face`) without HR intervention.
-  - **Self-Service 5-Angle Face Enrollment**: Guided 5-angle capture (Frontal 0°, Tilt Up +15°, Tilt Down -15°, Turn Left -30°, and Turn Right +30°) allowing personnel to enroll or refresh their 512D facial templates anytime.
+  - **Self-Service 5-Angle Face Enrollment with Directional Pose HUD**: Interactive step-by-step 5-angle capture (Frontal 0°, Tilt Up +15°, Tilt Down -15°, Turn Left -30°, and Turn Right +30°) featuring **animated directional guide pointers (Up ⬆️, Down ⬇️, Left ⬅️, Right ➡️, Center 🎯)**, live pose coaching banners, and step navigation pills allowing personnel to enroll or refresh their 512D facial templates accurately.
   - **1-Click Profile Link**: Automatically links unassociated IAM accounts to Face AI biometric records.
 - **Profile Self-Service**: Full Name and Phone Number self-updates with automatic dual-sync between Core User IAM and Face AI Employee roster, while protecting immutable system fields (Email, User Code).
 - **Self-Service Password Change**:

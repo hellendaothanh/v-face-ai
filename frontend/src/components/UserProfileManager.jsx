@@ -27,22 +27,80 @@ import {
   Sparkles,
   Link,
   ChevronRight,
+  ChevronLeft,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Compass,
+  Target,
+  X,
 } from 'lucide-react';
 import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
 
-const ANGLES_CONFIG = [
-  { id: 'front', label: '1. Chính diện (0°)', desc: 'Nhìn thẳng vào camera, giữ khuôn mặt cân đối', badge: 'Chính diện 0°' },
-  { id: 'up', label: '2. Ngẩng lên (+15°)', desc: 'Ngẩng cằm lên nhẹ khoảng 15 độ', badge: 'Ngẩng +15°' },
-  { id: 'down', label: '3. Cúi xuống (-15°)', desc: 'Cúi cằm xuống nhẹ khoảng 15 độ', badge: 'Cúi -15°' },
-  { id: 'left', label: '4. Nghiêng trái (-30°)', desc: 'Xoay mặt sang bên trái khoảng 30 độ', badge: 'Nghiêng trái -30°' },
-  { id: 'right', label: '5. Nghiêng phải (+30°)', desc: 'Xoay mặt sang bên phải khoảng 30 độ', badge: 'Nghiêng phải +30°' },
-];
-
 const UserProfileManager = () => {
   const { t } = useI18n();
   const { currentUser, refreshProfile, userRoles } = useAuth();
+
+  const anglesConfig = [
+    {
+      id: 'straight',
+      step: 1,
+      label: t('angle_front_label', '1. Frontal (0°)'),
+      title: t('angle_1_title', 'Góc 1: Nhìn Thẳng Trung Tâm'),
+      desc: t('angle_1_desc', 'Giữ thẳng đầu, mắt nhìn thẳng vào tâm ống kính camera'),
+      badge: t('angle_1_badge', 'Thẳng (Center)'),
+      instruction: t('angle_1_instruction', 'NHÌN THẲNG VÀO TRUNG TÂM CAMERA'),
+      guideType: 'center',
+      icon: Target,
+    },
+    {
+      id: 'left',
+      step: 2,
+      label: t('angle_left_label', '2. Turn Left (~20°)'),
+      title: t('angle_2_title', 'Góc 2: Quay Mặt Sang Trái (~20°)'),
+      desc: t('angle_2_desc', 'Nghiêng và quay mặt nhẹ nhàng sang phía BÊN TRÁI'),
+      badge: t('angle_2_badge', 'Quay Trái (Yaw -20°)'),
+      instruction: t('angle_2_instruction', 'QUAY MẶT SANG BÊN TRÁI (~20°)'),
+      guideType: 'left',
+      icon: ArrowLeft,
+    },
+    {
+      id: 'right',
+      step: 3,
+      label: t('angle_right_label', '3. Turn Right (~20°)'),
+      title: t('angle_3_title', 'Góc 3: Quay Mặt Sang Phải (~20°)'),
+      desc: t('angle_3_desc', 'Nghiêng và quay mặt nhẹ nhàng sang phía BÊN PHẢI'),
+      badge: t('angle_3_badge', 'Quay Phải (Yaw +20°)'),
+      instruction: t('angle_3_instruction', 'QUAY MẶT SANG BÊN PHẢI (~20°)'),
+      guideType: 'right',
+      icon: ArrowRight,
+    },
+    {
+      id: 'down',
+      step: 4,
+      label: t('angle_down_label', '4. Tilt Down (~15°)'),
+      title: t('angle_4_title', 'Góc 4: Cúi Cằm Xuống Dưới (~15°)'),
+      desc: t('angle_4_desc', 'Hơi cúi cằm và hạ thấp góc nhìn xuống dưới'),
+      badge: t('angle_4_badge', 'Cúi Xuống (Pitch -15°)'),
+      instruction: t('angle_4_instruction', 'HƠI CÚI CẰM XUỐNG DƯỚI (~15°)'),
+      guideType: 'down',
+      icon: ArrowDown,
+    },
+    {
+      id: 'up_smile',
+      step: 5,
+      label: t('angle_up_label', '5. Tilt Up (~15°)'),
+      title: t('angle_5_title', 'Góc 5: Ngẩng Lên & Cười Tự Nhiên'),
+      desc: t('angle_5_desc', 'Hơi ngẩng cằm lên và cười tươi tự nhiên để nhận diện biểu cảm'),
+      badge: t('angle_5_badge', 'Ngẩng & Cười'),
+      instruction: t('angle_5_instruction', 'HƠI NGẨNG CẰM & CƯỜI TỰ NHIÊN'),
+      guideType: 'up',
+      icon: ArrowUp,
+    },
+  ];
 
   // Notification Toast
   const [notification, setNotification] = useState(null);
@@ -95,12 +153,13 @@ const UserProfileManager = () => {
   // 5-Angle Face Enrollment Modal State
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [activeAngleIndex, setActiveAngleIndex] = useState(0);
+  const [enrollMode, setEnrollMode] = useState('webcam'); // 'webcam' | 'manual_upload'
   const [anglePhotos, setAnglePhotos] = useState({
-    front: null,
-    up: null,
-    down: null,
+    straight: null,
     left: null,
     right: null,
+    down: null,
+    up_smile: null,
   });
   const [enrollStream, setEnrollStream] = useState(null);
   const enrollVideoRef = useRef(null);
@@ -367,14 +426,15 @@ const UserProfileManager = () => {
 
   const openEnrollModal = () => {
     setAnglePhotos({
-      front: null,
-      up: null,
-      down: null,
+      straight: null,
       left: null,
       right: null,
+      down: null,
+      up_smile: null,
     });
     setEnrollSuccessResult(null);
     setActiveAngleIndex(0);
+    setEnrollMode('webcam');
     setShowEnrollModal(true);
     setTimeout(() => startEnrollCamera(), 100);
   };
@@ -398,14 +458,14 @@ const UserProfileManager = () => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
-    const activeAngleKey = ANGLES_CONFIG[activeAngleIndex].id;
+    const activeAngleKey = anglesConfig[activeAngleIndex].id;
     setAnglePhotos(prev => ({
       ...prev,
       [activeAngleKey]: dataUrl
     }));
 
-    showToast(`Đã chụp góc: ${ANGLES_CONFIG[activeAngleIndex].badge}`);
-    if (activeAngleIndex < ANGLES_CONFIG.length - 1) {
+    showToast(`Captured angle: ${anglesConfig[activeAngleIndex].badge}`);
+    if (activeAngleIndex < anglesConfig.length - 1) {
       setActiveAngleIndex(activeAngleIndex + 1);
     }
   };
@@ -419,7 +479,6 @@ const UserProfileManager = () => {
         ...prev,
         [angleKey]: event.target.result
       }));
-      showToast(`Đã tải ảnh cho góc: ${angleKey}`);
     };
     reader.readAsDataURL(file);
   };
@@ -441,7 +500,7 @@ const UserProfileManager = () => {
 
     try {
       const formData = new FormData();
-      for (const angle of ANGLES_CONFIG) {
+      for (const angle of anglesConfig) {
         const dataUrl = anglePhotos[angle.id];
         if (dataUrl) {
           const res = await fetch(dataUrl);
@@ -542,8 +601,8 @@ const UserProfileManager = () => {
   };
 
   const userCode = currentUser?.user_code || currentUser?.username || 'NV000';
-  const deptName = currentUser?.department?.name || currentUser?.department || 'Chưa xếp phòng ban';
-  const posName = currentUser?.position?.name || currentUser?.position || 'Nhân viên';
+  const deptName = currentUser?.department?.name || currentUser?.department || t('unassigned_dept', 'Unassigned Department');
+  const posName = currentUser?.position?.name || currentUser?.position || t('default_position', 'Staff Member');
   const readyPhotosCount = Object.values(anglePhotos).filter(Boolean).length;
 
   return (
@@ -628,7 +687,7 @@ const UserProfileManager = () => {
               <Scan className="w-4 h-4 text-cyan-400" />
               <span>Face AI 512D:</span>
               <span className={`font-mono font-bold ${faceCount > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                {faceCount > 0 ? `${faceCount}/5 mẫu đã nạp` : 'Chưa có mẫu'}
+                {faceCount > 0 ? `${faceCount}/5 ${t('templates_loaded', 'templates loaded')}` : t('no_templates', 'No templates')}
               </span>
             </div>
           </div>
@@ -646,13 +705,13 @@ const UserProfileManager = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-white tracking-wide flex items-center space-x-2">
-                <span>{t('self_biometrics_title') || 'Sinh Trắc Học & Tự Xác Thực Khuôn Mặt'}</span>
+                <span>{t('self_biometrics_title', 'Biometrics & Self-Service Face Verification')}</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
                   Self-Service AI
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                {t('self_biometrics_sub') || 'Quản lý 5 mẫu vector 512D và chủ động kiểm tra độ khớp nhận diện trước camera'}
+                {t('self_biometrics_sub', 'Manage your 512D facial vectors and independently verify match confidence in front of the camera')}
               </p>
             </div>
           </div>
@@ -667,7 +726,7 @@ const UserProfileManager = () => {
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-cyan-600/20 transition-all hover:scale-[1.02]"
                 >
                   <Camera className="w-4 h-4 text-cyan-200" />
-                  <span>{t('self_verify_btn') || 'Tự Kiểm Tra Xác Thực'}</span>
+                  <span>{t('self_verify_btn', 'Verify My Face Now')}</span>
                 </button>
 
                 <button
@@ -676,7 +735,7 @@ const UserProfileManager = () => {
                   className="px-4 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 font-bold text-xs flex items-center space-x-2 transition-all"
                 >
                   <Sparkles className="w-4 h-4 text-indigo-300" />
-                  <span>{t('self_register_face_btn') || 'Tự Cập Nhật 5 Góc Mặt'}</span>
+                  <span>{t('self_register_face_btn', 'Self-Update 5 Face Angles')}</span>
                 </button>
               </>
             ) : (
@@ -687,7 +746,7 @@ const UserProfileManager = () => {
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50"
               >
                 {isLinkingEmployee ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Link className="w-4 h-4" />}
-                <span>{t('self_link_employee_btn') || 'Tạo & Liên Kết Hồ Sơ Face AI'}</span>
+                <span>{t('self_link_employee_btn', 'Create & Link Face AI Profile')}</span>
               </button>
             )}
           </div>
@@ -696,38 +755,38 @@ const UserProfileManager = () => {
         {/* Biometric Status Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
-            <span className="text-[11px] text-slate-400 block font-medium">Trạng thái hồ sơ Face AI</span>
+            <span className="text-[11px] text-slate-400 block font-medium">{t('self_status_profile_label', 'Face AI Profile Status')}</span>
             <div className="flex items-center space-x-2 pt-0.5">
               {linkedEmployee ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold text-emerald-300">Đã liên kết ({linkedEmployee.employee_code})</span>
+                  <span className="text-xs font-bold text-emerald-300">{t('linked_status', 'Linked')} ({linkedEmployee.employee_code})</span>
                 </>
               ) : (
                 <>
                   <AlertCircle className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-bold text-amber-300">Chưa liên kết Face AI</span>
+                  <span className="text-xs font-bold text-amber-300">{t('unlinked_status', 'Not Linked to Face AI')}</span>
                 </>
               )}
             </div>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
-            <span className="text-[11px] text-slate-400 block font-medium">Vector Đặc Trưng (512D)</span>
+            <span className="text-[11px] text-slate-400 block font-medium">{t('feature_vectors_label', 'Feature Vectors (512D)')}</span>
             <div className="flex items-center space-x-2 pt-0.5">
               <Scan className="w-4 h-4 text-cyan-400" />
               <span className={`text-xs font-bold font-mono ${faceCount >= 5 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                {faceCount} / 5 mẫu góc nạp
+                {faceCount} / 5 {t('angles_enrolled', 'angles enrolled')}
               </span>
             </div>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
-            <span className="text-[11px] text-slate-400 block font-medium">Khả năng Điểm Danh & Face ID</span>
+            <span className="text-[11px] text-slate-400 block font-medium">{t('attendance_capability_label', 'Attendance & Face ID Capability')}</span>
             <div className="flex items-center space-x-2 pt-0.5">
               <ShieldCheck className="w-4 h-4 text-purple-400" />
               <span className={`text-xs font-bold ${faceCount > 0 ? 'text-purple-300' : 'text-slate-500'}`}>
-                {faceCount > 0 ? 'Sẵn sàng hoạt động (Active)' : 'Cần nạp mẫu khuôn mặt'}
+                {faceCount > 0 ? t('status_ready_active', 'Ready & Active') : t('status_need_enrollment', 'Requires Face Enrollment')}
               </span>
             </div>
           </div>
@@ -750,10 +809,10 @@ const UserProfileManager = () => {
               </div>
               <div>
                 <h2 className="text-base font-bold text-white tracking-wide">
-                  {t('personal_info_title') || 'Thông Tin Cá Nhân'}
+                  {t('personal_info_title', 'Personal Information')}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  {t('personal_info_sub') || 'Cập nhật họ tên hiển thị và thông tin liên hệ'}
+                  {t('personal_info_sub', 'Update your display name and contact details')}
                 </p>
               </div>
             </div>
@@ -763,7 +822,7 @@ const UserProfileManager = () => {
             {/* Full Name */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('full_name') || 'Họ và tên'} *
+                {t('full_name', 'Full Name')} *
               </label>
               <div className="relative">
                 <User className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
@@ -772,7 +831,7 @@ const UserProfileManager = () => {
                   required
                   value={profileForm.full_name}
                   onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
-                  placeholder="Nguyễn Văn A"
+                  placeholder={t('placeholder_fullname', 'Full Name')}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-white text-xs placeholder:text-slate-500"
                 />
               </div>
@@ -781,7 +840,7 @@ const UserProfileManager = () => {
             {/* Phone Number */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('phone') || 'Số điện thoại liên hệ'}
+                {t('phone', 'Phone Number')}
               </label>
               <div className="relative">
                 <Phone className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
@@ -798,7 +857,7 @@ const UserProfileManager = () => {
             {/* Email Address */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('email') || 'Địa chỉ Email'}
+                {t('email', 'Email Address')}
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
@@ -806,7 +865,7 @@ const UserProfileManager = () => {
                   type="email"
                   value={profileForm.email}
                   disabled
-                  title="Email gắn liền với tài khoản IAM (chỉ Admin có thể đổi)"
+                  title={t('email_locked_tooltip', 'Email is bound to IAM account (Only admin can change)')}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 text-xs cursor-not-allowed"
                 />
               </div>
@@ -815,19 +874,19 @@ const UserProfileManager = () => {
             {/* Read-only Enterprise Metadata Grid */}
             <div className="pt-2 grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('employee_code') || 'Mã nhân viên'}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('employee_code', 'Employee Code')}</span>
                 <span className="text-xs font-mono font-bold text-white mt-0.5 block">{userCode}</span>
               </div>
               <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('username') || 'Tên tài khoản'}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('username', 'Username')}</span>
                 <span className="text-xs font-mono font-bold text-white mt-0.5 block">@{currentUser?.username}</span>
               </div>
               <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('department') || 'Phòng ban'}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('department', 'Department')}</span>
                 <span className="text-xs font-semibold text-cyan-300 mt-0.5 block truncate">{deptName}</span>
               </div>
               <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('position') || 'Chức vụ'}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-semibold block">{t('position', 'Position')}</span>
                 <span className="text-xs font-semibold text-purple-300 mt-0.5 block truncate">{posName}</span>
               </div>
             </div>
@@ -842,12 +901,12 @@ const UserProfileManager = () => {
                 {isSavingProfile ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{t('saving') || 'Đang lưu thông tin...'}</span>
+                    <span>{t('saving', 'Saving information...')}</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>{t('btn_save_profile') || 'Lưu Thay Đổi Hồ Sơ'}</span>
+                    <span>{t('btn_save_profile', 'Save Profile Changes')}</span>
                   </>
                 )}
               </button>
@@ -866,10 +925,10 @@ const UserProfileManager = () => {
               </div>
               <div>
                 <h2 className="text-base font-bold text-white tracking-wide">
-                  {t('change_password_title') || 'Bảo Mật & Đổi Mật Khẩu'}
+                  {t('change_password_title', 'Security & Password Change')}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  {t('change_password_sub') || 'Bảo vệ tài khoản bằng mật khẩu có độ phức tạp cao'}
+                  {t('change_password_sub', 'Protect your account with a secure, complex password')}
                 </p>
               </div>
             </div>
@@ -886,7 +945,7 @@ const UserProfileManager = () => {
             {/* Old Password */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('current_password') || 'Mật khẩu hiện tại'} *
+                {t('current_password', 'Current Password')} *
               </label>
               <div className="relative">
                 <Key className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
@@ -911,7 +970,7 @@ const UserProfileManager = () => {
             {/* New Password */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('new_password') || 'Mật khẩu mới (Tối thiểu 6 ký tự)'} *
+                {t('new_password', 'New Password (Min 6 chars)')} *
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
@@ -936,7 +995,7 @@ const UserProfileManager = () => {
             {/* Confirm New Password */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('confirm_new_password') || 'Xác nhận mật khẩu mới'} *
+                {t('confirm_new_password', 'Confirm New Password')} *
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
@@ -968,12 +1027,12 @@ const UserProfileManager = () => {
                 {isChangingPassword ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{t('updating_password') || 'Đang cập nhật mật khẩu...'}</span>
+                    <span>{t('updating_password', 'Updating password...')}</span>
                   </>
                 ) : (
                   <>
                     <Key className="w-4 h-4" />
-                    <span>{t('btn_change_password') || 'Cập Nhật Mật Khẩu'}</span>
+                    <span>{t('btn_change_password', 'Update Password')}</span>
                   </>
                 )}
               </button>
@@ -995,10 +1054,10 @@ const UserProfileManager = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white tracking-wide">
-                    {t('self_verify_modal_title') || 'Tự Kiểm Tra Xác Thực Khuôn Mặt Trực Tiếp'}
+                    {t('self_verify_modal_title', 'Self-Service Live Face Verification')}
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    {t('self_verify_modal_sub') || 'Đứng trước camera máy tính để so khớp trực tiếp với 5 vector 512D'}
+                    {t('self_verify_modal_sub', 'Position yourself in front of the camera to verify your face against the 512D vectors stored in pgvector')}
                   </p>
                 </div>
               </div>
@@ -1024,7 +1083,7 @@ const UserProfileManager = () => {
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="w-44 h-56 rounded-full border-2 border-dashed border-cyan-400/60 flex items-center justify-center animate-pulse">
                   <span className="text-[10px] font-mono text-cyan-300 bg-slate-950/80 px-2 py-0.5 rounded-full border border-cyan-500/40">
-                    Đặt mặt vào khung
+                    {t('align_face_oval', 'Align face in oval')}
                   </span>
                 </div>
               </div>
@@ -1032,7 +1091,7 @@ const UserProfileManager = () => {
               {/* Top info badge */}
               <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[10px] font-mono text-cyan-300 flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>Live Webcam Stream</span>
+                <span>{t('live_webcam_stream', 'Live Webcam Stream')}</span>
               </div>
             </div>
 
@@ -1052,18 +1111,20 @@ const UserProfileManager = () => {
                     )}
                     <span>
                       {verifyResult.is_verified
-                        ? (t('self_verify_success_title') || '🎉 XÁC THỰC THÀNH CÔNG: Độ Tin Cậy {percent}%').replace('{percent}', verifyResult.confidence_percent)
-                        : (t('self_verify_fail_title') || '❌ XÁC THỰC CHƯA KHỚP: Độ Tin Cậy {percent}%').replace('{percent}', verifyResult.confidence_percent || 0)}
+                        ? (t('self_verify_success_title', '🎉 VERIFICATION SUCCESS: Confidence {percent}%')).replace('{percent}', verifyResult.confidence_percent)
+                        : (t('self_verify_fail_title', '❌ VERIFICATION FAILED: Confidence {percent}%')).replace('{percent}', verifyResult.confidence_percent || 0)}
                     </span>
                   </div>
                   <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-900/80 border border-slate-700">
-                    Sim: {verifyResult.similarity_score || '--'} (Ngưỡng: {verifyResult.threshold || 0.6})
+                    Sim: {verifyResult.similarity_score || '--'} ({t('lbl_threshold', 'Threshold')}: {verifyResult.threshold || 0.6})
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300">
                   {verifyResult.is_verified
-                    ? `Khuôn mặt trực tiếp khớp chính xác với hồ sơ ${verifyResult.full_name} (${verifyResult.employee_code}). Bạn đã sẵn sàng để chấm công tự động!`
-                    : 'Khuôn mặt chưa khớp với vector đã nạp. Vui lòng nhìn thẳng vào camera và thử lại.'}
+                    ? (t('verify_success_desc', 'Live face precisely matched profile {name} ({code}). You are all set for automated AI attendance!'))
+                        .replace('{name}', verifyResult.full_name || '')
+                        .replace('{code}', verifyResult.employee_code || '')
+                    : t('verify_fail_desc', 'Face does not match enrolled vectors. Please look straight into the camera and try again.')}
                 </p>
               </div>
             )}
@@ -1075,7 +1136,7 @@ const UserProfileManager = () => {
                 onClick={closeVerifyModal}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
               >
-                Đóng
+                {t('btn_close', 'Close')}
               </button>
 
               <button
@@ -1087,12 +1148,12 @@ const UserProfileManager = () => {
                 {isVerifying ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang so khớp vector...</span>
+                    <span>{t('matching_vectors', 'Matching vectors...')}</span>
                   </>
                 ) : (
                   <>
                     <Scan className="w-4 h-4 text-cyan-200" />
-                    <span>Chụp & Kiểm Tra Ngay</span>
+                    <span>{t('btn_capture_and_verify', 'Capture & Verify Now')}</span>
                   </>
                 )}
               </button>
@@ -1104,132 +1165,294 @@ const UserProfileManager = () => {
       {/* ====================================================================== */}
       {/* MODAL 2: SELF-SERVICE 5-ANGLE FACE ENROLLMENT MODAL                    */}
       {/* ====================================================================== */}
+      {/* ====================================================================== */}
+      {/* MODAL 2: SELF-SERVICE 5-ANGLE BIOMETRIC FACE REGISTRATION (512D)       */}
+      {/* ====================================================================== */}
       {showEnrollModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 max-w-2xl w-full space-y-5 shadow-2xl relative max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white tracking-wide">
-                    Tự Cập Nhật 5 Mẫu Góc Mặt (Self-Service 512D)
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Chụp hoặc tải ảnh 5 góc mặt để AI nhận diện chuẩn xác nhất từ mọi góc độ
-                  </p>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+          <div className="glass-panel w-full max-w-4xl rounded-3xl p-6 shadow-2xl border border-slate-700 relative max-h-[90vh] flex flex-col my-auto">
+            <button
+              onClick={closeEnrollModal}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-700 transition-colors z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <Camera className="w-6 h-6" />
               </div>
-              <button
-                onClick={closeEnrollModal}
-                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center"
-              >
-                ✕
-              </button>
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                  <span>{t('self_enroll_modal_title', '5-Angle Biometric Face Registration (512D)')}</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {t('full_name', 'Personnel')}: <strong className="text-white">{profileForm.full_name || currentUser?.full_name || 'User'}</strong> ({t('employee_code', 'Code')}: <span className="font-mono text-indigo-400">{linkedEmployee?.employee_code || currentUser?.username || 'STAFF'}</span>)
+                </p>
+              </div>
             </div>
 
-            {/* Webcam Live Capture Area */}
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center shadow-inner">
-              <video
-                ref={enrollVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover scale-x-[-1]"
-              />
-
-              {/* Instructions Overlay */}
-              <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-white">
-                <span className="font-bold text-cyan-300">{ANGLES_CONFIG[activeAngleIndex]?.label}: </span>
-                <span className="text-slate-300 text-[11px]">{ANGLES_CONFIG[activeAngleIndex]?.desc}</span>
-              </div>
-
-              {/* Capture Button Overlay */}
-              <div className="absolute bottom-3 inset-x-0 flex justify-center">
+            {/* Mode Switcher & Progress */}
+            <div className="flex items-center justify-between mb-4 flex-shrink-0 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-xs">
+              <div className="flex space-x-1">
                 <button
                   type="button"
-                  onClick={handleSnapCurrentAngle}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs flex items-center space-x-2 shadow-xl shadow-cyan-500/30 transition-all hover:scale-105"
+                  onClick={() => setEnrollMode('webcam')}
+                  className={`flex items-center space-x-1.5 py-2 px-3.5 rounded-xl font-semibold transition-all ${
+                    enrollMode === 'webcam' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'
+                  }`}
                 >
-                  <Camera className="w-4 h-4 text-cyan-200" />
-                  <span>Chụp Góc Này ({ANGLES_CONFIG[activeAngleIndex]?.badge})</span>
+                  <Camera className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>{t('capture_from_camera', 'Direct Camera (Webcam)')}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEnrollMode('manual_upload')}
+                  className={`flex items-center space-x-1.5 py-2 px-3.5 rounded-xl font-semibold transition-all ${
+                    enrollMode === 'manual_upload' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{t('upload_from_disk', 'Upload Files From Disk')}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-slate-400 text-xs">{t('status', 'Progress')}:</span>
+                <span className={`font-mono font-bold text-xs ${readyPhotosCount === 5 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {readyPhotosCount} / 5
+                </span>
               </div>
             </div>
 
-            {/* 5 Angles Thumbnail Slots */}
-            <div className="grid grid-cols-5 gap-2.5">
-              {ANGLES_CONFIG.map((angle, idx) => {
-                const photo = anglePhotos[angle.id];
-                const isActive = activeAngleIndex === idx;
-                return (
-                  <div
-                    key={angle.id}
-                    onClick={() => setActiveAngleIndex(idx)}
-                    className={`p-2 rounded-2xl border cursor-pointer transition-all flex flex-col items-center text-center space-y-1 relative ${
-                      isActive
-                        ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg'
-                        : photo
-                        ? 'bg-emerald-500/10 border-emerald-500/30'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="w-full aspect-square rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center relative border border-slate-800">
-                      {photo ? (
-                        <>
-                          <img src={photo} alt={angle.label} className="w-full h-full object-cover" />
-                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px]">
-                            ✓
-                          </div>
-                        </>
-                      ) : (
-                        <Camera className="w-5 h-5 text-slate-600" />
-                      )}
+            {/* Modal Body: 2-Column Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 flex-1 overflow-y-auto pr-1">
+              {/* Left Column (7 cols): Camera Viewport & HUD */}
+              <div className="md:col-span-7 flex flex-col space-y-3">
+                <div className="relative w-full aspect-video bg-black/80 rounded-3xl overflow-hidden border border-slate-800 flex items-center justify-center shadow-inner">
+                  {enrollMode === 'webcam' && (
+                    <video
+                      ref={enrollVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover scale-x-[-1]"
+                    />
+                  )}
+
+                  {enrollMode === 'manual_upload' && (
+                    <div className="text-center p-6 text-slate-400 space-y-2">
+                      <Upload className="w-12 h-12 mx-auto text-indigo-400 opacity-60" />
+                      <p className="text-xs">{t('manual_upload_hint', 'Select each angle slot on the right to upload corresponding photo.')}</p>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-300 truncate w-full block">
-                      {angle.badge}
+                  )}
+
+                  {/* Top Floating Active Guidance Header */}
+                  {enrollMode === 'webcam' && (
+                    <div className="absolute top-3 inset-x-3 pointer-events-none flex items-center justify-center z-20">
+                      <div className="px-4 py-2 rounded-2xl bg-black/80 backdrop-blur-md border border-cyan-500/60 shadow-2xl flex items-center space-x-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                        <span className="text-[11px] font-extrabold tracking-wider text-cyan-200 uppercase">
+                          {anglesConfig[activeAngleIndex]?.instruction}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Interactive Dynamic Pose Guidance Overlay */}
+                  {enrollMode === 'webcam' && (
+                    <>
+                      {anglesConfig[activeAngleIndex]?.guideType === 'center' && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-cyan-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)]">
+                            <div className="w-40 h-56 rounded-[42%] border border-cyan-500/40" />
+                            <div className="absolute w-8 h-8 rounded-full border-2 border-cyan-300 flex items-center justify-center">
+                              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {anglesConfig[activeAngleIndex]?.guideType === 'left' && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-between px-6 z-10">
+                          <div className="flex flex-col items-center space-y-1.5 animate-bounce bg-purple-950/85 p-3.5 rounded-2xl border-2 border-purple-400 shadow-2xl">
+                            <ArrowLeft className="w-8 h-8 text-purple-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_turn_left', 'QUAY TRÁI')}</span>
+                          </div>
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-purple-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.4)]" />
+                        </div>
+                      )}
+
+                      {anglesConfig[activeAngleIndex]?.guideType === 'right' && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-between px-6 z-10">
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-blue-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.4)]" />
+                          <div className="flex flex-col items-center space-y-1.5 animate-bounce bg-blue-950/85 p-3.5 rounded-2xl border-2 border-blue-400 shadow-2xl">
+                            <ArrowRight className="w-8 h-8 text-blue-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_turn_right', 'QUAY PHẢI')}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {anglesConfig[activeAngleIndex]?.guideType === 'down' && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-amber-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.4)]" />
+                          <div className="absolute bottom-3.5 flex items-center space-x-2 animate-bounce bg-amber-950/85 px-4 py-2 rounded-2xl border-2 border-amber-400 shadow-2xl">
+                            <ArrowDown className="w-5 h-5 text-amber-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_tilt_down', 'HƠI CÚI CẰM XUỐNG')}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {anglesConfig[activeAngleIndex]?.guideType === 'up' && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                          <div className="absolute top-14 flex items-center space-x-2 animate-bounce bg-emerald-950/85 px-4 py-2 rounded-2xl border-2 border-emerald-400 shadow-2xl">
+                            <ArrowUp className="w-5 h-5 text-emerald-300" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-wider">{t('hud_look_up_smile', 'NGẨNG LÊN & CƯỜI TỰ NHIÊN')}</span>
+                          </div>
+                          <div className="w-48 h-64 rounded-[42%] border-2 border-dashed border-emerald-400/80 flex items-center justify-center shadow-[0_0_25px_rgba(168,85,247,0.4)]" />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Direct Angle Quick Selection Strip */}
+                <div className="flex items-center space-x-1.5 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+                  {anglesConfig.map((angle, idx) => {
+                    const isReady = !!anglePhotos[angle.id];
+                    const isActive = idx === activeAngleIndex;
+                    return (
+                      <button
+                        type="button"
+                        key={angle.id}
+                        onClick={() => setActiveAngleIndex(idx)}
+                        className={`flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all flex items-center justify-center space-x-1 ${
+                          isActive
+                            ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
+                            : isReady
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-slate-800/60 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span>{angle.step}. {angle.badge.split(' ')[0]}</span>
+                        {isReady && <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Primary Snap Button */}
+                {enrollMode === 'webcam' && (
+                  <button
+                    type="button"
+                    onClick={handleSnapCurrentAngle}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-xl shadow-indigo-600/30 transition-all"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>
+                      {(t('capture_angle_btn', 'Chụp Góc {angle}: {title}'))
+                        .replace('{angle}', activeAngleIndex + 1)
+                        .replace('{title}', anglesConfig[activeAngleIndex]?.title || '')}
                     </span>
-                    <label className="text-[9px] text-cyan-400 hover:underline cursor-pointer">
-                      Tải ảnh
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleFileUploadForAngle(e, angle.id)}
-                      />
-                    </label>
-                  </div>
-                );
-              })}
+                  </button>
+                )}
+              </div>
+
+              {/* Right Column (5 cols): 5 Angle Slots */}
+              <div className="md:col-span-5 space-y-2.5">
+                {anglesConfig.map((angle, idx) => {
+                  const isReady = !!anglePhotos[angle.id];
+                  const preview = anglePhotos[angle.id];
+                  const isActive = idx === activeAngleIndex;
+
+                  return (
+                    <div
+                      key={angle.id}
+                      onClick={() => setActiveAngleIndex(idx)}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                        isActive
+                          ? 'bg-indigo-950/40 border-indigo-500 shadow-md'
+                          : isReady
+                          ? 'bg-slate-900/80 border-emerald-500/40'
+                          : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 min-w-0">
+                        {preview ? (
+                          <img src={preview} alt="Angle" className="w-10 h-10 rounded-xl object-cover border border-emerald-500/50" />
+                        ) : (
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
+                            isActive ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {angle.step}
+                          </div>
+                        )}
+                        <div className="truncate">
+                          <div className="font-semibold text-xs text-white truncate">{angle.title}</div>
+                          <div className="text-[10px] text-slate-400 truncate">{angle.badge}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        <label
+                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer transition-colors"
+                          title={t('upload_photo_for_slot', 'Upload photo for this angle')}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileUploadForAngle(e, angle.id)}
+                          />
+                        </label>
+
+                        {isReady ? (
+                          <span className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                            <Check className="w-4 h-4" />
+                          </span>
+                        ) : (
+                          <span className="w-7 h-7 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center text-[10px]">
+                            {angle.step}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Success Banner */}
             {enrollSuccessResult && (
-              <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-400 text-white text-xs space-y-1 animate-in fade-in duration-200">
+              <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-400 text-white text-xs space-y-1 mt-3 animate-in fade-in duration-200">
                 <div className="flex items-center space-x-2 font-bold text-sm text-emerald-300">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <span>Nạp 5 Vector 512D Thành Công!</span>
+                  <span>{t('enroll_success_title', '5 Vectors Enrolled Successfully!')}</span>
                 </div>
                 <p className="text-[11px] text-emerald-200/80">
-                  Đã lưu trữ {enrollSuccessResult.total_registered || 5} vector sinh trắc học vào kho PostgreSQL pgvector.
+                  {(t('enroll_success_desc', 'Stored {count} biometric vectors in PostgreSQL pgvector repository.'))
+                    .replace('{count}', enrollSuccessResult.total_registered || 5)}
                 </p>
               </div>
             )}
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-800 mt-4 flex-shrink-0">
               <button
                 type="button"
                 onClick={closeEnrollModal}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
               >
-                Đóng
+                {t('btn_close', 'Close')}
               </button>
 
               <div className="flex items-center space-x-3">
                 <span className="text-xs text-slate-400 font-mono">
-                  {readyPhotosCount}/5 góc sẵn sàng
+                  {readyPhotosCount} / 5 {t('angles_ready', 'angles ready')}
                 </span>
                 <button
                   type="button"
@@ -1240,12 +1463,12 @@ const UserProfileManager = () => {
                   {isSavingVectors ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Đang trích xuất vector...</span>
+                      <span>{t('extracting_vectors', 'Extracting vectors...')}</span>
                     </>
                   ) : (
                     <>
                       <ShieldCheck className="w-4 h-4" />
-                      <span>Trích Xuất & Lưu 5 Vector 512D</span>
+                      <span>{t('btn_extract_and_save_5_vectors', 'Extract & Save 5 Vectors (512D)')}</span>
                     </>
                   )}
                 </button>

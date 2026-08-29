@@ -165,4 +165,19 @@ test.describe('V-Face AI - English Localization Integrity Test', () => {
       ).toBeFalsy();
     }
   });
+
+  test('TC-I18N-07: My Account & Personal Profile Screen in EN Mode Must NOT Contain Vietnamese Text', async ({ page }) => {
+    const accountNav = page.locator('aside button').filter({ hasText: /My Account|Account|Profile/i }).first();
+    if (await accountNav.isVisible()) {
+      await accountNav.click();
+      await page.waitForTimeout(500);
+
+      const accountContent = page.locator('main');
+      const accountText = (await accountContent.innerText()) || '';
+      expect(
+        VIETNAMESE_KEYWORD_REGEX.test(accountText),
+        `My Account screen in EN mode contains untranslated Vietnamese keywords: "${accountText.slice(0, 100)}..."`
+      ).toBeFalsy();
+    }
+  });
 });
