@@ -3,7 +3,8 @@ import axios from 'axios';
 // -----------------------------------------------------------------------------
 // Face AI & Attendance API Client (Port 8000)
 // -----------------------------------------------------------------------------
-const BACKEND_BASE_URL = 'http://localhost:8000/api/v1';
+const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost');
+const BACKEND_BASE_URL = `http://${getHost()}:8000/api/v1`;
 
 const apiClient = axios.create({
   baseURL: BACKEND_BASE_URL,
@@ -51,7 +52,7 @@ apiClient.interceptors.response.use(
 // -----------------------------------------------------------------------------
 // Core User & IAM API Client (Port 8001)
 // -----------------------------------------------------------------------------
-const CORE_USER_BASE_URL = 'http://localhost:8001/api/v1';
+const CORE_USER_BASE_URL = `http://${getHost()}:8001/api/v1`;
 
 const coreUserClient = axios.create({
   baseURL: CORE_USER_BASE_URL,
@@ -150,8 +151,8 @@ export const api = {
     apiClient.post(`/camera/register-face/${employeeId}`),
 
   // API Health Diagnostics
-  getBackendHealth: () => axios.get('http://localhost:8000/health', { timeout: 5000 }).then(res => res.data),
-  getCoreUserHealth: () => axios.get('http://localhost:8001/health', { timeout: 5000 }).then(res => res.data),
+  getBackendHealth: () => axios.get(`http://${getHost()}:8000/health`, { timeout: 5000 }).then(res => res.data),
+  getCoreUserHealth: () => axios.get(`http://${getHost()}:8001/health`, { timeout: 5000 }).then(res => res.data),
 
   // ============================================================================
   // Core User & IAM Microservice APIs (Port 8001)

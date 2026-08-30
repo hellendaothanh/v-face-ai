@@ -871,7 +871,7 @@ const EmployeeManagement = () => {
                   <div className="lg:col-span-7 space-y-3">
                     <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center shadow-2xl">
                       <img
-                        src="http://localhost:8000/api/v1/camera/video_feed"
+                        src={`http://${window.location.hostname || 'localhost'}:8000/api/v1/camera/video_feed`}
                         alt="Live Backend Feed"
                         className="w-full h-full object-cover"
                       />

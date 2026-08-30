@@ -145,7 +145,9 @@ const RealtimeDashboard = ({
       return;
     }
 
-    const wsUrl = 'ws://localhost:8000/ws/attendance';
+    const currentHost = window.location.hostname || 'localhost';
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProto}//${currentHost}:8000/ws/attendance`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -365,7 +367,7 @@ const RealtimeDashboard = ({
       >
         {isCamRunning ? (
           <img
-            src="http://localhost:8000/api/v1/camera/video_feed"
+            src={`http://${window.location.hostname || 'localhost'}:8000/api/v1/camera/video_feed`}
             alt="Live Camera Video Stream"
             className="w-full h-full object-contain bg-slate-950"
           />

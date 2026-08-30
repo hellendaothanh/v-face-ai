@@ -2152,7 +2152,7 @@ const UnifiedHRHub = () => {
                   {regMode === 'backend_cam' && (
                     <img
                       key={feedTimestamp}
-                      src={`http://localhost:8000/api/v1/camera/video_feed?raw=true&t=${feedTimestamp}`}
+                      src={`http://${window.location.hostname || 'localhost'}:8000/api/v1/camera/video_feed?raw=true&t=${feedTimestamp}`}
                       alt="Live Stream Feed"
                       className="w-full h-full object-cover"
                       onError={(e) => {

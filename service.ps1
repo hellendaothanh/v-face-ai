@@ -1,4 +1,4 @@
-﻿param (
+param (
     [string]$Command = $null,
     [string]$Target = "all"
 )
@@ -88,6 +88,25 @@ function Stop-ProcessTree([int]$pidNumber) {
             Stop-Process -Id $pidNumber -Force -ErrorAction SilentlyContinue
         }
     }
+}
+
+# Helper: get local LAN IP address
+function Get-LocalIPAddress {
+    try {
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi*','Ethernet*','vEthernet*' -ErrorAction SilentlyContinue |
+            Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } |
+            Select-Object -ExpandProperty IPAddress -First 1)
+        if ($ip) { return $ip }
+    }
+    catch {}
+    try {
+        $ip = ([System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) |
+            Where-Object { $_.AddressFamily -eq 'InterNetwork' -and $_.IPAddressToString -notlike "127.*" -and $_.IPAddressToString -notlike "169.254.*" } |
+            Select-Object -ExpandProperty IPAddressToString -First 1)
+        if ($ip) { return $ip }
+    }
+    catch {}
+    return $null
 }
 
 # Helper: resolve Python executable & auto-prepare environment
@@ -391,9 +410,13 @@ function Start-Frontend {
         $portPid = Get-PidByPort $FRONTEND_PORT
         if ($portPid) {
             Set-Content -Path $FRONTEND_PID_FILE -Value $portPid
+            $localIp = Get-LocalIPAddress
             Write-Host "✔ Frontend started! (PID: $portPid)" -ForegroundColor Green
-            Write-Host "  Web URL: http://localhost:$FRONTEND_PORT" -ForegroundColor Cyan
-            Write-Host "  Logs:    $FRONTEND_LOG_FILE"
+            Write-Host "  Local URL:   http://localhost:$FRONTEND_PORT" -ForegroundColor Cyan
+            if ($localIp) {
+                Write-Host "  Network URL: http://${localIp}:$FRONTEND_PORT" -ForegroundColor Cyan
+            }
+            Write-Host "  Logs:        $FRONTEND_LOG_FILE"
         }
         else {
             Write-Host "✖ Failed to start Frontend. Check logs: $FRONTEND_LOG_FILE" -ForegroundColor Red
@@ -508,9 +531,14 @@ function Get-ServiceStatus {
     }
 
     if ($frontendPid) {
+        $localIp = Get-LocalIPAddress
         Write-Host "  Frontend:     " -NoNewline
         Write-Host "● Running " -ForegroundColor Green -NoNewline
-        Write-Host "(PID: $frontendPid, Port: $FRONTEND_PORT) -> http://localhost:$FRONTEND_PORT"
+        if ($localIp) {
+            Write-Host "(PID: $frontendPid, Port: $FRONTEND_PORT) -> http://localhost:$FRONTEND_PORT | http://${localIp}:$FRONTEND_PORT"
+        } else {
+            Write-Host "(PID: $frontendPid, Port: $FRONTEND_PORT) -> http://localhost:$FRONTEND_PORT"
+        }
     }
     else {
         Write-Host "  Frontend:     " -NoNewline

@@ -356,10 +356,15 @@ start_frontend() {
 
     port_pid=$(get_pid_by_port "${FRONTEND_PORT}")
     if [ -n "$port_pid" ]; then
+        local local_ip
+        local_ip=$(ipconfig getifaddr en0 2>/dev/null || ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n 1)
         echo "$port_pid" > "${FRONTEND_PID_FILE}"
         echo -e "${GREEN}✔ Frontend started! (PID: ${port_pid})${NC}"
-        echo -e "  Web URL: ${CYAN}http://localhost:${FRONTEND_PORT}${NC}"
-        echo -e "  Logs:    ${FRONTEND_LOG_FILE}"
+        echo -e "  Local URL:   ${CYAN}http://localhost:${FRONTEND_PORT}${NC}"
+        if [ -n "$local_ip" ]; then
+            echo -e "  Network URL: ${CYAN}http://${local_ip}:${FRONTEND_PORT}${NC}"
+        fi
+        echo -e "  Logs:        ${FRONTEND_LOG_FILE}"
     else
         echo -e "${RED}✖ Failed to start Frontend. Check logs: ${FRONTEND_LOG_FILE}${NC}"
         rm -f "${FRONTEND_PID_FILE}"
@@ -458,7 +463,13 @@ get_service_status() {
     fi
 
     if [ -n "$frontend_pid" ]; then
-        echo -e "  Frontend:     ${GREEN}● Running${NC} (PID: ${frontend_pid}, Port: ${FRONTEND_PORT}) -> http://localhost:${FRONTEND_PORT}"
+        local local_ip
+        local_ip=$(ipconfig getifaddr en0 2>/dev/null || ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n 1)
+        if [ -n "$local_ip" ]; then
+            echo -e "  Frontend:     ${GREEN}● Running${NC} (PID: ${frontend_pid}, Port: ${FRONTEND_PORT}) -> http://localhost:${FRONTEND_PORT} | http://${local_ip}:${FRONTEND_PORT}"
+        else
+            echo -e "  Frontend:     ${GREEN}● Running${NC} (PID: ${frontend_pid}, Port: ${FRONTEND_PORT}) -> http://localhost:${FRONTEND_PORT}"
+        fi
     else
         echo -e "  Frontend:     ${RED}○ Stopped${NC}"
     fi

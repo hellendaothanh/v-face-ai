@@ -253,7 +253,7 @@ const AttendanceHistory = () => {
                         {r.snapshot_url ? (
                           <div className="w-9 h-9 rounded-lg overflow-hidden border border-slate-700 mx-auto shadow">
                             <img
-                              src={`http://localhost:8000${r.snapshot_url}`}
+                              src={`http://${window.location.hostname || 'localhost'}:8000${r.snapshot_url}`}
                               alt={empName}
                               className="w-full h-full object-cover"
                             />
