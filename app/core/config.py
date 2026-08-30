@@ -70,7 +70,7 @@ class Settings(BaseSettings):
 
     # Face Anti-Spoofing & Liveness Detection
     LIVENESS_ENABLED: bool = True
-    LIVENESS_THRESHOLD: float = 0.50  # Score >= 0.5 is real face, < 0.5 is spoof
+    LIVENESS_THRESHOLD: float = 0.35  # Score >= 0.35 is real face, < 0.35 is spoof (Optimized for RTSP & Webcam)
     LIVENESS_MODEL_PATH: str = "./models/anti_spoofing/MiniFASNetV2.onnx"
 
     # Stranger Alert (Phát hiện & Cảnh báo người lạ)

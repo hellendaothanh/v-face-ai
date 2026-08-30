@@ -87,10 +87,21 @@ async def init_db() -> None:
     Initialize database:
     1. Enables pgvector extension if not exists.
     2. Creates all registered SQLAlchemy tables.
+    3. Runs schema sync / missing column additions.
     """
     async with engine.begin() as conn:
         logger.info("Verifying and enabling 'vector' extension in PostgreSQL...")
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         logger.info("Creating database tables if not exist...")
         await conn.run_sync(Base.metadata.create_all)
+
+        # Automatic lightweight schema sync for newly added columns
+        await conn.execute(text("""
+            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ppe_compliance BOOLEAN DEFAULT true NOT NULL;
+            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ppe_violations VARCHAR(255);
+            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS gesture_verified BOOLEAN DEFAULT false NOT NULL;
+            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS shift_id UUID REFERENCES work_shifts(id) ON DELETE SET NULL;
+            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS work_duration_hours DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
+            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ot_hours DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
+        """))
         logger.info("Database initialization completed successfully.")

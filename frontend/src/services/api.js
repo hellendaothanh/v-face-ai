@@ -84,6 +84,17 @@ coreUserClient.interceptors.response.use(
 
 export const api = {
   // ============================================================================
+  // Generic HTTP Methods (Forwarding to apiClient)
+  // ============================================================================
+  get: (url, config) => apiClient.get(url, config),
+  post: (url, data, config) => apiClient.post(url, data, config),
+  put: (url, data, config) => apiClient.put(url, data, config),
+  delete: (url, config) => apiClient.delete(url, config),
+  patch: (url, data, config) => apiClient.patch(url, data, config),
+  client: apiClient,
+  coreUserClient: coreUserClient,
+
+  // ============================================================================
   // Face AI Attendance APIs (Port 8000)
   // ============================================================================
   // Employees
@@ -120,12 +131,32 @@ export const api = {
   rejectRequest: (id, data = {}) => apiClient.put(`/requests/${id}/reject`, data),
   getDailySummary: (params = {}) => apiClient.get('/requests/daily-summary', { params }),
 
-  // Multi-Device Camera Management
+  // Multi-Device Camera Management & Relays
   getDevices: () => apiClient.get('/devices'),
   createDevice: (data) => apiClient.post('/devices', data),
   toggleDevice: (id) => apiClient.put(`/devices/${id}/toggle`),
   updateDevice: (id, data) => apiClient.put(`/devices/${id}`, data),
   deleteDevice: (id) => apiClient.delete(`/devices/${id}`),
+  triggerRelay: (deviceId, duration = 3.0, employeeCode = 'ADMIN') =>
+    apiClient.post(`/devices/${deviceId}/trigger-relay?duration=${duration}&employee_code=${employeeCode}`),
+
+  // Work Shifts & Rosters
+  getShifts: () => apiClient.get('/shifts'),
+  createShift: (data) => apiClient.post('/shifts', data),
+  updateShift: (id, data) => apiClient.put(`/shifts/${id}`, data),
+  deleteShift: (id) => apiClient.delete(`/shifts/${id}`),
+  getShiftAssignments: (params = {}) => apiClient.get('/shifts/assignments', { params }),
+  createShiftAssignment: (data) => apiClient.post('/shifts/assignments', data),
+  deleteShiftAssignment: (id) => apiClient.delete(`/shifts/assignments/${id}`),
+  autoMatchShifts: (data) => apiClient.post('/shifts/auto-match', data),
+
+  // Payroll Engine
+  getPayrollRecords: (month, year) => apiClient.get(`/payroll/records?month=${month}&year=${year}`),
+  calculatePayroll: (month, year) => apiClient.post(`/payroll/calculate?month=${month}&year=${year}`),
+
+  // OTT Push Notifications (Telegram, Zalo ZNS)
+  getOTTLogs: (limit = 20) => apiClient.get(`/notifications/ott/history?limit=${limit}`),
+  sendTestOTT: (data) => apiClient.post('/notifications/ott/test', data),
 
   // Analytics & BI
   getWeeklyPunctuality: (params = {}) => apiClient.get('/analytics/weekly-punctuality', { params }),
