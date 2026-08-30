@@ -254,6 +254,13 @@ const Login = () => {
         localizedMsg = t('face_login_err_spoof') || (language === 'en'
           ? 'Spoof attempt or screen replay detected (Anti-Spoofing Alert).'
           : 'Phát hiện hình ảnh giả mạo hoặc video tái tạo (Anti-Spoofing Alert).');
+      } else if (code === 'IDENTITY_CONFLICT_REQUIRES_PASSWORD' || rawMsg.includes('trùng khớp với nhiều hồ sơ') || rawMsg.includes('IDENTITY_CONFLICT')) {
+        localizedMsg = t('face_login_err_identity_conflict') || (language === 'en'
+          ? 'Multiple matching profiles detected for this face. For security, please sign in with Password.'
+          : 'Phát hiện khuôn mặt trùng khớp với nhiều hồ sơ khác nhau. Để bảo mật, vui lòng đăng nhập bằng Mật khẩu.');
+        localizedTip = language === 'en' ? 'Switching to Password Login for security verification...' : 'Đang chuyển sang Đăng nhập Mật khẩu để xác thực an toàn...';
+        // Auto switch to password tab
+        setTimeout(() => setActiveTab('password'), 1500);
       } else if (code === 'IAM_AUTH_FAILED' || rawMsg.includes('Xác thực IAM') || rawMsg.includes('phân quyền IAM') || rawMsg.toLowerCase().includes('iam auth')) {
         localizedMsg = t('face_login_err_iam_failed') || (language === 'en'
           ? 'IAM authorization failed or identity account is not linked. Please contact administrator.'

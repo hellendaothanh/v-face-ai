@@ -21,6 +21,7 @@ class FaceRegisterItemResult(BaseModel):
     detection_score: Optional[float] = None
     blur_score: Optional[float] = None
     error_detail: Optional[str] = None
+    duplicate_conflict: Optional[dict] = None
 
 
 class FaceRegisterResponse(BaseModel):

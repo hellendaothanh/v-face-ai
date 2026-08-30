@@ -59,3 +59,47 @@ class InvalidImageFormatException(VFaceException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=detail
         )
+
+
+class BiometricDuplicateException(VFaceException):
+    """Raised when an enrolled face matches another existing employee in the system."""
+    def __init__(
+        self,
+        conflict_employee_code: str,
+        conflict_full_name: str,
+        similarity: float,
+        detail: Optional[str] = None
+    ) -> None:
+        sim_pct = round(similarity * 100, 1)
+        msg = detail or (
+            f"Khuôn mặt này đã thuộc về nhân sự '{conflict_employee_code} - {conflict_full_name}' "
+            f"(Độ tương đồng sinh trắc: {sim_pct}%). Không thể đăng ký một khuôn mặt cho hai tài khoản khác nhau."
+        )
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "BIOMETRIC_DUPLICATE_DETECTED",
+                "message": msg,
+                "conflict_employee_code": conflict_employee_code,
+                "conflict_full_name": conflict_full_name,
+                "similarity_percent": sim_pct
+            }
+        )
+
+
+class IdentityConflictException(VFaceException):
+    """Raised when Face ID matches multiple distinct accounts with high confidence."""
+    def __init__(
+        self,
+        candidates: list[dict],
+        detail: Optional[str] = None
+    ) -> None:
+        msg = detail or "Phát hiện nhiều tài khoản có độ trùng khớp khuôn mặt tương đương. Vui lòng xác thực bằng mật khẩu để đảm bảo an toàn."
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "IDENTITY_CONFLICT_REQUIRES_PASSWORD",
+                "message": msg,
+                "candidates": candidates
+            }
+        )

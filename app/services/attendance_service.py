@@ -27,6 +27,92 @@ from app.services.face_engine import ExtractedFace, face_engine
 
 class AttendanceService:
     @staticmethod
+    async def check_biometric_duplication(
+        db: AsyncSession,
+        query_embedding: list[float],
+        current_employee_id: uuid.UUID,
+        duplicate_threshold: float = 0.70
+    ) -> Optional[Tuple[Employee, float]]:
+        """
+        1:N Biometric De-duplication Check:
+        Scans all face templates of OTHER active employees in the database using pgvector cosine distance.
+        If a template belongs to a different employee with similarity >= duplicate_threshold,
+        returns (conflicting_employee, similarity_score). Otherwise returns None.
+        """
+        distance_col = FaceFeature.embedding.cosine_distance(query_embedding).label("distance")
+        max_allowed_distance = float(1.0 - duplicate_threshold)
+
+        stmt = (
+            select(
+                Employee,
+                distance_col
+            )
+            .join(Employee, FaceFeature.employee_id == Employee.id)
+            .where(
+                Employee.id != current_employee_id,
+                Employee.is_active.is_(True),
+                distance_col <= max_allowed_distance
+            )
+            .order_by(distance_col)
+            .limit(1)
+        )
+
+        res = await db.execute(stmt)
+        row = res.first()
+        if not row:
+            return None
+
+        conflict_employee, distance = row
+        similarity = float(1.0 - distance)
+        return (conflict_employee, similarity)
+
+    @staticmethod
+    async def check_identity_conflict(
+        db: AsyncSession,
+        query_embedding: list[float],
+        min_similarity: float = 0.65,
+        max_similarity_gap: float = 0.05
+    ) -> Optional[List[dict]]:
+        """
+        Detects if multiple distinct employees match the query embedding with high similarity.
+        Returns a list of candidate employee dicts if conflict is detected, otherwise None.
+        """
+        distance_col = FaceFeature.embedding.cosine_distance(query_embedding).label("distance")
+        max_dist = float(1.0 - min_similarity)
+
+        stmt = (
+            select(Employee, distance_col)
+            .join(Employee, FaceFeature.employee_id == Employee.id)
+            .where(Employee.is_active.is_(True), distance_col <= max_dist)
+            .order_by(distance_col)
+            .limit(6)
+        )
+        res = await db.execute(stmt)
+        rows = res.all()
+        if not rows:
+            return None
+
+        seen_emps = {}
+        for emp, dist in rows:
+            if emp.id not in seen_emps:
+                seen_emps[emp.id] = {
+                    "employee_id": str(emp.id),
+                    "employee_code": emp.employee_code,
+                    "full_name": emp.full_name,
+                    "department": emp.department,
+                    "similarity_percent": round(float(1.0 - dist) * 100, 1)
+                }
+
+        unique_candidates = list(seen_emps.values())
+        if len(unique_candidates) >= 2:
+            top1_sim = unique_candidates[0]["similarity_percent"]
+            top2_sim = unique_candidates[1]["similarity_percent"]
+            if (top1_sim - top2_sim) <= (max_similarity_gap * 100):
+                return unique_candidates
+
+        return None
+
+    @staticmethod
     async def match_face_multi_template(
         db: AsyncSession,
         query_embedding: list[float],
@@ -72,7 +158,8 @@ class AttendanceService:
     ) -> FaceRegisterResponse:
         """
         Registers one or multiple face templates for a specific employee (Multi-template support).
-        Extracts 512-D vectors with quality/blur checking and stores them in `face_features`.
+        Extracts 512-D vectors with quality/blur checking, performs 1:N Biometric De-duplication,
+        and stores them in `face_features`.
         """
         # Verify employee existence
         query = select(Employee).where(Employee.id == employee_id)
@@ -96,6 +183,36 @@ class AttendanceService:
                     image_bytes=file_bytes,
                     require_single_face=False
                 )
+
+                # 1:N Biometric De-duplication Check (Protect against duplicate face registration on other accounts)
+                conflict = await AttendanceService.check_biometric_duplication(
+                    db=db,
+                    query_embedding=extracted.embedding,
+                    current_employee_id=employee.id,
+                    duplicate_threshold=0.70
+                )
+                if conflict:
+                    conflict_emp, sim = conflict
+                    sim_pct = round(sim * 100, 1)
+                    err_msg = (
+                        f"Khuôn mặt này đã thuộc về nhân sự '{conflict_emp.employee_code} - {conflict_emp.full_name}' "
+                        f"(Độ tương đồng sinh trắc: {sim_pct}%). Không thể đăng ký một khuôn mặt cho hai tài khoản khác nhau."
+                    )
+                    logger.warning(f"🚨 [Biometric De-duplication] Rejected face registration for {employee.employee_code}: {err_msg}")
+                    item_results.append(FaceRegisterItemResult(
+                        filename=filename,
+                        face_id=None,
+                        success=False,
+                        detection_score=extracted.detection_score,
+                        blur_score=extracted.blur_score,
+                        error_detail=err_msg,
+                        duplicate_conflict={
+                            "conflict_employee_code": conflict_emp.employee_code,
+                            "conflict_full_name": conflict_emp.full_name,
+                            "similarity_percent": sim_pct
+                        }
+                    ))
+                    continue
 
                 # Check if image is blurry
                 if extracted.blur_score < 30.0:
@@ -128,17 +245,23 @@ class AttendanceService:
                     success=True,
                     detection_score=extracted.detection_score,
                     blur_score=extracted.blur_score,
-                    error_detail=None
+                    error_detail=None,
+                    duplicate_conflict=None
                 ))
             except Exception as e:
-                logger.warning(f"Failed to register face from image '{filename}': {str(e)}")
+                err_str = e.detail if hasattr(e, "detail") and isinstance(e.detail, str) else str(e)
+                # Strip leading numeric status code like "422: " or "400: "
+                import re
+                err_str = re.sub(r"^\d{3}:\s*", "", err_str)
+                logger.warning(f"Failed to register face from image '{filename}': {err_str}")
                 item_results.append(FaceRegisterItemResult(
                     filename=filename,
                     face_id=None,
                     success=False,
                     detection_score=None,
                     blur_score=None,
-                    error_detail=str(e)
+                    error_detail=err_str,
+                    duplicate_conflict=None
                 ))
 
         await db.commit()

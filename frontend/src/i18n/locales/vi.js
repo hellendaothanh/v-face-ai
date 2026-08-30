@@ -72,6 +72,8 @@ const vi = {
   face_login_err_low_confidence: 'Độ khớp sinh trắc học không đạt ngưỡng an toàn.',
   face_login_err_iam_failed: 'Xác thực phân quyền IAM thất bại hoặc tài khoản chưa được liên kết. Vui lòng liên hệ quản trị viên.',
   face_login_err_iam_unavailable: 'Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM.',
+  face_login_err_identity_conflict: 'Phát hiện khuôn mặt trùng khớp với nhiều hồ sơ khác nhau. Để bảo mật, vui lòng đăng nhập bằng Mật khẩu.',
+  face_duplicate_enroll_error: 'Khuôn mặt này đã được đăng ký cho một nhân sự khác trong hệ thống. Hệ thống từ chối đăng ký trùng lặp.',
   face_login_err_tip: 'Vui lòng kiểm tra lại góc nhìn, đủ ánh sáng hoặc chuyển sang đăng nhập bằng Mật khẩu.',
 
   // Navigation Tabs
@@ -693,6 +695,11 @@ const vi = {
   btn_upload_photo: 'Tải ảnh',
   enroll_success_title: 'Nạp 5 Vector 512D Thành Công!',
   enroll_success_desc: 'Đã lưu trữ {count} vector sinh trắc học vào kho PostgreSQL pgvector.',
+  enroll_conflict_title: 'Từ chối nạp khuôn mặt (Xung đột Sinh trắc học)',
+  enroll_conflict_item_desc: 'Khuôn mặt này đã thuộc về nhân sự {code} - {name} (Độ tương đồng cao nhất: {similarity}%).',
+  enroll_conflict_rule: 'Hệ thống từ chối đăng ký một khuôn mặt cho hai tài khoản khác nhau để đảm bảo an toàn định danh.',
+  image_quality_notes_title: 'Lưu ý chất lượng ảnh:',
+  err_no_clear_face: 'Không tìm thấy khuôn mặt rõ nét trong ảnh.',
   angles_ready: 'góc sẵn sàng',
   extracting_vectors: 'Đang trích xuất vector...',
   btn_extract_and_save_5_vectors: 'Trích Xuất & Lưu 5 Vector 512D',

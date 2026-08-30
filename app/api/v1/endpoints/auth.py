@@ -74,7 +74,26 @@ async def face_login(
                 }
             )
 
-    # 3. Match against registered 5-angle pgvector templates
+    # 3. Check for Identity Conflict / Multi-Account Ambiguity
+    conflicts = await AttendanceService.check_identity_conflict(
+        db=db,
+        query_embedding=extracted.embedding,
+        min_similarity=0.65,
+        max_similarity_gap=0.05
+    )
+    if conflicts and len(conflicts) >= 2:
+        candidate_names = ", ".join([f"{c['employee_code']} ({c['full_name']})" for c in conflicts])
+        logger.warning(f"🚨 [Face Login Ambiguity] Multi-identity conflict detected: {candidate_names}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "IDENTITY_CONFLICT_REQUIRES_PASSWORD",
+                "message": f"Phát hiện khuôn mặt trùng khớp với nhiều hồ sơ ({candidate_names}). Để bảo mật, vui lòng đăng nhập bằng Mật khẩu.",
+                "candidates": conflicts
+            }
+        )
+
+    # 4. Match against registered 5-angle pgvector templates
     match_result = await AttendanceService.match_face_multi_template(
         db=db,
         query_embedding=extracted.embedding,

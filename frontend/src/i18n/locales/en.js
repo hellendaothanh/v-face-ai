@@ -72,6 +72,8 @@ const en = {
   face_login_err_low_confidence: 'Biometric confidence score is below safety threshold.',
   face_login_err_iam_failed: 'IAM authorization failed or identity account is not linked. Please contact administrator.',
   face_login_err_iam_unavailable: 'Cannot connect to Core User IAM Identity Service.',
+  face_login_err_identity_conflict: 'Multiple matching profiles detected for this face. For security, please sign in with Password.',
+  face_duplicate_enroll_error: 'This biometric face is already registered to another personnel. Cross-account duplication is rejected.',
   face_login_err_tip: 'Please check your lighting, face angle, or switch to Password login.',
 
   // Navigation Tabs
@@ -781,6 +783,11 @@ const en = {
   btn_upload_photo: 'Upload Photo',
   enroll_success_title: '5 Vectors Enrolled Successfully!',
   enroll_success_desc: 'Stored {count} biometric vectors in PostgreSQL pgvector repository.',
+  enroll_conflict_title: 'Face Enrollment Rejected (Biometric Identity Conflict)',
+  enroll_conflict_item_desc: 'This face is already registered to personnel {code} - {name} (Peak similarity: {similarity}%).',
+  enroll_conflict_rule: 'Cross-account face registration is rejected to preserve biometric identity security.',
+  image_quality_notes_title: 'Image Quality Notices:',
+  err_no_clear_face: 'No clear face detected in the image.',
   angles_ready: 'angles ready',
   extracting_vectors: 'Extracting vectors...',
   btn_extract_and_save_5_vectors: 'Extract & Save 5 Vectors (512D)',

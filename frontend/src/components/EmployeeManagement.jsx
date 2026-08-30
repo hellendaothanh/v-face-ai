@@ -19,6 +19,8 @@ import {
   ArrowUp,
   ArrowDown,
   ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
   RotateCcw,
   Target,
   Compass
@@ -1063,18 +1065,88 @@ const EmployeeManagement = () => {
                 <div
                   className={`p-4 rounded-2xl text-xs space-y-2 animate-fade-in ${
                     uploadResult.success
-                      ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                      : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+                      ? 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-100'
+                      : 'bg-rose-950/70 border border-rose-500/50 text-rose-100'
                   }`}
                 >
                   <div className="flex items-center space-x-2 font-bold text-sm">
                     {uploadResult.success ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                     ) : (
-                      <AlertCircle className="w-5 h-5 text-rose-400" />
+                      <ShieldAlert className="w-5 h-5 text-rose-400 flex-shrink-0" />
                     )}
                     <span>{uploadResult.message}</span>
                   </div>
+
+                  {uploadResult.data?.results && (
+                    <div className="space-y-2 pl-7 pt-1 border-t border-slate-700/50">
+                      {(() => {
+                        const conflicts = [];
+                        const otherErrors = [];
+
+                        uploadResult.data.results.forEach((r) => {
+                          if (r.duplicate_conflict) {
+                            const existing = conflicts.find(
+                              (c) => c.code === r.duplicate_conflict.conflict_employee_code
+                            );
+                            if (existing) {
+                              if (r.duplicate_conflict.similarity_percent > existing.similarity) {
+                                existing.similarity = r.duplicate_conflict.similarity_percent;
+                              }
+                              existing.count += 1;
+                            } else {
+                              conflicts.push({
+                                code: r.duplicate_conflict.conflict_employee_code,
+                                name: r.duplicate_conflict.conflict_full_name,
+                                similarity: r.duplicate_conflict.similarity_percent,
+                                count: 1,
+                              });
+                            }
+                          } else if (!r.success && r.error_detail) {
+                            let cleanMsg = r.error_detail.replace(/^\d{3}:\s*/, '');
+                            if (cleanMsg.includes('Không tìm thấy khuôn mặt') || cleanMsg.toLowerCase().includes('no clear face')) {
+                              cleanMsg = t('err_no_clear_face', 'No clear face detected in the image.');
+                            }
+                            if (!otherErrors.includes(cleanMsg)) {
+                              otherErrors.push(cleanMsg);
+                            }
+                          }
+                        });
+
+                        return (
+                          <>
+                            {conflicts.map((c, idx) => (
+                              <div key={idx} className="p-2.5 bg-rose-900/30 border border-rose-700/50 rounded-xl space-y-1">
+                                <p className="text-rose-200 font-medium leading-relaxed">
+                                  {(t('enroll_conflict_item_desc', 'This face is already registered to personnel {code} - {name} (Peak similarity: {similarity}%).'))
+                                    .replace('{code}', c.code)
+                                    .replace('{name}', c.name)
+                                    .replace('{similarity}', c.similarity)}
+                                </p>
+                                <p className="text-[11px] text-rose-300/80">
+                                  {t('enroll_conflict_rule', 'Cross-account face registration is rejected to preserve biometric identity security.')}
+                                </p>
+                              </div>
+                            ))}
+
+                            {otherErrors.length > 0 && (
+                              <div className="p-2.5 bg-amber-950/40 border border-amber-600/40 rounded-xl text-amber-200/90 text-[11px] space-y-1">
+                                <div className="flex items-center space-x-1.5 font-semibold text-amber-300">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                                  <span>{t('image_quality_notes_title', 'Image Quality Notices:')}</span>
+                                </div>
+                                <ul className="list-disc list-inside pl-1 space-y-0.5 text-amber-200/80">
+                                  {otherErrors.map((err, i) => (
+                                    <li key={i}>{err}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

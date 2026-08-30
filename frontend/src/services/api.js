@@ -95,6 +95,10 @@ export const api = {
     apiClient.post(`/employees/${employeeId}/register-face`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  registerEmployeeFace: (employeeId, formData) =>
+    apiClient.post(`/employees/${employeeId}/register-face`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   verifyEmployeeFace: (employeeId, formData) =>
     apiClient.post(`/employees/${employeeId}/verify-face`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

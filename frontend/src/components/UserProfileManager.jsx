@@ -19,6 +19,9 @@ import {
   Camera,
   Check,
   ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
+  Info,
   Calendar,
   BadgeCheck,
   CameraOff,
@@ -535,16 +538,27 @@ const UserProfileManager = () => {
         if (dataUrl) {
           const res = await fetch(dataUrl);
           const blob = await res.blob();
-          formData.append('photos', blob, `${angle.id}_${Date.now()}.jpg`);
+          formData.append('images', blob, `${angle.id}_${Date.now()}.jpg`);
         }
       }
 
-      const res = await api.registerEmployeeFace(linkedEmployee.id, formData);
+      const res = await api.registerFace(linkedEmployee.id, formData);
       const data = res?.data || res;
       setEnrollSuccessResult(data);
-      setFaceCount(5);
-      showToast('🎉 Đã nạp thành công 5 vector 512D vào PostgreSQL pgvector!');
-      await loadUserData();
+
+      if (data?.total_registered > 0) {
+        setFaceCount(data.total_registered);
+        const successMsg = (t('enroll_success_desc', 'Stored {count} biometric vectors in PostgreSQL pgvector repository.'))
+          .replace('{count}', data.total_registered);
+        showToast(successMsg);
+        await loadUserData();
+      } else {
+        const conflictItem = data.results?.find(r => r.duplicate_conflict);
+        const errMsg = conflictItem 
+          ? t('enroll_conflict_title', 'Face Enrollment Rejected (Biometric Identity Conflict)')
+          : (res.message || t('enroll_failed_desc', 'Unable to extract biometric vectors from captured photos.'));
+        showToast(errMsg, 'error');
+      }
     } catch (err) {
       showToast(err.message || 'Lỗi trích xuất vector khuôn mặt', 'error');
     } finally {
@@ -1456,17 +1470,101 @@ const UserProfileManager = () => {
               </div>
             </div>
 
-            {/* Success Banner */}
+            {/* Result Banner */}
             {enrollSuccessResult && (
-              <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-400 text-white text-xs space-y-1 mt-3 animate-in fade-in duration-200">
-                <div className="flex items-center space-x-2 font-bold text-sm text-emerald-300">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <span>{t('enroll_success_title', '5 Vectors Enrolled Successfully!')}</span>
+              <div className={`p-4 rounded-2xl border text-xs space-y-2 mt-3 animate-in fade-in duration-200 ${
+                (enrollSuccessResult.total_registered || 0) > 0
+                  ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-100'
+                  : 'bg-rose-950/70 border-rose-500/50 text-rose-100'
+              }`}>
+                <div className="flex items-center space-x-2 font-bold text-sm">
+                  {(enrollSuccessResult.total_registered || 0) > 0 ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                      <span className="text-emerald-300">{t('enroll_success_title', '5 Vectors Enrolled Successfully!')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldAlert className="w-5 h-5 text-rose-400 flex-shrink-0" />
+                      <span className="text-rose-300 font-semibold">{t('enroll_conflict_title', 'Face Enrollment Rejected (Biometric Identity Conflict)')}</span>
+                    </>
+                  )}
                 </div>
-                <p className="text-[11px] text-emerald-200/80">
-                  {(t('enroll_success_desc', 'Stored {count} biometric vectors in PostgreSQL pgvector repository.'))
-                    .replace('{count}', enrollSuccessResult.total_registered || 5)}
-                </p>
+
+                {(enrollSuccessResult.total_registered || 0) > 0 ? (
+                  <p className="text-[11px] text-emerald-200/90 pl-7">
+                    {(t('enroll_success_desc', 'Stored {count} biometric vectors in PostgreSQL pgvector repository.'))
+                      .replace('{count}', enrollSuccessResult.total_registered || 5)}
+                  </p>
+                ) : (
+                  <div className="space-y-2 pl-7">
+                    {(() => {
+                      const conflicts = [];
+                      const otherErrors = [];
+
+                      enrollSuccessResult.results?.forEach((r) => {
+                        if (r.duplicate_conflict) {
+                          const existing = conflicts.find(
+                            (c) => c.code === r.duplicate_conflict.conflict_employee_code
+                          );
+                          if (existing) {
+                            if (r.duplicate_conflict.similarity_percent > existing.similarity) {
+                              existing.similarity = r.duplicate_conflict.similarity_percent;
+                            }
+                            existing.count += 1;
+                          } else {
+                            conflicts.push({
+                              code: r.duplicate_conflict.conflict_employee_code,
+                              name: r.duplicate_conflict.conflict_full_name,
+                              similarity: r.duplicate_conflict.similarity_percent,
+                              count: 1,
+                            });
+                          }
+                        } else if (!r.success && r.error_detail) {
+                          let cleanMsg = r.error_detail.replace(/^\d{3}:\s*/, '');
+                          if (cleanMsg.includes('Không tìm thấy khuôn mặt') || cleanMsg.toLowerCase().includes('no clear face')) {
+                            cleanMsg = t('err_no_clear_face', 'No clear face detected in the image.');
+                          }
+                          if (!otherErrors.includes(cleanMsg)) {
+                            otherErrors.push(cleanMsg);
+                          }
+                        }
+                      });
+
+                      return (
+                        <>
+                          {conflicts.map((c, idx) => (
+                            <div key={idx} className="p-2.5 bg-rose-900/30 border border-rose-700/50 rounded-xl space-y-1">
+                              <p className="text-rose-200 font-medium leading-relaxed">
+                                {(t('enroll_conflict_item_desc', 'This face is already registered to personnel {code} - {name} (Peak similarity: {similarity}%).'))
+                                  .replace('{code}', c.code)
+                                  .replace('{name}', c.name)
+                                  .replace('{similarity}', c.similarity)}
+                              </p>
+                              <p className="text-[11px] text-rose-300/80">
+                                {t('enroll_conflict_rule', 'Cross-account face registration is rejected to preserve biometric identity security.')}
+                              </p>
+                            </div>
+                          ))}
+
+                          {otherErrors.length > 0 && (
+                            <div className="p-2.5 bg-amber-950/40 border border-amber-600/40 rounded-xl text-amber-200/90 text-[11px] space-y-1">
+                              <div className="flex items-center space-x-1.5 font-semibold text-amber-300">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                                <span>{t('image_quality_notes_title', 'Image Quality Notices:')}</span>
+                              </div>
+                              <ul className="list-disc list-inside pl-1 space-y-0.5 text-amber-200/80">
+                                {otherErrors.map((err, i) => (
+                                  <li key={i}>{err}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             )}
 
