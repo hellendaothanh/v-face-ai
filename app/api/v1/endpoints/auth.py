@@ -113,7 +113,12 @@ async def face_login(
     token_payload = {
         "user_code": matched_employee.employee_code,
         "username": matched_employee.employee_code,
-        "employee_id": str(matched_employee.id)
+        "employee_id": str(matched_employee.id),
+        "email": matched_employee.email,
+        "full_name": matched_employee.full_name,
+        "phone_number": matched_employee.phone_number,
+        "department": matched_employee.department,
+        "position": matched_employee.position
     }
 
     try:
@@ -124,7 +129,7 @@ async def face_login(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={
                     "code": "IAM_AUTH_FAILED",
-                    "message": f"Xác thực IAM thất bại: {resp.text}"
+                    "message": "Xác thực phân quyền IAM thất bại"
                 }
             )
         token_data = resp.json()
@@ -132,7 +137,10 @@ async def face_login(
         logger.error(f"Failed to connect to Core User IAM at {core_user_url}: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM"
+            detail={
+                "code": "IAM_UNAVAILABLE",
+                "message": "Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM"
+            }
         )
 
     return ResponseBase(

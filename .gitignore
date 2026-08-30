@@ -11,7 +11,7 @@
 *.p12
 *.secrets
 secrets.json
-
+*.ses
 # Python
 __pycache__/
 *.py[cod]

@@ -71,7 +71,9 @@ class DeviceWorker:
         try:
             logger.info(f"■ [CameraManager] Stopping camera device worker '{self.device_name}'...")
             await self.processor.stop()
-            self.stream_reader.stop()
+            if self.stream_reader:
+                self.stream_reader.stop()
+                self.stream_reader = None
         except Exception as e:
             logger.warning(f"Error stopping worker '{self.device_name}': {e}")
 
@@ -118,7 +120,7 @@ class CameraManager:
                 res = await db.execute(select(Device))
                 devices = res.scalars().all()
 
-                # If no devices exist in database yet, seed standard default devices
+                # If no devices exist in database yet, seed standard default devices (all inactive on startup)
                 if not devices:
                     logger.info("⚡ [CameraManager] No camera devices found in DB. Seeding default camera devices...")
                     default_devs = [
@@ -128,7 +130,7 @@ class CameraManager:
                             rtsp_url="0",
                             location="Văn phòng chính - Cửa vào A",
                             purpose=DevicePurpose.CHECK_IN,
-                            is_active=True
+                            is_active=False
                         ),
                         Device(
                             id=uuid.uuid4(),
@@ -186,15 +188,41 @@ class CameraManager:
             return True
         return False
 
-    async def toggle_device(self, db: AsyncSession, device_id: uuid.UUID) -> Tuple[bool, Optional[Device]]:
-        """Toggles the is_active state of a device in DB and starts/stops its worker thread."""
+    async def toggle_device(
+        self,
+        db: AsyncSession,
+        device_id: uuid.UUID,
+        exclusive: bool = True
+    ) -> Tuple[bool, Optional[Device]]:
+        """
+        Toggles the is_active state of a device in DB and starts/stops its worker thread.
+        When exclusive=True and activating a camera, all other active cameras (and standalone stream_processor)
+        are stopped to prevent hardware conflicts and stop the laptop webcam indicator light.
+        """
+        from app.services.stream_processor import stream_processor
+
         res = await db.execute(select(Device).where(Device.id == device_id))
         device = res.scalar_one_or_none()
         if not device:
             return False, None
 
-        # Toggle state
-        device.is_active = not device.is_active
+        target_state = not device.is_active
+
+        if target_state and exclusive:
+            # Deactivate all other devices in DB and stop their workers
+            all_res = await db.execute(select(Device).where(Device.id != device_id, Device.is_active == True))
+            other_active = all_res.scalars().all()
+            for other_dev in other_active:
+                other_dev.is_active = False
+                await self.stop_worker_for_device(other_dev.id)
+                logger.info(f"■ [CameraManager] Auto-stopped other camera '{other_dev.device_name}' for exclusivity.")
+
+            # If global standalone stream processor is running webcam or anything, stop it
+            if stream_processor._is_running:
+                await stream_processor.stop()
+                logger.info("■ [CameraManager] Stopped standalone stream_processor to release hardware.")
+
+        device.is_active = target_state
         await db.commit()
         await db.refresh(device)
 

@@ -70,6 +70,8 @@ const vi = {
   face_login_err_no_face: 'Không tìm thấy khuôn mặt trong khung hình. Vui lòng nhìn thẳng vào camera.',
   face_login_err_spoof: 'Phát hiện hình ảnh giả mạo hoặc video tái tạo (Anti-Spoofing Alert).',
   face_login_err_low_confidence: 'Độ khớp sinh trắc học không đạt ngưỡng an toàn.',
+  face_login_err_iam_failed: 'Xác thực phân quyền IAM thất bại hoặc tài khoản chưa được liên kết. Vui lòng liên hệ quản trị viên.',
+  face_login_err_iam_unavailable: 'Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM.',
   face_login_err_tip: 'Vui lòng kiểm tra lại góc nhìn, đủ ánh sáng hoặc chuyển sang đăng nhập bằng Mật khẩu.',
 
   // Navigation Tabs

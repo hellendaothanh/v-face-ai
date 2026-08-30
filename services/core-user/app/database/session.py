@@ -281,6 +281,11 @@ async def seed_initial_data(session: AsyncSession) -> None:
             session.add(profile)
             await session.flush()
 
+    # Fetch admin_user for assigning as author of default KB articles and tickets
+    admin_stmt = select(User).where(User.username == settings.FIRST_SUPERUSER_USERNAME)
+    admin_res = await session.execute(admin_stmt)
+    admin_user = admin_res.scalar_one_or_none()
+
     # 6. Seed Default Knowledge Base (KB) Categories & Articles
     from app.models.helpdesk import (
         KBCategory,

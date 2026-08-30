@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ==============================================================================
-# V-Face Service Manager Script
-# Supports: start | stop | restart | status | logs
+# V-Face Service Manager Script (Linux / macOS)
+# Supports: start | stop | restart | status | test | logs
 # Targets:  all (default) | core-user | backend | frontend | db
 # ==============================================================================
 
@@ -32,8 +32,10 @@ BLUE="\033[0;34m"
 MAGENTA="\033[0;35m"
 CYAN="\033[0;36m"
 BOLD="\033[1m"
+GRAY="\033[0;90m"
 NC="\033[0m" # No Color
 
+# Ensure directories exist
 mkdir -p "${PID_DIR}" "${LOG_DIR}"
 
 # Helper: check if a PID is running
@@ -48,17 +50,61 @@ is_pid_running() {
 # Helper: find PID by port
 get_pid_by_port() {
     local port=$1
-    lsof -ti tcp:"${port}" -sTCP:LISTEN 2>/dev/null
+    lsof -ti tcp:"${port}" -sTCP:LISTEN 2>/dev/null | head -n 1
 }
 
-# Helper: resolve Python executable
+# Helper: safely stop a process tree
+stop_process_tree() {
+    local pid=$1
+    if [ -n "$pid" ] && is_pid_running "$pid"; then
+        kill "$pid" 2>/dev/null
+        for _ in {1..10}; do
+            if ! is_pid_running "$pid"; then
+                break
+            fi
+            sleep 0.5
+        done
+        if is_pid_running "$pid"; then
+            kill -9 "$pid" 2>/dev/null
+        fi
+    fi
+}
+
+# Helper: resolve Python executable & auto-prepare environment
 get_python_exec() {
     local exec="${PROJECT_ROOT}/venv/bin/python"
     if [ ! -f "$exec" ]; then
         exec="${PROJECT_ROOT}/.venv/bin/python"
     fi
+
     if [ ! -f "$exec" ]; then
-        exec="python3"
+        # Check if global python3 has uvicorn
+        if python3 -c "import uvicorn" 2>/dev/null; then
+            echo "python3"
+            return 0
+        fi
+
+        # Auto-create venv if missing or python lacks uvicorn
+        echo -e "${YELLOW}Creating Python virtual environment in ./venv...${NC}" >&2
+        if python3 -m venv "${PROJECT_ROOT}/venv" 2>/dev/null; then
+            local venv_python="${PROJECT_ROOT}/venv/bin/python"
+            if [ -f "$venv_python" ]; then
+                echo -e "${YELLOW}Installing backend and core-user dependencies...${NC}" >&2
+                "$venv_python" -m pip install --upgrade pip --quiet
+                if [ -f "${PROJECT_ROOT}/requirements.txt" ]; then
+                    "$venv_python" -m pip install -r "${PROJECT_ROOT}/requirements.txt" --quiet
+                fi
+                if [ -f "${CORE_USER_DIR}/requirements.txt" ]; then
+                    "$venv_python" -m pip install -r "${CORE_USER_DIR}/requirements.txt" --quiet
+                fi
+                echo "$venv_python"
+                return 0
+            fi
+        else
+            echo -e "${RED}⚠ Error initializing Python virtual environment.${NC}" >&2
+        fi
+        echo "python3"
+        return 0
     fi
     echo "$exec"
 }
@@ -67,12 +113,16 @@ get_python_exec() {
 # DATABASE (Docker Compose)
 # ------------------------------------------------------------------------------
 start_db() {
-    if command -v docker-compose &>/dev/null || docker compose version &>/dev/null; then
+    local compose_file="${PROJECT_ROOT}/docker-compose.yml"
+    if command -v docker &>/dev/null; then
         echo -e "${CYAN}[DB]${NC} Starting PostgreSQL container..."
         if docker compose version &>/dev/null; then
-            docker compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d postgres
+            docker compose -f "$compose_file" up -d postgres
+        elif command -v docker-compose &>/dev/null; then
+            docker-compose -f "$compose_file" up -d postgres
         else
-            docker-compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d postgres
+            echo -e "${YELLOW}⚠ [DB] Docker Compose not found.${NC}"
+            return 1
         fi
         echo -e "${GREEN}✔ [DB] PostgreSQL is running.${NC}"
     else
@@ -81,12 +131,13 @@ start_db() {
 }
 
 stop_db() {
-    if command -v docker-compose &>/dev/null || docker compose version &>/dev/null; then
+    local compose_file="${PROJECT_ROOT}/docker-compose.yml"
+    if command -v docker &>/dev/null; then
         echo -e "${CYAN}[DB]${NC} Stopping PostgreSQL container..."
         if docker compose version &>/dev/null; then
-            docker compose -f "${PROJECT_ROOT}/docker-compose.yml" stop postgres
-        else
-            docker-compose -f "${PROJECT_ROOT}/docker-compose.yml" stop postgres
+            docker compose -f "$compose_file" stop postgres
+        elif command -v docker-compose &>/dev/null; then
+            docker-compose -f "$compose_file" stop postgres
         fi
         echo -e "${GREEN}✔ [DB] PostgreSQL container stopped.${NC}"
     fi
@@ -98,15 +149,17 @@ stop_db() {
 start_core_user() {
     echo -e "${MAGENTA}▶ Starting Core User Service (IAM/Auth/RBAC/Org)...${NC}"
 
+    # Check PID file
     if [ -f "${CORE_USER_PID_FILE}" ]; then
         local pid
-        pid=$(cat "${CORE_USER_PID_FILE}")
-        if is_pid_running "$pid"; then
+        pid=$(cat "${CORE_USER_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$pid" ] && is_pid_running "$pid"; then
             echo -e "${YELLOW}⚠ Core User Service is already running (PID: ${pid}) on port ${CORE_USER_PORT}${NC}"
             return 0
         fi
     fi
 
+    # Check port
     local port_pid
     port_pid=$(get_pid_by_port "${CORE_USER_PORT}")
     if [ -n "$port_pid" ]; then
@@ -119,13 +172,23 @@ start_core_user() {
     PYTHON_EXEC=$(get_python_exec)
 
     cd "${CORE_USER_DIR}" || exit 1
-    nohup "${PYTHON_EXEC}" -m uvicorn app.main:app --reload --host 0.0.0.0 --port "${CORE_USER_PORT}" >> "${CORE_USER_LOG_FILE}" 2>&1 &
+    nohup "${PYTHON_EXEC}" -m uvicorn app.main:app --host 0.0.0.0 --port "${CORE_USER_PORT}" >> "${CORE_USER_LOG_FILE}" 2>&1 &
     local new_pid=$!
     echo "$new_pid" > "${CORE_USER_PID_FILE}"
 
-    sleep 1.5
-    if is_pid_running "$new_pid"; then
-        echo -e "${GREEN}✔ Core User Service started! (PID: ${new_pid})${NC}"
+    # Wait for port to become active (up to 8 seconds)
+    for _ in {1..8}; do
+        sleep 1
+        port_pid=$(get_pid_by_port "${CORE_USER_PORT}")
+        if [ -n "$port_pid" ]; then
+            break
+        fi
+    done
+
+    port_pid=$(get_pid_by_port "${CORE_USER_PORT}")
+    if [ -n "$port_pid" ]; then
+        echo "$port_pid" > "${CORE_USER_PID_FILE}"
+        echo -e "${GREEN}✔ Core User Service started! (PID: ${port_pid})${NC}"
         echo -e "  API URL:  ${CYAN}http://localhost:${CORE_USER_PORT}${NC}"
         echo -e "  Docs URL: ${CYAN}http://localhost:${CORE_USER_PORT}/docs${NC}"
         echo -e "  Logs:     ${CORE_USER_LOG_FILE}"
@@ -138,39 +201,30 @@ start_core_user() {
 
 stop_core_user() {
     echo -e "${MAGENTA}■ Stopping Core User Service...${NC}"
-    local pid=""
+    local stopped=0
 
     if [ -f "${CORE_USER_PID_FILE}" ]; then
-        pid=$(cat "${CORE_USER_PID_FILE}")
-    fi
-
-    if [ -z "$pid" ] || ! is_pid_running "$pid"; then
-        pid=$(get_pid_by_port "${CORE_USER_PORT}")
-    fi
-
-    if [ -n "$pid" ] && is_pid_running "$pid"; then
-        kill "$pid" 2>/dev/null
-        for _ in {1..10}; do
-            if ! is_pid_running "$pid"; then
-                break
-            fi
-            sleep 0.5
-        done
-        if is_pid_running "$pid"; then
-            kill -9 "$pid" 2>/dev/null
+        local pid
+        pid=$(cat "${CORE_USER_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$pid" ] && is_pid_running "$pid"; then
+            stop_process_tree "$pid"
+            stopped=1
+            echo -e "${GREEN}✔ Core User Service (PID: ${pid}) stopped.${NC}"
         fi
-        echo -e "${GREEN}✔ Core User Service (PID: ${pid}) stopped.${NC}"
-    else
+        rm -f "${CORE_USER_PID_FILE}"
+    fi
+
+    local port_pid
+    port_pid=$(get_pid_by_port "${CORE_USER_PORT}")
+    if [ -n "$port_pid" ]; then
+        stop_process_tree "$port_pid"
+        stopped=1
+        echo -e "${GREEN}✔ Cleaned up process occupying port ${CORE_USER_PORT} (PID: ${port_pid}).${NC}"
+    fi
+
+    if [ "$stopped" -eq 0 ]; then
         echo -e "${YELLOW}Core User Service is not running.${NC}"
     fi
-
-    local remaining_pid
-    remaining_pid=$(get_pid_by_port "${CORE_USER_PORT}")
-    if [ -n "$remaining_pid" ]; then
-        kill -9 "$remaining_pid" 2>/dev/null
-    fi
-
-    rm -f "${CORE_USER_PID_FILE}"
 }
 
 # ------------------------------------------------------------------------------
@@ -179,15 +233,17 @@ stop_core_user() {
 start_backend() {
     echo -e "${BLUE}▶ Starting Face AI Attendance Backend...${NC}"
 
+    # Check PID file
     if [ -f "${BACKEND_PID_FILE}" ]; then
         local pid
-        pid=$(cat "${BACKEND_PID_FILE}")
-        if is_pid_running "$pid"; then
+        pid=$(cat "${BACKEND_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$pid" ] && is_pid_running "$pid"; then
             echo -e "${YELLOW}⚠ Backend is already running (PID: ${pid}) on port ${BACKEND_PORT}${NC}"
             return 0
         fi
     fi
 
+    # Check port
     local port_pid
     port_pid=$(get_pid_by_port "${BACKEND_PORT}")
     if [ -n "$port_pid" ]; then
@@ -200,13 +256,23 @@ start_backend() {
     PYTHON_EXEC=$(get_python_exec)
 
     cd "${PROJECT_ROOT}" || exit 1
-    nohup "${PYTHON_EXEC}" -m uvicorn app.main:app --reload --host 0.0.0.0 --port "${BACKEND_PORT}" >> "${BACKEND_LOG_FILE}" 2>&1 &
+    nohup "${PYTHON_EXEC}" -m uvicorn app.main:app --host 0.0.0.0 --port "${BACKEND_PORT}" >> "${BACKEND_LOG_FILE}" 2>&1 &
     local new_pid=$!
     echo "$new_pid" > "${BACKEND_PID_FILE}"
 
-    sleep 1.5
-    if is_pid_running "$new_pid"; then
-        echo -e "${GREEN}✔ Face AI Backend started! (PID: ${new_pid})${NC}"
+    # Wait for port to become active (up to 8 seconds)
+    for _ in {1..8}; do
+        sleep 1
+        port_pid=$(get_pid_by_port "${BACKEND_PORT}")
+        if [ -n "$port_pid" ]; then
+            break
+        fi
+    done
+
+    port_pid=$(get_pid_by_port "${BACKEND_PORT}")
+    if [ -n "$port_pid" ]; then
+        echo "$port_pid" > "${BACKEND_PID_FILE}"
+        echo -e "${GREEN}✔ Face AI Backend started! (PID: ${port_pid})${NC}"
         echo -e "  API URL:  ${CYAN}http://localhost:${BACKEND_PORT}${NC}"
         echo -e "  Docs URL: ${CYAN}http://localhost:${BACKEND_PORT}/docs${NC}"
         echo -e "  Logs:     ${BACKEND_LOG_FILE}"
@@ -219,41 +285,30 @@ start_backend() {
 
 stop_backend() {
     echo -e "${BLUE}■ Stopping Face AI Backend...${NC}"
-    local pid=""
+    local stopped=0
 
     if [ -f "${BACKEND_PID_FILE}" ]; then
-        pid=$(cat "${BACKEND_PID_FILE}")
-    fi
-
-    if [ -z "$pid" ] || ! is_pid_running "$pid"; then
-        pid=$(get_pid_by_port "${BACKEND_PORT}")
-    fi
-
-    if [ -n "$pid" ] && is_pid_running "$pid"; then
-        kill "$pid" 2>/dev/null
-        for _ in {1..10}; do
-            if ! is_pid_running "$pid"; then
-                break
-            fi
-            sleep 0.5
-        done
-
-        if is_pid_running "$pid"; then
-            kill -9 "$pid" 2>/dev/null
+        local pid
+        pid=$(cat "${BACKEND_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$pid" ] && is_pid_running "$pid"; then
+            stop_process_tree "$pid"
+            stopped=1
+            echo -e "${GREEN}✔ Face AI Backend (PID: ${pid}) stopped.${NC}"
         fi
+        rm -f "${BACKEND_PID_FILE}"
+    fi
 
-        echo -e "${GREEN}✔ Face AI Backend (PID: ${pid}) stopped.${NC}"
-    else
+    local port_pid
+    port_pid=$(get_pid_by_port "${BACKEND_PORT}")
+    if [ -n "$port_pid" ]; then
+        stop_process_tree "$port_pid"
+        stopped=1
+        echo -e "${GREEN}✔ Cleaned up process occupying port ${BACKEND_PORT} (PID: ${port_pid}).${NC}"
+    fi
+
+    if [ "$stopped" -eq 0 ]; then
         echo -e "${YELLOW}Face AI Backend is not running.${NC}"
     fi
-
-    local remaining_pid
-    remaining_pid=$(get_pid_by_port "${BACKEND_PORT}")
-    if [ -n "$remaining_pid" ]; then
-        kill -9 "$remaining_pid" 2>/dev/null
-    fi
-
-    rm -f "${BACKEND_PID_FILE}"
 }
 
 # ------------------------------------------------------------------------------
@@ -264,8 +319,8 @@ start_frontend() {
 
     if [ -f "${FRONTEND_PID_FILE}" ]; then
         local pid
-        pid=$(cat "${FRONTEND_PID_FILE}")
-        if is_pid_running "$pid"; then
+        pid=$(cat "${FRONTEND_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$pid" ] && is_pid_running "$pid"; then
             echo -e "${YELLOW}⚠ Frontend is already running (PID: ${pid}) on port ${FRONTEND_PORT}${NC}"
             return 0
         fi
@@ -279,19 +334,30 @@ start_frontend() {
         return 0
     fi
 
-    if [ ! -d "${PROJECT_ROOT}/frontend/node_modules" ]; then
+    local frontend_dir="${PROJECT_ROOT}/frontend"
+    if [ ! -d "${frontend_dir}/node_modules" ]; then
         echo -e "${YELLOW}Installing frontend dependencies...${NC}"
-        (cd "${PROJECT_ROOT}/frontend" && npm install)
+        (cd "${frontend_dir}" && npm install)
     fi
 
-    cd "${PROJECT_ROOT}/frontend" || exit 1
+    cd "${frontend_dir}" || exit 1
     nohup npm run dev >> "${FRONTEND_LOG_FILE}" 2>&1 &
     local new_pid=$!
     echo "$new_pid" > "${FRONTEND_PID_FILE}"
 
-    sleep 1.5
-    if is_pid_running "$new_pid"; then
-        echo -e "${GREEN}✔ Frontend started! (PID: ${new_pid})${NC}"
+    # Wait for port to become active (up to 8 seconds)
+    for _ in {1..8}; do
+        sleep 1
+        port_pid=$(get_pid_by_port "${FRONTEND_PORT}")
+        if [ -n "$port_pid" ]; then
+            break
+        fi
+    done
+
+    port_pid=$(get_pid_by_port "${FRONTEND_PORT}")
+    if [ -n "$port_pid" ]; then
+        echo "$port_pid" > "${FRONTEND_PID_FILE}"
+        echo -e "${GREEN}✔ Frontend started! (PID: ${port_pid})${NC}"
         echo -e "  Web URL: ${CYAN}http://localhost:${FRONTEND_PORT}${NC}"
         echo -e "  Logs:    ${FRONTEND_LOG_FILE}"
     else
@@ -303,48 +369,37 @@ start_frontend() {
 
 stop_frontend() {
     echo -e "${CYAN}■ Stopping Frontend...${NC}"
-    local pid=""
+    local stopped=0
 
     if [ -f "${FRONTEND_PID_FILE}" ]; then
-        pid=$(cat "${FRONTEND_PID_FILE}")
-    fi
-
-    if [ -z "$pid" ] || ! is_pid_running "$pid"; then
-        pid=$(get_pid_by_port "${FRONTEND_PORT}")
-    fi
-
-    if [ -n "$pid" ] && is_pid_running "$pid"; then
-        kill "$pid" 2>/dev/null
-        for _ in {1..10}; do
-            if ! is_pid_running "$pid"; then
-                break
-            fi
-            sleep 0.5
-        done
-
-        if is_pid_running "$pid"; then
-            kill -9 "$pid" 2>/dev/null
+        local pid
+        pid=$(cat "${FRONTEND_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$pid" ] && is_pid_running "$pid"; then
+            stop_process_tree "$pid"
+            stopped=1
+            echo -e "${GREEN}✔ Frontend (PID: ${pid}) stopped.${NC}"
         fi
+        rm -f "${FRONTEND_PID_FILE}"
+    fi
 
-        echo -e "${GREEN}✔ Frontend (PID: ${pid}) stopped.${NC}"
-    else
+    local port_pid
+    port_pid=$(get_pid_by_port "${FRONTEND_PORT}")
+    if [ -n "$port_pid" ]; then
+        stop_process_tree "$port_pid"
+        stopped=1
+        echo -e "${GREEN}✔ Cleaned up process occupying port ${FRONTEND_PORT} (PID: ${port_pid}).${NC}"
+    fi
+
+    if [ "$stopped" -eq 0 ]; then
         echo -e "${YELLOW}Frontend is not running.${NC}"
     fi
-
-    local remaining_pid
-    remaining_pid=$(get_pid_by_port "${FRONTEND_PORT}")
-    if [ -n "$remaining_pid" ]; then
-        kill -9 "$remaining_pid" 2>/dev/null
-    fi
-
-    rm -f "${FRONTEND_PID_FILE}"
 }
 
 # ------------------------------------------------------------------------------
 # STATUS
 # ------------------------------------------------------------------------------
-status() {
-    echo -e "${BOLD}====== V-Face Ecosystem Services Status ======${NC}"
+get_service_status() {
+    echo -e "\n${BOLD}====== V-Face Ecosystem Services Status ======${NC}"
 
     # Database
     if command -v docker &>/dev/null; then
@@ -359,14 +414,16 @@ status() {
 
     # Core User
     local core_user_pid=""
-    if [ -f "${CORE_USER_PID_FILE}" ]; then
-        core_user_pid=$(cat "${CORE_USER_PID_FILE}")
-    fi
-    if [ -z "$core_user_pid" ] || ! is_pid_running "$core_user_pid"; then
-        core_user_pid=$(get_pid_by_port "${CORE_USER_PORT}")
+    core_user_pid=$(get_pid_by_port "${CORE_USER_PORT}")
+    if [ -z "$core_user_pid" ] && [ -f "${CORE_USER_PID_FILE}" ]; then
+        local check_pid
+        check_pid=$(cat "${CORE_USER_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$check_pid" ] && is_pid_running "$check_pid"; then
+            core_user_pid=$check_pid
+        fi
     fi
 
-    if [ -n "$core_user_pid" ] && is_pid_running "$core_user_pid"; then
+    if [ -n "$core_user_pid" ]; then
         echo -e "  Core User:    ${GREEN}● Running${NC} (PID: ${core_user_pid}, Port: ${CORE_USER_PORT}) -> http://localhost:${CORE_USER_PORT}/docs"
     else
         echo -e "  Core User:    ${RED}○ Stopped${NC}"
@@ -374,14 +431,16 @@ status() {
 
     # Backend Face AI
     local backend_pid=""
-    if [ -f "${BACKEND_PID_FILE}" ]; then
-        backend_pid=$(cat "${BACKEND_PID_FILE}")
-    fi
-    if [ -z "$backend_pid" ] || ! is_pid_running "$backend_pid"; then
-        backend_pid=$(get_pid_by_port "${BACKEND_PORT}")
+    backend_pid=$(get_pid_by_port "${BACKEND_PORT}")
+    if [ -z "$backend_pid" ] && [ -f "${BACKEND_PID_FILE}" ]; then
+        local check_pid
+        check_pid=$(cat "${BACKEND_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$check_pid" ] && is_pid_running "$check_pid"; then
+            backend_pid=$check_pid
+        fi
     fi
 
-    if [ -n "$backend_pid" ] && is_pid_running "$backend_pid"; then
+    if [ -n "$backend_pid" ]; then
         echo -e "  Face AI:      ${GREEN}● Running${NC} (PID: ${backend_pid}, Port: ${BACKEND_PORT}) -> http://localhost:${BACKEND_PORT}/docs"
     else
         echo -e "  Face AI:      ${RED}○ Stopped${NC}"
@@ -389,44 +448,92 @@ status() {
 
     # Frontend
     local frontend_pid=""
-    if [ -f "${FRONTEND_PID_FILE}" ]; then
-        frontend_pid=$(cat "${FRONTEND_PID_FILE}")
-    fi
-    if [ -z "$frontend_pid" ] || ! is_pid_running "$frontend_pid"; then
-        frontend_pid=$(get_pid_by_port "${FRONTEND_PORT}")
+    frontend_pid=$(get_pid_by_port "${FRONTEND_PORT}")
+    if [ -z "$frontend_pid" ] && [ -f "${FRONTEND_PID_FILE}" ]; then
+        local check_pid
+        check_pid=$(cat "${FRONTEND_PID_FILE}" | tr -d '[:space:]')
+        if [ -n "$check_pid" ] && is_pid_running "$check_pid"; then
+            frontend_pid=$check_pid
+        fi
     fi
 
-    if [ -n "$frontend_pid" ] && is_pid_running "$frontend_pid"; then
+    if [ -n "$frontend_pid" ]; then
         echo -e "  Frontend:     ${GREEN}● Running${NC} (PID: ${frontend_pid}, Port: ${FRONTEND_PORT}) -> http://localhost:${FRONTEND_PORT}"
     else
         echo -e "  Frontend:     ${RED}○ Stopped${NC}"
     fi
-    echo -e "${BOLD}==============================================${NC}"
+
+    echo -e "${BOLD}==============================================${NC}\n"
 }
 
 # ------------------------------------------------------------------------------
 # LOGS
 # ------------------------------------------------------------------------------
-view_logs() {
+show_logs() {
     local target=${1:-"all"}
     case "$target" in
         core-user)
-            echo -e "${MAGENTA}Following Core User logs (${CORE_USER_LOG_FILE})... (Press Ctrl+C to exit)${NC}"
-            tail -f "${CORE_USER_LOG_FILE}"
+            touch "${CORE_USER_LOG_FILE}"
+            echo -e "${CYAN}Following Core User logs (${CORE_USER_LOG_FILE})... (Press Ctrl+C to exit)${NC}"
+            tail -n 50 -f "${CORE_USER_LOG_FILE}"
             ;;
         backend)
-            echo -e "${BLUE}Following Face AI Backend logs (${BACKEND_LOG_FILE})... (Press Ctrl+C to exit)${NC}"
-            tail -f "${BACKEND_LOG_FILE}"
+            touch "${BACKEND_LOG_FILE}"
+            echo -e "${CYAN}Following Face AI Backend logs (${BACKEND_LOG_FILE})... (Press Ctrl+C to exit)${NC}"
+            tail -n 50 -f "${BACKEND_LOG_FILE}"
             ;;
         frontend)
+            touch "${FRONTEND_LOG_FILE}"
             echo -e "${CYAN}Following Frontend logs (${FRONTEND_LOG_FILE})... (Press Ctrl+C to exit)${NC}"
-            tail -f "${FRONTEND_LOG_FILE}"
+            tail -n 50 -f "${FRONTEND_LOG_FILE}"
             ;;
         all|*)
-            echo -e "${CYAN}Following All logs... (Press Ctrl+C to exit)${NC}"
-            tail -f "${CORE_USER_LOG_FILE}" "${BACKEND_LOG_FILE}" "${FRONTEND_LOG_FILE}"
+            echo -e "${CYAN}Showing last lines of logs...${NC}"
+            if [ -f "${CORE_USER_LOG_FILE}" ]; then
+                echo -e "${MAGENTA}--- Core User Log (${CORE_USER_LOG_FILE}) ---${NC}"
+                tail -n 15 "${CORE_USER_LOG_FILE}"
+            fi
+            if [ -f "${BACKEND_LOG_FILE}" ]; then
+                echo -e "\n${BLUE}--- Face AI Backend Log (${BACKEND_LOG_FILE}) ---${NC}"
+                tail -n 15 "${BACKEND_LOG_FILE}"
+            fi
+            if [ -f "${FRONTEND_LOG_FILE}" ]; then
+                echo -e "\n${YELLOW}--- Frontend Log (${FRONTEND_LOG_FILE}) ---${NC}"
+                tail -n 15 "${FRONTEND_LOG_FILE}"
+            fi
+            echo -e "\n${GRAY}(Tip: Run '$0 logs core-user' or '$0 logs backend' to follow in real-time)${NC}"
             ;;
     esac
+}
+
+# ------------------------------------------------------------------------------
+# TESTS
+# ------------------------------------------------------------------------------
+run_e2e_tests() {
+    echo -e "\n${CYAN}🚀 Running Playwright E2E Tests for V-Face Ecosystem...${NC}"
+    local frontend_dir="${PROJECT_ROOT}/frontend"
+    (cd "${frontend_dir}" && npx playwright test)
+}
+
+# ------------------------------------------------------------------------------
+# USAGE
+# ------------------------------------------------------------------------------
+show_usage() {
+    echo -e "${YELLOW}Usage: $0 {start|stop|restart|status|test|logs} [all|core-user|backend|frontend|db]${NC}\n"
+    echo "Examples:"
+    echo "  $0 start                  # Start DB, Core User, Face AI & Frontend"
+    echo "  $0 stop                   # Stop all services"
+    echo "  $0 restart                # Restart all services"
+    echo "  $0 start core-user        # Start Core User Service only (Port 8001)"
+    echo "  $0 stop core-user         # Stop Core User Service only"
+    echo "  $0 start backend          # Start Face AI Backend only (Port 8000)"
+    echo "  $0 stop backend           # Stop Face AI Backend only"
+    echo "  $0 start frontend         # Start Frontend only (Port 3000)"
+    echo "  $0 stop frontend          # Stop Frontend only"
+    echo "  $0 status                 # Check status of all ecosystem services"
+    echo "  $0 test                   # Run automated Playwright E2E tests"
+    echo "  $0 logs core-user         # Stream Core User service logs"
+    echo "  $0 logs backend           # Stream Face AI Backend logs"
 }
 
 # ------------------------------------------------------------------------------
@@ -508,31 +615,16 @@ case "$COMMAND" in
                 ;;
         esac
         ;;
+    status)
+        get_service_status
+        ;;
     test)
-        echo -e "${CYAN}🚀 Running Playwright E2E Tests for V-Face Ecosystem...${NC}"
-        cd "${PROJECT_ROOT}/frontend" || exit 1
-        npx playwright test
+        run_e2e_tests
         ;;
     logs)
-        view_logs "$TARGET"
+        show_logs "$TARGET"
         ;;
-    *)
-        echo -e "${BOLD}Usage: $0 {start|stop|restart|status|test|logs} [all|core-user|backend|frontend|db]${NC}"
-        echo ""
-        echo "Examples:"
-        echo "  $0 start                  # Start DB, Core User, Face AI & Frontend"
-        echo "  $0 stop                   # Stop all services"
-        echo "  $0 restart                # Restart all services"
-        echo "  $0 test                   # Run Playwright E2E Tests"
-        echo "  $0 start core-user        # Start Core User Service only (Port 8001)"
-        echo "  $0 stop core-user         # Stop Core User Service only"
-        echo "  $0 start backend          # Start Face AI Backend only (Port 8000)"
-        echo "  $0 stop backend           # Stop Face AI Backend only"
-        echo "  $0 start frontend         # Start Frontend only (Port 3000)"
-        echo "  $0 stop frontend          # Stop Frontend only"
-        echo "  $0 status                 # Check status of all services"
-        echo "  $0 logs core-user         # Stream Core User logs"
-        echo "  $0 logs backend           # Stream Face AI Backend logs"
-        exit 1
+    help|*)
+        show_usage
         ;;
 esac

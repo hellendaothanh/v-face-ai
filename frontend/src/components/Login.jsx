@@ -118,19 +118,27 @@ const Login = () => {
     }
   }, [cameraActive, activeTab]);
 
-  // Stop Webcam
+  // Stop Webcam thoroughly
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.enabled = false;
+          track.stop();
+        } catch (e) {}
+      });
       streamRef.current = null;
     }
     if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+      } catch (e) {}
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
   }, []);
 
-  // Handle Tab Switch
+  // Handle Tab Switch & Component Unmount Cleanup
   useEffect(() => {
     if (activeTab === 'face') {
       startCamera();
@@ -140,10 +148,17 @@ const Login = () => {
       setFaceStatus('');
       setFaceLoginError(null);
     }
-    return () => {
+
+    const handleBeforeUnload = () => {
       stopCamera();
     };
-  }, [activeTab, startCamera, stopCamera]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      stopCamera();
+    };
+  }, [activeTab]);
 
   // Password Login Handler
   const handleSubmit = async (e) => {
@@ -199,6 +214,7 @@ const Login = () => {
       const result = await loginWithFace(blob);
       
       if (result && result.success) {
+        stopCamera();
         setDetectedEmployee(result.employee);
         const welcomeMsg = (t('face_login_success') || 'Đăng nhập thành công! Chào mừng') + ` ${result.employee?.full_name || ''}`;
         setFaceStatus(welcomeMsg);
@@ -238,6 +254,14 @@ const Login = () => {
         localizedMsg = t('face_login_err_spoof') || (language === 'en'
           ? 'Spoof attempt or screen replay detected (Anti-Spoofing Alert).'
           : 'Phát hiện hình ảnh giả mạo hoặc video tái tạo (Anti-Spoofing Alert).');
+      } else if (code === 'IAM_AUTH_FAILED' || rawMsg.includes('Xác thực IAM') || rawMsg.includes('phân quyền IAM') || rawMsg.toLowerCase().includes('iam auth')) {
+        localizedMsg = t('face_login_err_iam_failed') || (language === 'en'
+          ? 'IAM authorization failed or identity account is not linked. Please contact administrator.'
+          : 'Xác thực phân quyền IAM thất bại hoặc tài khoản chưa được liên kết. Vui lòng liên hệ quản trị viên.');
+      } else if (code === 'IAM_UNAVAILABLE' || rawMsg.includes('Không thể kết nối đến Dịch vụ') || rawMsg.toLowerCase().includes('unavailable')) {
+        localizedMsg = t('face_login_err_iam_unavailable') || (language === 'en'
+          ? 'Cannot connect to Core User IAM Identity Service.'
+          : 'Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM.');
       }
 
       setErrorMsg(localizedMsg);

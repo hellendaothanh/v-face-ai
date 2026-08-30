@@ -109,12 +109,14 @@ async def create_device(
 @router.put("/{device_id}/toggle", response_model=ResponseBase[DeviceToggleResponse])
 async def toggle_device_status(
     device_id: uuid.UUID,
+    exclusive: bool = Query(True, description="Tự động tắt các camera khác (đặc biệt webcam máy tính) để giải phóng phần cứng"),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Bật / Tắt nhanh luồng camera từ xa theo thời gian thực (Start/Stop worker thread).
+    Khi exclusive=True (mặc định), việc bật camera mới sẽ tự động ngắt các camera khác và webcam máy tính.
     """
-    success, device = await camera_manager.toggle_device(db=db, device_id=device_id)
+    success, device = await camera_manager.toggle_device(db=db, device_id=device_id, exclusive=exclusive)
     if not success or not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

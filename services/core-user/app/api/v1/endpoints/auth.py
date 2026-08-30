@@ -38,23 +38,67 @@ async def face_token(
     if req.username:
         conditions.append(User.username == req.username)
         conditions.append(User.email == req.username)
+    if req.email:
+        conditions.append(User.email == req.email)
 
-    if not conditions:
-        raise UnauthorizedException("user_code or username is required for biometric token issuance")
+    if not conditions and not req.user_code and not req.username:
+        raise UnauthorizedException("user_code, username or email is required for biometric token issuance")
 
     stmt = select(User).where(or_(*conditions))
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
-    if not user:
+    if not user and req.user_code:
         # Fallback: check if username matches user_code (case-insensitive)
-        if req.user_code:
-            fallback_stmt = select(User).where(User.username.ilike(req.user_code))
-            fallback_res = await db.execute(fallback_stmt)
-            user = fallback_res.scalar_one_or_none()
+        fallback_stmt = select(User).where(User.username.ilike(req.user_code))
+        fallback_res = await db.execute(fallback_stmt)
+        user = fallback_res.scalar_one_or_none()
 
     if not user:
-        raise UnauthorizedException(f"No IAM User found matching biometric identity '{req.user_code or req.username}'")
+        # Auto-provision IAM user for verified biometric employee
+        from app.models.rbac import Role
+        from app.models.user import UserProfile
+        import uuid
+
+        auto_code = req.user_code or f"EMP{uuid.uuid4().hex[:6].upper()}"
+        base_username = (req.email.split('@')[0] if req.email else auto_code).lower().replace(" ", "_")
+        
+        # Ensure username uniqueness
+        chk = await db.execute(select(User).where(User.username == base_username))
+        existing_u = chk.scalar_one_or_none()
+        final_username = base_username if not existing_u else f"{base_username}_{uuid.uuid4().hex[:4]}".lower()
+        final_email = req.email or f"{final_username}@vface.ai"
+
+        # Determine admin role: if EMP000, NV001, or IT/BOD department, grant superadmin
+        is_admin = False
+        role_names = ["employee"]
+        if auto_code in ["EMP000", "NV001"] or (req.department and req.department.upper() in ["IT", "BOD", "BAN GIÁM ĐỐC"]):
+            is_admin = True
+            role_names = ["superadmin"]
+
+        roles_stmt = select(Role).where(Role.name.in_(role_names))
+        roles_res = await db.execute(roles_stmt)
+        assigned_roles = roles_res.scalars().all()
+
+        user = User(
+            user_code=auto_code,
+            username=final_username,
+            email=final_email,
+            hashed_password=get_password_hash("Password@123"),
+            is_active=True,
+            is_superuser=is_admin,
+            roles=assigned_roles
+        )
+        db.add(user)
+        await db.flush()
+
+        profile = UserProfile(
+            user_id=user.id,
+            full_name=req.full_name or auto_code,
+            phone_number=req.phone_number
+        )
+        db.add(profile)
+        await db.flush()
 
     if not user.is_active:
         raise UnauthorizedException("Account is disabled. Please contact administrator.")

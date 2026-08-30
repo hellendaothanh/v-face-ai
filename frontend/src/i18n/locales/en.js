@@ -70,6 +70,8 @@ const en = {
   face_login_err_no_face: 'No face detected in camera frame. Please look directly at the camera.',
   face_login_err_spoof: 'Spoof attempt or screen replay detected (Anti-Spoofing Alert).',
   face_login_err_low_confidence: 'Biometric confidence score is below safety threshold.',
+  face_login_err_iam_failed: 'IAM authorization failed or identity account is not linked. Please contact administrator.',
+  face_login_err_iam_unavailable: 'Cannot connect to Core User IAM Identity Service.',
   face_login_err_tip: 'Please check your lighting, face angle, or switch to Password login.',
 
   // Navigation Tabs

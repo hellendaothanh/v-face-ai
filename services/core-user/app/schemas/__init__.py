@@ -27,6 +27,11 @@ class FaceTokenRequest(BaseModel):
     user_code: Optional[str] = Field(None, description="Employee/User Code")
     username: Optional[str] = Field(None, description="Username or Email")
     employee_id: Optional[str] = Field(None, description="Employee UUID from Face AI")
+    email: Optional[str] = Field(None, description="Employee Email")
+    full_name: Optional[str] = Field(None, description="Employee Full Name")
+    phone_number: Optional[str] = Field(None, description="Employee Phone Number")
+    department: Optional[str] = Field(None, description="Employee Department")
+    position: Optional[str] = Field(None, description="Employee Position")
     secret_key: Optional[str] = Field(None, description="Internal service secret if needed")
 
 

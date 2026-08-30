@@ -238,11 +238,22 @@ const EmployeeManagement = () => {
     }
   };
 
-  // Stop Browser WebRTC Camera
+  // Stop Browser WebRTC Camera thoroughly
   const stopWebcam = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.enabled = false;
+          track.stop();
+        } catch (e) {}
+      });
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+      } catch (e) {}
+      videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
   };

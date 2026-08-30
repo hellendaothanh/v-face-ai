@@ -1,3 +1,4 @@
+import gc
 import os
 import platform
 import threading
@@ -70,8 +71,9 @@ class CameraStreamReader:
         """Stops the stream capture thread and releases camera resources."""
         self._is_running = False
         if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=2.0)
+            self._thread.join(timeout=1.5)
         self._release_cap()
+        gc.collect()
         logger.info(f"Stopped Camera Capture thread for device '{self.device_id}'.")
 
     def _open_capture(self) -> bool:
@@ -106,7 +108,7 @@ class CameraStreamReader:
 
             else:  # RTSP Stream (Tapo C200)
                 logger.info(f"Opening RTSP Stream: {self.rtsp_url}...")
-                os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay"
+                os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|stimeout;3000000|max_delay;500000"
                 self._cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
                 if self._cap and self._cap.isOpened():
                     self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
@@ -125,13 +127,15 @@ class CameraStreamReader:
 
     def _release_cap(self) -> None:
         with self._lock:
-            if self._cap:
+            if self._cap is not None:
                 try:
                     self._cap.release()
                 except Exception:
                     pass
+                del self._cap
                 self._cap = None
             self.is_connected = False
+        gc.collect()
 
     def _capture_loop(self) -> None:
         """Continuous background loop for reading frames."""

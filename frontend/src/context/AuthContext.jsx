@@ -52,9 +52,10 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const res = await api.getCurrentUser();
-      if (res && res.data) {
-        setCurrentUser(res.data);
-        localStorage.setItem('vface_user_profile', JSON.stringify(res.data));
+      const userData = res?.data || res;
+      if (userData && (userData.username || userData.id)) {
+        setCurrentUser(userData);
+        localStorage.setItem('vface_user_profile', JSON.stringify(userData));
       }
     } catch (err) {
       console.warn('Session check warning:', err.message);

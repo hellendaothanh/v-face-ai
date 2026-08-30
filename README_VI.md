@@ -95,11 +95,21 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 | **Face AI Attendance** | `8000` | `http://localhost:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | Nhận diện khuôn mặt, Stream Camera, Chấm công |
 | **Frontend Web App** | `3000` | `http://localhost:3000` | - | Giao diện Dashboard, Giám sát và Quản trị |
 
-### Tài khoản Quản trị viên mặc định:
-- **Tên đăng nhập / Email:** `admin` / `admin@vface.ai`
-- **Mật khẩu ban đầu:** `admin123`
-- **Mã nhân viên:** `EMP000`
-- **Vai trò:** `superadmin` (Toàn quyền hệ thống)
+### Danh Sách Tài Khoản Mẫu & Mật Khẩu Khởi Tạo:
+
+Hệ thống tự động khởi tạo (seed) sẵn các tài khoản mẫu đại diện cho các cấp bậc phân quyền RBAC và phòng ban khác nhau:
+
+| STT | Họ và Tên | Tên đăng nhập (Username) | Email | Mật khẩu mặc định | Vai trò (Role) | Chức vụ / Phòng ban |
+| :---: | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | **System Administrator** | `admin` | `admin@vface.ai` | `admin123` | **`superadmin`** | Tổng Giám Đốc (CEO) / Ban Giám Đốc |
+| 2 | **Trần Quang Hải** | `cto_hai` | `hai.tq@vface.ai` | `Password@123` | **`superadmin`** | Giám Đốc Công Nghệ (CTO) / Khối Công Nghệ & AI |
+| 3 | **Lê Tuyết Mai** | `hr_mai` | `mai.lt@vface.ai` | `Password@123` | **`hr_manager`** | Giám Đốc Nhân Sự / Phòng Nhân Sự & Vận Hành |
+| 4 | **Phạm Quốc Hùng** | `ai_hung` | `hung.pq@vface.ai` | `Password@123` | **`dept_manager`** | Trưởng Nhóm AI & Vision / Khối Công Nghệ & AI |
+| 5 | **Đỗ Hoàng Nam** | `dev_nam` | `nam.dh@vface.ai` | `Password@123` | **`employee`** | Kỹ Sư Phần Mềm Cao Cấp / Khối Công Nghệ & AI |
+| 6 | **Hoàng Mỹ Linh** | `sale_linh` | `linh.hm@vface.ai` | `Password@123` | **`employee`** | Trưởng Phòng Kinh Doanh / Phòng KD & Marketing |
+| 7 | **Vũ Thúy Nga** | `hr_nga` | `nga.vt@vface.ai` | `Password@123` | **`hr_manager`** | Chuyên Viên Nhân Sự / Phòng Nhân Sự & Vận Hành |
+
+> **Ghi chú**: Người dùng có thể đổi mật khẩu bất kỳ lúc nào tại màn hình **Hồ sơ cá nhân & Bảo mật (User Profile & Security)** sau khi đăng nhập.
 
 ---
 

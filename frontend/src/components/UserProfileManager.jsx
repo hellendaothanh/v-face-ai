@@ -332,8 +332,19 @@ const UserProfileManager = () => {
 
   const stopVerifyCamera = () => {
     if (verifyStream) {
-      verifyStream.getTracks().forEach(track => track.stop());
+      verifyStream.getTracks().forEach(track => {
+        try {
+          track.enabled = false;
+          track.stop();
+        } catch (e) {}
+      });
       setVerifyStream(null);
+    }
+    if (verifyVideoRef.current) {
+      try {
+        verifyVideoRef.current.pause();
+      } catch (e) {}
+      verifyVideoRef.current.srcObject = null;
     }
   };
 
@@ -419,10 +430,29 @@ const UserProfileManager = () => {
 
   const stopEnrollCamera = () => {
     if (enrollStream) {
-      enrollStream.getTracks().forEach(track => track.stop());
+      enrollStream.getTracks().forEach(track => {
+        try {
+          track.enabled = false;
+          track.stop();
+        } catch (e) {}
+      });
       setEnrollStream(null);
     }
+    if (enrollVideoRef.current) {
+      try {
+        enrollVideoRef.current.pause();
+      } catch (e) {}
+      enrollVideoRef.current.srcObject = null;
+    }
   };
+
+  // Clean up all camera streams when UserProfileManager unmounts
+  useEffect(() => {
+    return () => {
+      stopVerifyCamera();
+      stopEnrollCamera();
+    };
+  }, []);
 
   const openEnrollModal = () => {
     setAnglePhotos({

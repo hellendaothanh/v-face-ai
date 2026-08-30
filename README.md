@@ -95,11 +95,21 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 | **Face AI Attendance** | `8000` | `http://localhost:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | Face Recognition, Streams, Attendance logs |
 | **Frontend Dashboard** | `3000` | `http://localhost:3000` | - | React 19 UI for Attendance & Admin |
 
-### Default Administrator Credentials:
-- **Username / Email:** `admin` / `admin@vface.ai`
-- **Password:** `admin123`
-- **Employee Code:** `EMP000`
-- **Assigned Role:** `superadmin`
+### Seeded Demo Accounts & Initial Credentials:
+
+The database is automatically pre-seeded with sample enterprise accounts mapped to various RBAC roles and departments:
+
+| # | Full Name | Username | Email | Default Password | Assigned Role | Position / Department |
+| :---: | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | **System Administrator** | `admin` | `admin@vface.ai` | `admin123` | **`superadmin`** | Chief Executive Officer (CEO) / BOD |
+| 2 | **Trần Quang Hải** | `cto_hai` | `hai.tq@vface.ai` | `Password@123` | **`superadmin`** | Chief Technology Officer (CTO) / TECH_AI |
+| 3 | **Lê Tuyết Mai** | `hr_mai` | `mai.lt@vface.ai` | `Password@123` | **`hr_manager`** | HR Director / HR_OPS |
+| 4 | **Phạm Quốc Hùng** | `ai_hung` | `hung.pq@vface.ai` | `Password@123` | **`dept_manager`** | AI Team Lead / TECH_AI |
+| 5 | **Đỗ Hoàng Nam** | `dev_nam` | `nam.dh@vface.ai` | `Password@123` | **`employee`** | Senior Software Engineer / TECH_AI |
+| 6 | **Hoàng Mỹ Linh** | `sale_linh` | `linh.hm@vface.ai` | `Password@123` | **`employee`** | Sales Lead / SALES_MKT |
+| 7 | **Vũ Thúy Nga** | `hr_nga` | `nga.vt@vface.ai` | `Password@123` | **`hr_manager`** | HR Executive / HR_OPS |
+
+> **Note**: Passwords can be changed anytime via the **User Profile & Security Management** portal in the application.
 
 ---
 
