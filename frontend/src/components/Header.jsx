@@ -7,7 +7,10 @@ import {
   Wifi, 
   AlertTriangle,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
@@ -19,7 +22,10 @@ const Header = ({
   isApiConnected, 
   cameraStatus, 
   onRefreshCamera,
-  showCameraControls = false 
+  showCameraControls = false,
+  onToggleMobileMenu,
+  isSidebarCollapsed = false,
+  onToggleSidebarCollapse
 }) => {
   const { language, setLanguage, t } = useI18n();
   const { currentUser, logout } = useAuth();
@@ -66,13 +72,40 @@ const Header = ({
   const isCamRunning = !!cameraStatus?.is_running;
 
   return (
-    <header className="h-16 bg-[#0E1322]/90 backdrop-blur-xl border-b border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-lg shadow-black/20">
-      {/* 1. Left: Page Title & Short Description */}
-      <div className="min-w-0 pr-4">
-        <h1 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">{title}</h1>
-        {subtitle && (
-          <p className="text-[11px] text-slate-400 truncate hidden md:block">{subtitle}</p>
+    <header className="h-16 bg-[#0E1322]/90 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-20 shadow-lg shadow-black/20">
+      {/* 1. Left: Hamburger (Mobile) / Collapse Toggle (Desktop) + Page Title */}
+      <div className="flex items-center space-x-3 min-w-0 pr-2 sm:pr-4">
+        {/* Mobile Hamburger */}
+        <button
+          onClick={onToggleMobileMenu}
+          className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0"
+          aria-label="Open Navigation Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Desktop Sidebar Collapse Toggle */}
+        {onToggleSidebarCollapse && (
+          <button
+            onClick={onToggleSidebarCollapse}
+            className="hidden lg:flex p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0"
+            title={isSidebarCollapsed ? 'Mở rộng menu (Expand)' : 'Thu gọn menu (Collapse)'}
+            aria-label="Toggle Sidebar"
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="w-4 h-4 text-indigo-400" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
         )}
+
+        <div className="min-w-0">
+          <h1 className="text-sm sm:text-base lg:text-lg font-bold text-white tracking-tight truncate">{title}</h1>
+          {subtitle && (
+            <p className="text-[11px] text-slate-400 truncate hidden md:block">{subtitle}</p>
+          )}
+        </div>
       </div>
 
       {/* 2. Right: Streamlined Control Group */}

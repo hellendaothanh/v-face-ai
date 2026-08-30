@@ -34,7 +34,19 @@ function App() {
   const [isApiConnected, setIsApiConnected] = useState(null); // null = checking, true = online, false = offline
   const [apiError, setApiError] = useState('');
   const [cameraStatus, setCameraStatus] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('vface_sidebar_collapsed') === 'true';
+  });
   const mainContentRef = useRef(null);
+
+  const handleToggleCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('vface_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
 
   // Fetch camera diagnostics and check backend API health
   const fetchCameraStatus = useCallback(async () => {
@@ -139,7 +151,7 @@ function App() {
   }
 
   return (
-    <div className="flex bg-[#0B0F19] text-slate-100 min-h-screen">
+    <div className="flex bg-[#0B0F19] text-slate-100 min-h-screen relative overflow-x-hidden">
       {/* Left Navigation Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -147,6 +159,10 @@ function App() {
         isWsConnected={isWsConnected}
         isApiConnected={isApiConnected}
         cameraStatus={cameraStatus}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleCollapse}
       />
 
       {/* Main Content Area */}
@@ -159,9 +175,12 @@ function App() {
           cameraStatus={cameraStatus}
           onRefreshCamera={fetchCameraStatus}
           showCameraControls={currentTab === NAV_TABS.DASHBOARD}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebarCollapse={handleToggleCollapse}
         />
 
-        <main ref={mainContentRef} className="flex-1 p-8 pb-16 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main ref={mainContentRef} className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-16 overflow-y-auto max-w-7xl w-full mx-auto">
           {currentTab === NAV_TABS.DASHBOARD && (
             <RealtimeDashboard
               isWsConnected={isWsConnected}

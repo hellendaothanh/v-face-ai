@@ -77,7 +77,10 @@ const en = {
   face_login_err_tip: 'Please check your lighting, face angle, or switch to Password login.',
 
   // Navigation Tabs
-  nav_menu: 'Management Menu',
+  nav_menu: 'Navigation Menu',
+  nav_section_monitoring: 'Realtime Monitor',
+  nav_section_management: 'System Management',
+  nav_section_support: 'Operations & Services',
   nav_dashboard: 'Realtime Dashboard',
   nav_dashboard_sub: 'Live video & AI HUD monitor',
   nav_hr_hub: 'HR & Biometrics Hub',

@@ -77,7 +77,10 @@ const vi = {
   face_login_err_tip: 'Vui lòng kiểm tra lại góc nhìn, đủ ánh sáng hoặc chuyển sang đăng nhập bằng Mật khẩu.',
 
   // Navigation Tabs
-  nav_menu: 'Menu Quản Trị',
+  nav_menu: 'Menu Điều Hướng',
+  nav_section_monitoring: 'Giám Sát Trực Quan',
+  nav_section_management: 'Quản Trị Hệ Thống',
+  nav_section_support: 'Vận Hành & Dịch Vụ',
   nav_dashboard: 'Dashboard Realtime',
   nav_dashboard_sub: 'Giám sát trực tiếp & AI HUD',
   nav_hr_hub: 'Quản Trị Nhân Sự & Sinh Trắc',
