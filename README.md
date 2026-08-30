@@ -94,6 +94,7 @@ V-Face provides unified service management scripts for **Windows PowerShell** (`
 | **Core User & IAM** | `8001` | `http://localhost:8001` | [http://localhost:8001/docs](http://localhost:8001/docs) | Authentication, RBAC, Users, Organization |
 | **Face AI Attendance** | `8000` | `http://localhost:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | Face Recognition, Streams, Attendance logs |
 | **Frontend Dashboard** | `3000` | `http://localhost:3000` | - | React 19 UI for Attendance & Admin |
+| **Mobile App (Flutter)** | - | `mobile/` | [Mobile Spec Docs](docs/MOBILE_APP_SPEC.md) | Android / iOS Employee Self-Service Face AI App |
 
 ### Seeded Demo Accounts & Initial Credentials:
 

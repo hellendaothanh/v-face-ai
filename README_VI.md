@@ -94,6 +94,7 @@ Hệ thống cung cấp kịch bản điều khiển tự động hóa hoàn ch�
 | **Core User & IAM** | `8001` | `http://localhost:8001` | [http://localhost:8001/docs](http://localhost:8001/docs) | Xác thực JWT, RBAC, Quản lý User, Cơ cấu tổ chức |
 | **Face AI Attendance** | `8000` | `http://localhost:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | Nhận diện khuôn mặt, Stream Camera, Chấm công |
 | **Frontend Web App** | `3000` | `http://localhost:3000` | - | Giao diện Dashboard, Giám sát và Quản trị |
+| **Mobile App (Flutter)** | - | `mobile/` | [Tài liệu Mobile Spec](docs/MOBILE_APP_SPEC.md) | Ứng dụng di động Chấm công & Tự phục vụ (Android / iOS) |
 
 ### Danh Sách Tài Khoản Mẫu & Mật Khẩu Khởi Tạo:
 
