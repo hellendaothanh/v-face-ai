@@ -74,7 +74,14 @@ const vi = {
   face_login_err_iam_unavailable: 'Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM.',
   face_login_err_identity_conflict: 'Phát hiện khuôn mặt trùng khớp với nhiều hồ sơ khác nhau. Để bảo mật, vui lòng đăng nhập bằng Mật khẩu.',
   face_duplicate_enroll_error: 'Khuôn mặt này đã được đăng ký cho một nhân sự khác trong hệ thống. Hệ thống từ chối đăng ký trùng lặp.',
+  camera_starting: 'Camera đang khởi động, vui lòng bấm lại sau 1 giây.',
+  camera_not_ready: 'Camera chưa sẵn sàng',
+  camera_capture_failed: 'Không thể chụp hình từ camera.',
   face_login_err_tip: 'Vui lòng kiểm tra lại góc nhìn, đủ ánh sáng hoặc chuyển sang đăng nhập bằng Mật khẩu.',
+  sidebar_collapse: 'Thu gọn',
+  sidebar_expand: 'Mở rộng',
+  sidebar_collapse_menu: 'Thu gọn menu',
+  sidebar_expand_menu: 'Mở rộng menu',
 
   // Navigation Tabs
   nav_menu: 'Menu Điều Hướng',

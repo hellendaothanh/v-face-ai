@@ -18,7 +18,7 @@ import { useI18n } from './i18n/I18nContext';
 import { useAuth } from './context/AuthContext';
 
 function App() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { 
     isAuthenticated, 
     isLoading, 
@@ -74,62 +74,78 @@ function App() {
     switch (currentTab) {
       case NAV_TABS.DASHBOARD:
         return {
-          title: t('header_dashboard_title'),
-          subtitle: t('header_dashboard_sub'),
+          title: t('header_dashboard_title') || (language === 'en' ? 'Realtime Dashboard & AI HUD' : 'Bàn Làm Việc Trực Tuyến'),
+          subtitle: t('header_dashboard_sub') || (language === 'en' ? 'Live video monitoring, AI detection & instant attendance' : 'Giám sát video trực tiếp, phát hiện AI & điểm danh tức thì'),
         };
       case NAV_TABS.MY_ACCOUNT:
         return {
-          title: t('header_my_account_title') || 'Tài Khoản & Hồ Sơ Cá Nhân',
-          subtitle: t('header_my_account_sub') || 'Quản lý thông tin định danh doanh nghiệp và đổi mật khẩu bảo mật',
+          title: t('header_my_account_title') || (language === 'en' ? 'My Account & Profile' : 'Tài Khoản & Hồ Sơ Cá Nhân'),
+          subtitle: t('header_my_account_sub') || (language === 'en' ? 'Manage corporate identity information and secure password' : 'Quản lý thông tin định danh doanh nghiệp và đổi mật khẩu bảo mật'),
         };
       case NAV_TABS.HR_HUB:
       case 'EMPLOYEES':
       case 'CORE_USER':
         return {
-          title: t('header_hr_hub_title', 'Trung Tâm Quản Trị Nhân Sự & Sinh Trắc Học'),
-          subtitle: t('header_hr_hub_sub', 'Quản lý tập trung hồ sơ nhân viên, trích xuất vector khuôn mặt 512D và danh tính bảo mật IAM'),
+          title: t('header_hr_hub_title') || (language === 'en' ? 'Unified HR & Biometrics Hub' : 'Trung Tâm Quản Trị Nhân Sự & Sinh Trắc Học'),
+          subtitle: t('header_hr_hub_sub') || (language === 'en' ? 'Centralized management of employee profiles, 512D face vectors, and IAM identities' : 'Quản lý tập trung hồ sơ nhân viên, trích xuất vector khuôn mặt 512D và danh tính bảo mật IAM'),
         };
       case NAV_TABS.REQUESTS:
         return {
-          title: t('header_requests_title'),
-          subtitle: t('header_requests_sub'),
+          title: t('header_requests_title') || (language === 'en' ? 'Request Management & Approvals' : 'Quản Lý Đơn Từ & Phê Duyệt'),
+          subtitle: t('header_requests_sub') || (language === 'en' ? 'Review and manage leave requests, overtime, and remote work' : 'Xem xét và quản lý các đơn xin nghỉ, làm thêm giờ và làm việc từ xa'),
         };
       case NAV_TABS.ATTENDANCE:
         return {
-          title: t('header_attendance_title'),
-          subtitle: t('header_attendance_sub'),
+          title: t('header_attendance_title') || (language === 'en' ? 'Attendance History & Logs' : 'Lịch Sử Chấm Công & Điểm Danh'),
+          subtitle: t('header_attendance_sub') || (language === 'en' ? 'Detailed logs of attendance, shift compliance, and verification history' : 'Nhật ký chi tiết về điểm danh, tuân thủ ca làm việc và lịch sử xác minh'),
         };
       case NAV_TABS.DEVICES:
         return {
-          title: t('header_devices_title'),
-          subtitle: t('header_devices_sub'),
+          title: t('header_devices_title') || (language === 'en' ? 'Device & AI Camera Management' : 'Quản Trị Thiết Bị & Camera AI'),
+          subtitle: t('header_devices_sub') || (language === 'en' ? 'Configure RTSP camera streams, IoT controllers, and terminals' : 'Cấu hình luồng camera RTSP, bộ điều khiển IoT và thiết bị đầu cuối'),
         };
       case NAV_TABS.ANALYTICS:
         return {
-          title: t('header_analytics_title'),
-          subtitle: t('header_analytics_sub'),
+          title: t('header_analytics_title') || (language === 'en' ? 'Analytics & Attendance Insights' : 'Báo Cáo Phân Tích & Thống Kê Chấm Công'),
+          subtitle: t('header_analytics_sub') || (language === 'en' ? 'Data-driven insights on attendance rates, punctuality, and anomalies' : 'Thông tin chi tiết dựa trên dữ liệu về tỷ lệ chuyên cần, đi đúng giờ và bất thường'),
         };
       case NAV_TABS.SHIFTS_PAYROLL:
         return {
-          title: t('header_shifts_payroll_title'),
-          subtitle: t('header_shifts_payroll_sub'),
+          title: t('header_shifts_payroll_title') || (language === 'en' ? 'Shift Scheduling & Payroll Calculation' : 'Quản Lý Ca Làm Việc & Bảng Lương'),
+          subtitle: t('header_shifts_payroll_sub') || (language === 'en' ? 'Manage work shifts, overtime multipliers, and automated salary calculation' : 'Quản lý ca làm việc, hệ số làm thêm giờ và tính toán tiền lương tự động'),
         };
       case NAV_TABS.HELPDESK:
         return {
-          title: t('header_helpdesk_title'),
-          subtitle: t('header_helpdesk_sub'),
+          title: t('header_helpdesk_title') || (language === 'en' ? 'Helpdesk & AI Support Assistant' : 'Trung Tâm Hỗ Trợ & Trợ Lý AI'),
+          subtitle: t('header_helpdesk_sub') || (language === 'en' ? 'Knowledge base, support ticketing, and intelligent AI troubleshooting' : 'Cơ sở tri thức, tạo yêu cầu hỗ trợ và xử lý sự cố thông minh với AI'),
         };
       case NAV_TABS.HEALTH:
         return {
-          title: t('header_health_title'),
-          subtitle: t('header_health_sub'),
+          title: t('header_health_title') || (language === 'en' ? 'System Health & Diagnostics' : 'Giám Sát Hạ Tầng & Sức Khỏe Hệ Thống'),
+          subtitle: t('header_health_sub') || (language === 'en' ? 'Realtime diagnostics for PostgreSQL, pgvector, and microservices' : 'Chẩn đoán thời gian thực cho PostgreSQL, pgvector và các vi dịch vụ'),
         };
       default:
-        return { title: 'V-Face System', subtitle: 'AI Attendance & HRM System' };
+        return { 
+          title: language === 'en' ? 'V-Face System' : 'Hệ Thống V-Face AI', 
+          subtitle: language === 'en' ? 'AI Attendance & HRM System' : 'Hệ thống Chấm công & Quản trị Nhân sự AI' 
+        };
     }
   };
 
   const headerInfo = getHeaderInfo();
+
+  // Dynamically update document title based on current context tab and active language
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const pageTitle = headerInfo?.title;
+    if (pageTitle) {
+      document.title = `${pageTitle} | V-Face AI`;
+    } else {
+      document.title = language === 'en' 
+        ? 'V-Face AI - Intelligent Biometric Attendance & HRM'
+        : 'V-Face AI - Hệ Thống Chấm Công & Giám Sát Thông Minh';
+    }
+  }, [currentTab, language, headerInfo?.title, isAuthenticated]);
 
   // 1. Loading State while checking JWT Token
   if (isLoading) {

@@ -26,6 +26,12 @@ export const I18nProvider = ({ children }) => {
     }
   };
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
   const toggleLanguage = () => {
     const nextLang = language === 'en' ? 'vi' : 'en';
     setLanguage(nextLang);

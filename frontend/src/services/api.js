@@ -15,8 +15,9 @@ const apiClient = axios.create({
 });
 
 const extractErrorMessage = (error, defaultMsg) => {
+  const isEn = typeof window !== 'undefined' && localStorage.getItem('vface_lang') === 'en';
   const data = error.response?.data;
-  if (!data) return error.message || defaultMsg;
+  if (!data) return error.message || (isEn ? 'Network or server error.' : defaultMsg);
   if (typeof data === 'string' && data) return data;
   if (typeof data.message === 'string' && data.message) return data.message;
   if (typeof data.detail === 'string' && data.detail) return data.detail;
@@ -32,7 +33,9 @@ const extractErrorMessage = (error, defaultMsg) => {
     return data.message.message || JSON.stringify(data.message);
   }
   if (error.response?.status === 401) {
-    return 'Xác thực không thành công hoặc khuôn mặt chưa được đăng ký trong hệ thống.';
+    return isEn 
+      ? 'Authentication failed or face is not registered in the system.' 
+      : 'Xác thực không thành công hoặc khuôn mặt chưa được đăng ký trong hệ thống.';
   }
   return error.message || defaultMsg;
 };
@@ -40,7 +43,11 @@ const extractErrorMessage = (error, defaultMsg) => {
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Face AI Backend.');
+    const isEn = typeof window !== 'undefined' && localStorage.getItem('vface_lang') === 'en';
+    const fallbackMsg = isEn 
+      ? 'An error occurred while connecting to Face AI Backend.' 
+      : 'Đã xảy ra lỗi khi kết nối Face AI Backend.';
+    const errorMsg = extractErrorMessage(error, fallbackMsg);
     const err = new Error(errorMsg);
     err.code = error.response?.data?.detail?.code || error.response?.data?.code || (error.response?.status === 401 ? 'UNAUTHORIZED' : 'ERROR');
     err.data = error.response?.data;
@@ -73,7 +80,11 @@ coreUserClient.interceptors.request.use((config) => {
 coreUserClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const errorMsg = extractErrorMessage(error, 'Đã xảy ra lỗi khi kết nối Core User IAM.');
+    const isEn = typeof window !== 'undefined' && localStorage.getItem('vface_lang') === 'en';
+    const fallbackMsg = isEn 
+      ? 'An error occurred while connecting to Core User IAM.' 
+      : 'Đã xảy ra lỗi khi kết nối Core User IAM.';
+    const errorMsg = extractErrorMessage(error, fallbackMsg);
     const err = new Error(errorMsg);
     err.code = error.response?.data?.detail?.code || error.response?.data?.code || (error.response?.status === 401 ? 'UNAUTHORIZED' : 'ERROR');
     err.data = error.response?.data;

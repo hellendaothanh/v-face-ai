@@ -89,7 +89,7 @@ const Header = ({
           <button
             onClick={onToggleSidebarCollapse}
             className="hidden lg:flex p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0"
-            title={isSidebarCollapsed ? 'Mở rộng menu (Expand)' : 'Thu gọn menu (Collapse)'}
+            title={isSidebarCollapsed ? (t('sidebar_expand_menu') || 'Mở rộng menu') : (t('sidebar_collapse_menu') || 'Thu gọn menu')}
             aria-label="Toggle Sidebar"
           >
             {isSidebarCollapsed ? (

@@ -273,7 +273,7 @@ const Sidebar = ({
               <div 
                 onClick={onToggleCollapse} 
                 className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0 cursor-pointer transition-transform hover:scale-105"
-                title={isCollapsed ? 'Mở rộng menu' : 'V-Face HRM Pro'}
+                title={isCollapsed ? (t('sidebar_expand_menu') || 'Mở rộng menu') : 'V-Face HRM Pro'}
               >
                 <ShieldCheck className="w-6 h-6 text-white" />
               </div>
@@ -294,7 +294,7 @@ const Sidebar = ({
               <button
                 onClick={onToggleCollapse}
                 className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                title="Thu gọn menu"
+                title={t('sidebar_collapse_menu') || 'Thu gọn menu'}
                 aria-label="Collapse Sidebar"
               >
                 <PanelLeftClose className="w-4 h-4" />
@@ -420,7 +420,7 @@ const Sidebar = ({
             <button
               onClick={onToggleCollapse}
               className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition-colors"
-              title="Mở rộng menu"
+              title={t('sidebar_expand_menu') || 'Mở rộng menu'}
               aria-label="Expand Sidebar"
             >
               <ChevronsRight className="w-4 h-4" />
@@ -522,10 +522,10 @@ const Sidebar = ({
               <button
                 onClick={onToggleCollapse}
                 className="hover:text-white transition-colors flex items-center space-x-0.5 text-[10px]"
-                title="Thu gọn menu"
+                title={t('sidebar_collapse_menu') || 'Thu gọn menu'}
               >
                 <ChevronsLeft className="w-3 h-3" />
-                <span>Thu gọn</span>
+                <span>{t('sidebar_collapse') || 'Thu gọn'}</span>
               </button>
             </div>
           </div>

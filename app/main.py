@@ -109,7 +109,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers={"Access-Control-Allow-Origin": "*"},
         content={
             "success": False,
-            "message": f"Đã xảy ra lỗi máy chủ nội bộ: {str(exc)}",
+            "message": f"Internal Server Error: {str(exc)}",
             "data": str(exc) if settings.DEBUG else None
         }
     )

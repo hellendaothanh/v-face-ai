@@ -73,8 +73,14 @@ const en = {
   face_login_err_iam_failed: 'IAM authorization failed or identity account is not linked. Please contact administrator.',
   face_login_err_iam_unavailable: 'Cannot connect to Core User IAM Identity Service.',
   face_login_err_identity_conflict: 'Multiple matching profiles detected for this face. For security, please sign in with Password.',
-  face_duplicate_enroll_error: 'This biometric face is already registered to another personnel. Cross-account duplication is rejected.',
+  camera_starting: 'Camera is initializing, please click again in 1 second.',
+  camera_not_ready: 'Camera not ready',
+  camera_capture_failed: 'Cannot capture image from camera.',
   face_login_err_tip: 'Please check your lighting, face angle, or switch to Password login.',
+  sidebar_collapse: 'Collapse',
+  sidebar_expand: 'Expand',
+  sidebar_collapse_menu: 'Collapse sidebar',
+  sidebar_expand_menu: 'Expand sidebar',
 
   // Navigation Tabs
   nav_menu: 'Navigation Menu',

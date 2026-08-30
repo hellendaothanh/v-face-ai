@@ -63,6 +63,12 @@ const Login = () => {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  useEffect(() => {
+    document.title = language === 'en'
+      ? 'Sign In | V-Face AI - Biometric Attendance & Security System'
+      : 'Đăng Nhập | V-Face AI - Hệ Thống Chấm Công & Giám Sát Thông Minh';
+  }, [language]);
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
@@ -187,15 +193,15 @@ const Login = () => {
 
     const video = videoRef.current;
     if (!video.videoWidth || !video.videoHeight) {
-      const msg = 'Camera đang khởi động, vui lòng bấm lại sau 1 giây.';
+      const msg = t('camera_starting') || (language === 'en' ? 'Camera is initializing, please click again in 1 second.' : 'Camera đang khởi động, vui lòng bấm lại sau 1 giây.');
       setErrorMsg(msg);
-      showToast(msg, 'error', 'Camera chưa sẵn sàng');
+      showToast(msg, 'error', t('camera_not_ready') || (language === 'en' ? 'Camera not ready' : 'Camera chưa sẵn sàng'));
       return;
     }
 
     setErrorMsg('');
     setFaceLoginError(null);
-    setFaceStatus(t('face_login_scanning') || 'Đang trích xuất đặc trưng sinh trắc học...');
+    setFaceStatus(t('face_login_scanning') || (language === 'en' ? 'Extracting biometric facial features...' : 'Đang trích xuất đặc trưng sinh trắc học...'));
     setLoading(true);
 
     try {
@@ -207,18 +213,18 @@ const Login = () => {
 
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
       if (!blob || blob.size < 100) {
-        throw new Error('Không thể chụp hình từ camera.');
+        throw new Error(t('camera_capture_failed') || (language === 'en' ? 'Cannot capture image from camera.' : 'Không thể chụp hình từ camera.'));
       }
 
-      setFaceStatus(t('face_login_verifying') || 'Đang kiểm tra liveness & đối chiếu pgvector...');
+      setFaceStatus(t('face_login_verifying') || (language === 'en' ? 'Verifying liveness & matching pgvector...' : 'Đang kiểm tra liveness & đối chiếu pgvector...'));
       const result = await loginWithFace(blob);
       
       if (result && result.success) {
         stopCamera();
         setDetectedEmployee(result.employee);
-        const welcomeMsg = (t('face_login_success') || 'Đăng nhập thành công! Chào mừng') + ` ${result.employee?.full_name || ''}`;
+        const welcomeMsg = (t('face_login_success') || (language === 'en' ? 'Biometric Login successful! Welcome' : 'Đăng nhập thành công! Chào mừng')) + ` ${result.employee?.full_name || ''}`;
         setFaceStatus(welcomeMsg);
-        showToast(welcomeMsg, 'success', t('face_login_success_title') || 'Xác thực sinh trắc thành công!');
+        showToast(welcomeMsg, 'success', t('face_login_success_title') || (language === 'en' ? 'Biometric Authentication Successful!' : 'Xác thực sinh trắc thành công!'));
       }
     } catch (err) {
       console.error('Face login error:', err);
@@ -269,6 +275,15 @@ const Login = () => {
         localizedMsg = t('face_login_err_iam_unavailable') || (language === 'en'
           ? 'Cannot connect to Core User IAM Identity Service.'
           : 'Không thể kết nối đến Dịch vụ Quản lý Định danh Core User IAM.');
+      } else if (rawMsg.includes('Đã xảy ra lỗi máy chủ nội bộ') || rawMsg.includes('máy chủ nội bộ') || err.status === 500) {
+        const errorDetail = rawMsg.replace(/^(Đã xảy ra lỗi máy chủ nội bộ:?\s*)/i, '').trim();
+        localizedTitle = language === 'en' ? 'Internal Server Error (500)' : 'Lỗi Máy Chủ Nội Bộ (500)';
+        localizedMsg = language === 'en'
+          ? `Internal Server Error: ${errorDetail || 'An unexpected error occurred in Face AI backend.'}`
+          : `Đã xảy ra lỗi máy chủ nội bộ: ${errorDetail || 'Lỗi không xác định trên hệ thống.'}`;
+        localizedTip = language === 'en'
+          ? 'Please check backend logs or reinstall blocked Python C-extensions.'
+          : 'Vui lòng kiểm tra nhật ký lỗi máy chủ (backend logs) hoặc cài đặt lại các thư viện Python bị chặn.';
       }
 
       setErrorMsg(localizedMsg);
