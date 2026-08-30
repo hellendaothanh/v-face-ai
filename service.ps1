@@ -12,6 +12,11 @@ if ([string]::IsNullOrWhiteSpace($Command)) {
     $Command = "help"
 }
 
+# Ensure UTF-8 output encoding for symbols/emojis in Windows console
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
+
 # ==============================================================================
 # V-Face Service Manager Script for Windows (PowerShell)
 # Supports: start | stop | restart | status | logs
@@ -109,45 +114,106 @@ function Get-LocalIPAddress {
     return $null
 }
 
+# Helper: test if Python executable actually runs on Windows
+function Test-PythonWorks([string]$path) {
+    if ([string]::IsNullOrWhiteSpace($path) -or (-not (Test-Path $path) -and $path -ne "python")) { return $false }
+    try {
+        $res = & $path -c "import sys; print('ok')" 2>$null
+        return ($res -eq "ok")
+    }
+    catch {
+        return $false
+    }
+}
+
+# Helper: test if Python executable has uvicorn installed
+function Test-PythonHasUvicorn([string]$path) {
+    if (-not (Test-PythonWorks $path)) { return $false }
+    try {
+        $res = & $path -c "import uvicorn; print('ok')" 2>$null
+        return ($res -eq "ok")
+    }
+    catch {
+        return $false
+    }
+}
+
 # Helper: resolve Python executable & auto-prepare environment
 function Get-PythonExec {
-    $pythonExec = Join-Path $PROJECT_ROOT "venv\Scripts\python.exe"
-    if (-not (Test-Path $pythonExec)) {
-        $pythonExec = Join-Path $PROJECT_ROOT ".venv\Scripts\python.exe"
-    }
+    $candidates = @(
+        (Join-Path $PROJECT_ROOT "venv-win\Scripts\python.exe"),
+        (Join-Path $PROJECT_ROOT "venv\Scripts\python.exe"),
+        (Join-Path $PROJECT_ROOT ".venv\Scripts\python.exe")
+    )
 
-    if (-not (Test-Path $pythonExec)) {
-        # Check if global python has uvicorn
-        $hasUvicorn = $false
-        try {
-            $uvicornCheck = python -c "import uvicorn; print('ok')" 2>$null
-            if ($uvicornCheck -eq "ok") {
-                return "python"
+    foreach ($cand in $candidates) {
+        if (Test-PythonWorks $cand) {
+            if (Test-PythonHasUvicorn $cand) {
+                return $cand
+            } else {
+                Write-Host "Installing missing dependencies into $cand..." -ForegroundColor Yellow
+                & $cand -m pip install -r (Join-Path $PROJECT_ROOT "requirements.txt") --quiet 2>$null
+                & $cand -m pip install -r (Join-Path $CORE_USER_DIR "requirements.txt") --quiet 2>$null
+                return $cand
             }
-        } catch {}
-
-        # Auto-create venv if missing or python lacks uvicorn
-        Write-Host "Creating Python virtual environment in .\venv..." -ForegroundColor Yellow
-        try {
-            python -m venv (Join-Path $PROJECT_ROOT "venv")
-            $venvPython = Join-Path $PROJECT_ROOT "venv\Scripts\python.exe"
-            if (Test-Path $venvPython) {
-                Write-Host "Installing backend and core-user dependencies..." -ForegroundColor Yellow
-                & $venvPython -m pip install --upgrade pip --quiet
-                if (Test-Path (Join-Path $PROJECT_ROOT "requirements.txt")) {
-                    & $venvPython -m pip install -r (Join-Path $PROJECT_ROOT "requirements.txt") --quiet
-                }
-                if (Test-Path (Join-Path $CORE_USER_DIR "requirements.txt")) {
-                    & $venvPython -m pip install -r (Join-Path $CORE_USER_DIR "requirements.txt") --quiet
-                }
-                return $venvPython
-            }
-        } catch {
-            Write-Host "⚠ Error initializing Python virtual environment." -ForegroundColor Red
         }
-        return "python"
     }
-    return $pythonExec
+
+    # Check global python command
+    if (Test-PythonWorks "python") {
+        if (Test-PythonHasUvicorn "python") {
+            return "python"
+        }
+    }
+
+    # If venv folder exists but belongs to Linux/WSL (e.g. pyvenv.cfg has /usr/), use venv-win
+    $targetVenvName = "venv"
+    $venvCfg = Join-Path $PROJECT_ROOT "venv\pyvenv.cfg"
+    if (Test-Path $venvCfg) {
+        $cfgContent = Get-Content $venvCfg -Raw -ErrorAction SilentlyContinue
+        if ($cfgContent -match "/usr/") {
+            $targetVenvName = "venv-win"
+            Write-Host "ℹ Existing .\venv belongs to Linux/WSL. Creating dedicated Windows environment in .\$targetVenvName..." -ForegroundColor Cyan
+        }
+    }
+
+    $targetVenvPath = Join-Path $PROJECT_ROOT $targetVenvName
+    Write-Host "Creating Python virtual environment in .\$targetVenvName..." -ForegroundColor Yellow
+    try {
+        python -m venv $targetVenvPath
+        $venvPython = Join-Path $targetVenvPath "Scripts\python.exe"
+        if (Test-PythonWorks $venvPython) {
+            Write-Host "Installing backend and core-user dependencies into .\$targetVenvName..." -ForegroundColor Yellow
+            & $venvPython -m pip install --upgrade pip --quiet
+            if (Test-Path (Join-Path $PROJECT_ROOT "requirements.txt")) {
+                & $venvPython -m pip install -r (Join-Path $PROJECT_ROOT "requirements.txt")
+            }
+            if (Test-Path (Join-Path $CORE_USER_DIR "requirements.txt")) {
+                & $venvPython -m pip install -r (Join-Path $CORE_USER_DIR "requirements.txt")
+            }
+            return $venvPython
+        }
+    } catch {
+        Write-Host "⚠ Error initializing Python virtual environment." -ForegroundColor Red
+    }
+
+    return "python"
+}
+
+# Helper: check docker installation and daemon status
+function Test-DockerInstalled {
+    return ((Get-Command docker -ErrorAction SilentlyContinue) -ne $null)
+}
+
+function Test-DockerRunning {
+    if (-not (Test-DockerInstalled)) { return $false }
+    try {
+        $null = docker info 2>&1
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        return $false
+    }
 }
 
 # ------------------------------------------------------------------------------
@@ -155,36 +221,47 @@ function Get-PythonExec {
 # ------------------------------------------------------------------------------
 function Start-Db {
     $composeFile = Join-Path $PROJECT_ROOT "docker-compose.yml"
-    $hasDocker = (Get-Command docker -ErrorAction SilentlyContinue) -ne $null
-
-    if ($hasDocker) {
-        Write-Host "[DB] Starting PostgreSQL container..." -ForegroundColor Cyan
-        try {
-            docker compose -f $composeFile up -d postgres
-            Write-Host "✔ [DB] PostgreSQL is running." -ForegroundColor Green
-        }
-        catch {
-            Write-Host "⚠ [DB] Failed to start Docker container via docker compose." -ForegroundColor Yellow
-        }
+    
+    if (-not (Test-DockerInstalled)) {
+        Write-Host "⚠ [DB] Docker is not installed or not found in PATH. Skipping PostgreSQL database auto-start." -ForegroundColor Yellow
+        return
     }
-    else {
-        Write-Host "⚠ [DB] Docker not found or not running. Skipping database container auto-start." -ForegroundColor Yellow
+
+    if (-not (Test-DockerRunning)) {
+        Write-Host "⚠ [DB] Docker is installed but Docker daemon / Docker Desktop is NOT running." -ForegroundColor Red
+        Write-Host "  Please start Docker Desktop to enable the PostgreSQL database container." -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "[DB] Starting PostgreSQL container..." -ForegroundColor Cyan
+    try {
+        docker compose -f $composeFile up -d postgres
+        Write-Host "✔ [DB] PostgreSQL is running." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "⚠ [DB] Failed to start Docker container via docker compose." -ForegroundColor Yellow
     }
 }
 
 function Stop-Db {
     $composeFile = Join-Path $PROJECT_ROOT "docker-compose.yml"
-    $hasDocker = (Get-Command docker -ErrorAction SilentlyContinue) -ne $null
 
-    if ($hasDocker) {
-        Write-Host "[DB] Stopping PostgreSQL container..." -ForegroundColor Cyan
-        try {
-            docker compose -f $composeFile stop postgres
-            Write-Host "✔ [DB] PostgreSQL container stopped." -ForegroundColor Green
-        }
-        catch {
-            Write-Host "⚠ [DB] Failed to stop Docker container." -ForegroundColor Yellow
-        }
+    if (-not (Test-DockerInstalled)) {
+        return
+    }
+
+    if (-not (Test-DockerRunning)) {
+        Write-Host "⚠ [DB] Docker daemon is not running." -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "[DB] Stopping PostgreSQL container..." -ForegroundColor Cyan
+    try {
+        docker compose -f $composeFile stop postgres
+        Write-Host "✔ [DB] PostgreSQL container stopped." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "⚠ [DB] Failed to stop Docker container." -ForegroundColor Yellow
     }
 }
 
@@ -217,7 +294,7 @@ function Start-CoreUser {
     $pythonExec = Get-PythonExec
 
     # Start uvicorn via Start-Process
-    $cmdArgs = "/c `"`"$pythonExec`" -m uvicorn app.main:app --host 0.0.0.0 --port $CORE_USER_PORT >> `"$CORE_USER_LOG_FILE`" 2>&1`""
+    $cmdArgs = '/c ""{0}" -m uvicorn app.main:app --host 0.0.0.0 --port {1} >> "{2}" 2>&1"' -f $pythonExec, $CORE_USER_PORT, $CORE_USER_LOG_FILE
     $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WorkingDirectory $CORE_USER_DIR -WindowStyle Hidden -PassThru
     if ($proc) {
         Set-Content -Path $CORE_USER_PID_FILE -Value $proc.Id
@@ -302,7 +379,7 @@ function Start-Backend {
     $pythonExec = Get-PythonExec
 
     # Start uvicorn via Start-Process
-    $cmdArgs = "/c `"`"$pythonExec`" -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT >> `"$BACKEND_LOG_FILE`" 2>&1`""
+    $cmdArgs = '/c ""{0}" -m uvicorn app.main:app --host 0.0.0.0 --port {1} >> "{2}" 2>&1"' -f $pythonExec, $BACKEND_PORT, $BACKEND_LOG_FILE
     $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WorkingDirectory $PROJECT_ROOT -WindowStyle Hidden -PassThru
     if ($proc) {
         Set-Content -Path $BACKEND_PID_FILE -Value $proc.Id
@@ -458,11 +535,22 @@ function Stop-Frontend {
 # STATUS
 # ------------------------------------------------------------------------------
 function Get-ServiceStatus {
-    Write-Host "`n====== V-Face Ecosystem Services Status ======" -ForegroundColor DarkCyan
+    Write-Host "`n================ V-Face Services Status Summary ================" -ForegroundColor DarkCyan
 
-    # Database
-    $hasDocker = (Get-Command docker -ErrorAction SilentlyContinue) -ne $null
-    if ($hasDocker) {
+    # Database & Docker
+    if (-not (Test-DockerInstalled)) {
+        Write-Host "  Docker:       " -NoNewline
+        Write-Host "○ Not Installed / Not found in PATH" -ForegroundColor Yellow
+        Write-Host "  PostgreSQL:   " -NoNewline
+        Write-Host "○ Offline (Docker missing)" -ForegroundColor Red
+    }
+    elseif (-not (Test-DockerRunning)) {
+        Write-Host "  Docker:       " -NoNewline
+        Write-Host "⚠ Stopped / Daemon not running (Please start Docker Desktop)" -ForegroundColor Red
+        Write-Host "  PostgreSQL:   " -NoNewline
+        Write-Host "○ Offline (Docker daemon stopped)" -ForegroundColor Red
+    }
+    else {
         $dbStatus = docker ps --filter "name=vface_postgres" --format "{{.Status}}" 2>$null
         if ($dbStatus) {
             Write-Host "  PostgreSQL:   " -NoNewline
@@ -470,7 +558,7 @@ function Get-ServiceStatus {
         }
         else {
             Write-Host "  PostgreSQL:   " -NoNewline
-            Write-Host "○ Stopped" -ForegroundColor Red
+            Write-Host "○ Stopped (Container 'vface_postgres' is not active)" -ForegroundColor Red
         }
     }
 
@@ -493,7 +581,7 @@ function Get-ServiceStatus {
     }
     else {
         Write-Host "  Core User:    " -NoNewline
-        Write-Host "○ Stopped" -ForegroundColor Red
+        Write-Host "○ Stopped (Port $CORE_USER_PORT inactive)" -ForegroundColor Red
     }
 
     # Backend Face AI
@@ -515,7 +603,7 @@ function Get-ServiceStatus {
     }
     else {
         Write-Host "  Face AI:      " -NoNewline
-        Write-Host "○ Stopped" -ForegroundColor Red
+        Write-Host "○ Stopped (Port $BACKEND_PORT inactive)" -ForegroundColor Red
     }
 
     # Frontend
@@ -542,10 +630,10 @@ function Get-ServiceStatus {
     }
     else {
         Write-Host "  Frontend:     " -NoNewline
-        Write-Host "○ Stopped" -ForegroundColor Red
+        Write-Host "○ Stopped (Port $FRONTEND_PORT inactive)" -ForegroundColor Red
     }
 
-    Write-Host "==============================================`n" -ForegroundColor DarkCyan
+    Write-Host "================================================================`n" -ForegroundColor DarkCyan
 }
 
 # ------------------------------------------------------------------------------
@@ -600,7 +688,7 @@ function Show-Usage {
     Write-Host "  .\service.ps1 stop core-user         # Stop Core User Service only"
     Write-Host "  .\service.ps1 start backend          # Start Face AI Backend only (Port 8000)"
     Write-Host "  .\service.ps1 stop backend           # Stop Face AI Backend only"
-    Write-Host "  .\service.ps1 start frontend         # Start Frontend only (Port 5173)"
+    Write-Host "  .\service.ps1 start frontend         # Start Frontend only (Port 3000)"
     Write-Host "  .\service.ps1 stop frontend          # Stop Frontend only"
     Write-Host "  .\service.ps1 status                 # Check status of all ecosystem services"
     Write-Host "  .\service.ps1 test                   # Run automated Playwright E2E tests"
@@ -625,6 +713,7 @@ switch ($Command) {
             "db"        { Start-Db }
             default     { Start-Db; Start-CoreUser; Start-Backend; Start-Frontend }
         }
+        Get-ServiceStatus
     }
     "stop" {
         switch ($Target) {
@@ -643,6 +732,7 @@ switch ($Command) {
             "db"        { Stop-Db; Start-Db }
             default     { Stop-Frontend; Stop-Backend; Stop-CoreUser; Start-Db; Start-CoreUser; Start-Backend; Start-Frontend }
         }
+        Get-ServiceStatus
     }
     "status" {
         Get-ServiceStatus

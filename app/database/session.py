@@ -96,12 +96,18 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
         # Automatic lightweight schema sync for newly added columns
-        await conn.execute(text("""
-            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ppe_compliance BOOLEAN DEFAULT true NOT NULL;
-            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ppe_violations VARCHAR(255);
-            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS gesture_verified BOOLEAN DEFAULT false NOT NULL;
-            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS shift_id UUID REFERENCES work_shifts(id) ON DELETE SET NULL;
-            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS work_duration_hours DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
-            ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ot_hours DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
-        """))
+        migration_statements = [
+            "ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ppe_compliance BOOLEAN DEFAULT true NOT NULL;",
+            "ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ppe_violations VARCHAR(255);",
+            "ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS gesture_verified BOOLEAN DEFAULT false NOT NULL;",
+            "ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS shift_id UUID REFERENCES work_shifts(id) ON DELETE SET NULL;",
+            "ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS work_duration_hours DOUBLE PRECISION DEFAULT 0.0 NOT NULL;",
+            "ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS ot_hours DOUBLE PRECISION DEFAULT 0.0 NOT NULL;"
+        ]
+        for stmt in migration_statements:
+            try:
+                await conn.execute(text(stmt))
+            except Exception as e:
+                logger.debug(f"Schema sync note ({stmt.strip()}): {e}")
+
         logger.info("Database initialization completed successfully.")

@@ -70,43 +70,87 @@ stop_process_tree() {
     fi
 }
 
+# Helper: test if Python executable actually runs
+is_python_works() {
+    local path=$1
+    [ -n "$path" ] && [ -f "$path" ] && "$path" -c "import sys; print('ok')" 2>/dev/null | grep -q "ok"
+}
+
+is_python_has_uvicorn() {
+    local path=$1
+    is_python_works "$path" && "$path" -c "import uvicorn; print('ok')" 2>/dev/null | grep -q "ok"
+}
+
 # Helper: resolve Python executable & auto-prepare environment
 get_python_exec() {
-    local exec="${PROJECT_ROOT}/venv/bin/python"
-    if [ ! -f "$exec" ]; then
-        exec="${PROJECT_ROOT}/.venv/bin/python"
-    fi
+    local candidates=(
+        "${PROJECT_ROOT}/venv-linux/bin/python"
+        "${PROJECT_ROOT}/venv/bin/python"
+        "${PROJECT_ROOT}/.venv/bin/python"
+    )
 
-    if [ ! -f "$exec" ]; then
-        # Check if global python3 has uvicorn
+    for cand in "${candidates[@]}"; do
+        if is_python_works "$cand"; then
+            if is_python_has_uvicorn "$cand"; then
+                echo "$cand"
+                return 0
+            else
+                echo -e "${YELLOW}Installing missing dependencies into $cand...${NC}" >&2
+                "$cand" -m pip install -r "${PROJECT_ROOT}/requirements.txt" --quiet 2>/dev/null
+                "$cand" -m pip install -r "${CORE_USER_DIR}/requirements.txt" --quiet 2>/dev/null
+                echo "$cand"
+                return 0
+            fi
+        fi
+    done
+
+    # Check global python3
+    if command -v python3 &>/dev/null; then
         if python3 -c "import uvicorn" 2>/dev/null; then
             echo "python3"
             return 0
         fi
-
-        # Auto-create venv if missing or python lacks uvicorn
-        echo -e "${YELLOW}Creating Python virtual environment in ./venv...${NC}" >&2
-        if python3 -m venv "${PROJECT_ROOT}/venv" 2>/dev/null; then
-            local venv_python="${PROJECT_ROOT}/venv/bin/python"
-            if [ -f "$venv_python" ]; then
-                echo -e "${YELLOW}Installing backend and core-user dependencies...${NC}" >&2
-                "$venv_python" -m pip install --upgrade pip --quiet
-                if [ -f "${PROJECT_ROOT}/requirements.txt" ]; then
-                    "$venv_python" -m pip install -r "${PROJECT_ROOT}/requirements.txt" --quiet
-                fi
-                if [ -f "${CORE_USER_DIR}/requirements.txt" ]; then
-                    "$venv_python" -m pip install -r "${CORE_USER_DIR}/requirements.txt" --quiet
-                fi
-                echo "$venv_python"
-                return 0
-            fi
-        else
-            echo -e "${RED}⚠ Error initializing Python virtual environment.${NC}" >&2
-        fi
-        echo "python3"
-        return 0
     fi
-    echo "$exec"
+
+    # Determine target venv directory (if venv was made on Windows, use venv-linux)
+    local target_venv_name="venv"
+    if [ -f "${PROJECT_ROOT}/venv/pyvenv.cfg" ] && grep -qiE '^[a-zA-Z]:\\' "${PROJECT_ROOT}/venv/pyvenv.cfg"; then
+        target_venv_name="venv-linux"
+        echo -e "${CYAN}ℹ Existing ./venv belongs to Windows. Creating dedicated Linux environment in ./${target_venv_name}...${NC}" >&2
+    fi
+
+    local target_venv_path="${PROJECT_ROOT}/${target_venv_name}"
+    echo -e "${YELLOW}Creating Python virtual environment in ./${target_venv_name}...${NC}" >&2
+    if python3 -m venv "${target_venv_path}" 2>/dev/null; then
+        local venv_python="${target_venv_path}/bin/python"
+        if is_python_works "$venv_python"; then
+            echo -e "${YELLOW}Installing backend and core-user dependencies...${NC}" >&2
+            "$venv_python" -m pip install --upgrade pip --quiet
+            if [ -f "${PROJECT_ROOT}/requirements.txt" ]; then
+                "$venv_python" -m pip install -r "${PROJECT_ROOT}/requirements.txt" --quiet
+            fi
+            if [ -f "${CORE_USER_DIR}/requirements.txt" ]; then
+                "$venv_python" -m pip install -r "${CORE_USER_DIR}/requirements.txt" --quiet
+            fi
+            echo "$venv_python"
+            return 0
+        fi
+    fi
+
+    echo "python3"
+    return 0
+}
+
+# Helper: check docker installation and daemon status
+is_docker_installed() {
+    command -v docker &>/dev/null
+}
+
+is_docker_running() {
+    if ! is_docker_installed; then
+        return 1
+    fi
+    docker info &>/dev/null
 }
 
 # ------------------------------------------------------------------------------
@@ -114,33 +158,46 @@ get_python_exec() {
 # ------------------------------------------------------------------------------
 start_db() {
     local compose_file="${PROJECT_ROOT}/docker-compose.yml"
-    if command -v docker &>/dev/null; then
-        echo -e "${CYAN}[DB]${NC} Starting PostgreSQL container..."
-        if docker compose version &>/dev/null; then
-            docker compose -f "$compose_file" up -d postgres
-        elif command -v docker-compose &>/dev/null; then
-            docker-compose -f "$compose_file" up -d postgres
-        else
-            echo -e "${YELLOW}⚠ [DB] Docker Compose not found.${NC}"
-            return 1
-        fi
-        echo -e "${GREEN}✔ [DB] PostgreSQL is running.${NC}"
-    else
-        echo -e "${YELLOW}⚠ [DB] Docker not found or not running. Skipping database container auto-start.${NC}"
+    
+    if ! is_docker_installed; then
+        echo -e "${YELLOW}⚠ [DB] Docker is not installed or not in PATH. Skipping PostgreSQL database auto-start.${NC}"
+        return 1
     fi
+
+    if ! is_docker_running; then
+        echo -e "${RED}⚠ [DB] Docker is installed but Docker daemon / Docker Desktop is NOT running.${NC}"
+        echo -e "${YELLOW}  Please start Docker daemon (e.g. 'sudo systemctl start docker' or Docker Desktop) to enable PostgreSQL.${NC}"
+        return 1
+    fi
+
+    echo -e "${CYAN}[DB]${NC} Starting PostgreSQL container..."
+    if docker compose version &>/dev/null; then
+        docker compose -f "$compose_file" up -d postgres
+    elif command -v docker-compose &>/dev/null; then
+        docker-compose -f "$compose_file" up -d postgres
+    else
+        echo -e "${YELLOW}⚠ [DB] Docker Compose not found.${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}✔ [DB] PostgreSQL is running.${NC}"
 }
 
 stop_db() {
     local compose_file="${PROJECT_ROOT}/docker-compose.yml"
-    if command -v docker &>/dev/null; then
-        echo -e "${CYAN}[DB]${NC} Stopping PostgreSQL container..."
-        if docker compose version &>/dev/null; then
-            docker compose -f "$compose_file" stop postgres
-        elif command -v docker-compose &>/dev/null; then
-            docker-compose -f "$compose_file" stop postgres
-        fi
-        echo -e "${GREEN}✔ [DB] PostgreSQL container stopped.${NC}"
+    if ! is_docker_installed; then
+        return 0
     fi
+    if ! is_docker_running; then
+        echo -e "${YELLOW}⚠ [DB] Docker daemon is not running.${NC}"
+        return 0
+    fi
+    echo -e "${CYAN}[DB]${NC} Stopping PostgreSQL container..."
+    if docker compose version &>/dev/null; then
+        docker compose -f "$compose_file" stop postgres
+    elif command -v docker-compose &>/dev/null; then
+        docker-compose -f "$compose_file" stop postgres
+    fi
+    echo -e "${GREEN}✔ [DB] PostgreSQL container stopped.${NC}"
 }
 
 # ------------------------------------------------------------------------------
@@ -404,16 +461,22 @@ stop_frontend() {
 # STATUS
 # ------------------------------------------------------------------------------
 get_service_status() {
-    echo -e "\n${BOLD}====== V-Face Ecosystem Services Status ======${NC}"
+    echo -e "\n${BOLD}================ V-Face Services Status Summary ================${NC}"
 
-    # Database
-    if command -v docker &>/dev/null; then
+    # Database & Docker
+    if ! is_docker_installed; then
+        echo -e "  Docker:       ${YELLOW}○ Not Installed / Not found in PATH${NC}"
+        echo -e "  PostgreSQL:   ${RED}○ Offline (Docker missing)${NC}"
+    elif ! is_docker_running; then
+        echo -e "  Docker:       ${RED}⚠ Stopped / Daemon not running (Please start Docker)${NC}"
+        echo -e "  PostgreSQL:   ${RED}○ Offline (Docker daemon stopped)${NC}"
+    else
         local db_container
         db_container=$(docker ps --filter "name=vface_postgres" --format "{{.Status}}" 2>/dev/null)
         if [ -n "$db_container" ]; then
             echo -e "  PostgreSQL:   ${GREEN}● Running (${db_container})${NC}"
         else
-            echo -e "  PostgreSQL:   ${RED}○ Stopped${NC}"
+            echo -e "  PostgreSQL:   ${RED}○ Stopped (Container 'vface_postgres' is not active)${NC}"
         fi
     fi
 
@@ -431,7 +494,7 @@ get_service_status() {
     if [ -n "$core_user_pid" ]; then
         echo -e "  Core User:    ${GREEN}● Running${NC} (PID: ${core_user_pid}, Port: ${CORE_USER_PORT}) -> http://localhost:${CORE_USER_PORT}/docs"
     else
-        echo -e "  Core User:    ${RED}○ Stopped${NC}"
+        echo -e "  Core User:    ${RED}○ Stopped (Port ${CORE_USER_PORT} inactive)${NC}"
     fi
 
     # Backend Face AI
@@ -448,7 +511,7 @@ get_service_status() {
     if [ -n "$backend_pid" ]; then
         echo -e "  Face AI:      ${GREEN}● Running${NC} (PID: ${backend_pid}, Port: ${BACKEND_PORT}) -> http://localhost:${BACKEND_PORT}/docs"
     else
-        echo -e "  Face AI:      ${RED}○ Stopped${NC}"
+        echo -e "  Face AI:      ${RED}○ Stopped (Port ${BACKEND_PORT} inactive)${NC}"
     fi
 
     # Frontend
@@ -471,10 +534,10 @@ get_service_status() {
             echo -e "  Frontend:     ${GREEN}● Running${NC} (PID: ${frontend_pid}, Port: ${FRONTEND_PORT}) -> http://localhost:${FRONTEND_PORT}"
         fi
     else
-        echo -e "  Frontend:     ${RED}○ Stopped${NC}"
+        echo -e "  Frontend:     ${RED}○ Stopped (Port ${FRONTEND_PORT} inactive)${NC}"
     fi
 
-    echo -e "${BOLD}==============================================${NC}\n"
+    echo -e "${BOLD}================================================================${NC}\n"
 }
 
 # ------------------------------------------------------------------------------
@@ -575,6 +638,7 @@ case "$COMMAND" in
                 start_frontend
                 ;;
         esac
+        get_service_status
         ;;
     stop)
         case "$TARGET" in
@@ -625,6 +689,7 @@ case "$COMMAND" in
                 start_frontend
                 ;;
         esac
+        get_service_status
         ;;
     status)
         get_service_status
