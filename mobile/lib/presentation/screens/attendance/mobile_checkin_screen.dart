@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../data/repositories/attendance_repository.dart';
 import '../../widgets/biometric_hud_overlay.dart';
 
@@ -18,7 +19,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
   CameraController? _cameraController;
   bool _isCameraReady = false;
   bool _isProcessing = false;
-  String _hudInstruction = "Đặt khuôn mặt trong khung & Nhìn thẳng";
+  String? _customHudInstruction;
 
   Position? _currentPosition;
   String? _currentBssid;
@@ -30,7 +31,6 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
   }
 
   Future<void> _initDeviceSensors() async {
-    // 1. Khởi động Camera trước
     try {
       final cameras = await availableCameras();
       final frontCamera = cameras.firstWhere(
@@ -47,7 +47,6 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
       if (mounted) setState(() => _isCameraReady = true);
     } catch (_) {}
 
-    // 2. Lấy vị trí GPS & Wi-Fi BSSID
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -69,7 +68,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
 
     setState(() {
       _isProcessing = true;
-      _hudInstruction = "Đang xác thực Geofencing GPS & Face AI...";
+      _customHudInstruction = context.tr('hud_processing');
     });
 
     try {
@@ -91,17 +90,17 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
 
       _showResultDialog(
         success: result.success,
-        title: result.success ? "Chấm Công Thành Công!" : "Chấm Công Thất Bại",
+        title: result.success ? context.tr('checkin_success_title') : context.tr('checkin_fail_title'),
         message: result.message,
-        time: result.checkInTime ?? "Bây giờ",
+        time: result.checkInTime ?? context.tr('checkin_now'),
         distance: result.distanceMeters,
       );
     } catch (e) {
       if (mounted) {
         _showResultDialog(
           success: false,
-          title: "Lỗi Kết Nối",
-          message: "Không thể kết nối đến máy chủ hoặc vị trí ngoài vùng cho phép.",
+          title: context.tr('error'),
+          message: context.tr('connection_error_desc'),
           time: "--:--",
         );
       }
@@ -109,7 +108,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _hudInstruction = "Đặt khuôn mặt trong khung & Nhìn thẳng";
+          _customHudInstruction = null;
         });
       }
     }
@@ -171,7 +170,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
                 children: [
                   Column(
                     children: [
-                      const Text("Thời gian", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text(context.tr('time_in'), style: const TextStyle(color: Colors.white54, fontSize: 12)),
                       const SizedBox(height: 4),
                       Text(time, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ],
@@ -179,9 +178,9 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
                   if (distance != null)
                     Column(
                       children: [
-                        const Text("Khoảng cách GPS", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        Text(context.tr('gps_distance'), style: const TextStyle(color: Colors.white54, fontSize: 12)),
                         const SizedBox(height: 4),
-                        Text("${distance.toStringAsFixed(1)}m", style: const TextStyle(color: AppColors.accentNeon, fontWeight: FontWeight.bold)),
+                        Text("${distance.toStringAsFixed(1)}m", style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold)),
                       ],
                     ),
                 ],
@@ -201,7 +200,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
                 backgroundColor: success ? AppColors.primary : AppColors.surfaceDark,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("Xác Nhận", style: TextStyle(color: Colors.white)),
+              child: Text(context.tr('confirm'), style: const TextStyle(color: Colors.white)),
             ),
           ),
         ],
@@ -226,7 +225,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Chấm Công Di Động", style: TextStyle(color: Colors.white)),
+        title: Text(context.tr('checkin_screen_title'), style: const TextStyle(color: Colors.white)),
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -234,10 +233,10 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
           if (_isCameraReady && _cameraController != null)
             CameraPreview(_cameraController!)
           else
-            const Center(child: CircularProgressIndicator(color: AppColors.accentNeon)),
+            const Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
 
           BiometricHudOverlay(
-            instruction: _hudInstruction,
+            instruction: _customHudInstruction ?? context.tr('hud_align_face'),
             isScanning: _isProcessing,
           ),
 
@@ -265,9 +264,9 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
                     ],
                   ),
                   child: Icon(
-                    _isProcessing ? Icons.hourglass_top_rounded : Icons.fingerprint_rounded,
+                    _isProcessing ? Icons.hourglass_top_rounded : Icons.camera_alt_rounded,
                     color: Colors.white,
-                    size: 40,
+                    size: 36,
                   ),
                 ),
               ),

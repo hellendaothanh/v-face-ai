@@ -13,6 +13,7 @@ from app.api.v1.endpoints import (
     payroll,
     reports,
     notifications,
+    offices,
 )
 
 api_router = APIRouter()
@@ -22,6 +23,7 @@ api_router.include_router(employees.router)
 api_router.include_router(attendance.router)
 api_router.include_router(requests.router)
 api_router.include_router(devices.router)
+api_router.include_router(offices.router)
 api_router.include_router(analytics.router)
 api_router.include_router(camera.router)
 api_router.include_router(websocket.router)

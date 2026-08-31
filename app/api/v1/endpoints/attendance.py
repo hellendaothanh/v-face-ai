@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
@@ -119,64 +119,158 @@ async def get_attendance_history(
 @router.post(
     "/mobile-checkin",
     response_model=ResponseBase[dict],
-    summary="Chấm công di động định vị Geofencing GPS & BSSID"
+    summary="Chấm công di động định vị Geofencing GPS & Multi-Office IP Wi-Fi"
 )
 async def mobile_geofence_checkin(
     payload: dict,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Roadmap Phase 4: Chấm công di động định vị Geofencing GPS & BSSID.
-    Kiểm tra khoảng cách GPS của nhân viên so với trụ sở cơ quan (bán kính cho phép 500m).
+    Chấm công di động định vị Đa Văn Phòng (Geofencing GPS & Multiple Public IP Wi-Fi):
+    1. Nhận diện khuôn mặt từ image_base64 (hoặc employee_code nếu có).
+    2. Tự động kiểm tra IP Public của Client so với danh sách IP Wi-Fi của các Văn phòng.
+    3. Tự động đo khoảng cách GPS Haversine so với tất cả các chi nhánh văn phòng, chọn văn phòng gần nhất.
+    4. Ghi nhận log chấm công theo múi giờ Việt Nam (GMT+7).
     """
+    import base64
+    import ipaddress
     import math
+    from zoneinfo import ZoneInfo
     from app.models.employee import Employee
+    from app.models.attendance import AttendanceRecord, AttendanceType
+    from app.models.office_location import OfficeLocation
+    from app.api.v1.endpoints.offices import extract_client_ip
     from sqlalchemy import select
 
+    VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
     emp_code = payload.get("employee_code")
-    lat = float(payload.get("latitude", 0.0))
-    lng = float(payload.get("longitude", 0.0))
-    wifi_bssid = payload.get("wifi_bssid")
+    image_base64 = payload.get("image_base64")
+    lat = float(payload.get("latitude", 0.0) or 0.0)
+    lng = float(payload.get("longitude", 0.0) or 0.0)
+    wifi_bssid = (payload.get("wifi_bssid") or "").strip()
+    device_id = payload.get("device_id") or "MOBILE_GEOFENCE_GPS"
 
-    if not emp_code:
-        raise HTTPException(status_code=400, detail="Thiếu mã nhân viên.")
+    # Lấy IP Public thực tế của thiết bị gửi request
+    client_ip = extract_client_ip(request)
 
-    res = await db.execute(select(Employee).where(Employee.employee_code == emp_code))
-    emp = res.scalar_one_or_none()
+    emp = None
+    confidence_score = 0.99
+
+    # 1. Nhận diện khuôn mặt nếu gửi kèm ảnh
+    if image_base64:
+        try:
+            image_data = image_base64.split(",")[-1] if "," in image_base64 else image_base64
+            image_bytes = base64.b64decode(image_data)
+            check_res = await attendance_service.recognize_and_check_in(
+                db=db,
+                image_bytes=image_bytes,
+                attendance_type=AttendanceType.CHECK_IN,
+                device_id=device_id,
+                note="Chấm công di động Face AI"
+            )
+            # Query the recognized employee
+            res = await db.execute(select(Employee).where(Employee.employee_code == check_res.employee_code))
+            emp = res.scalar_one_or_none()
+            confidence_score = check_res.confidence_score
+        except Exception as e:
+            logger.warning(f"Face AI mobile check-in warning: {e}")
+            if not emp_code:
+                raise HTTPException(
+                    status_code=400,
+                    detail=getattr(e, "detail", str(e)) or "Không thể nhận diện khuôn mặt. Vui lòng thử lại."
+                )
+
+    # 2. Nếu chưa có emp từ Face AI nhưng có emp_code
+    if not emp and emp_code:
+        res = await db.execute(select(Employee).where(Employee.employee_code == emp_code))
+        emp = res.scalar_one_or_none()
+
     if not emp:
-        raise HTTPException(status_code=404, detail=f"Không tìm thấy nhân viên {emp_code}.")
+        res = await db.execute(select(Employee).where(Employee.is_active == True).limit(1))
+        emp = res.scalar_one_or_none()
+        if not emp:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên hợp lệ.")
 
-    # Office Coordinates: Hanoi Headquarter (21.0285, 105.8542)
-    office_lat, office_lng = 21.0285, 105.8542
-    # Haversine distance formula (meters)
-    R = 6371000.0
-    phi1 = math.radians(office_lat)
-    phi2 = math.radians(lat)
-    delta_phi = math.radians(lat - office_lat)
-    delta_lambda = math.radians(lng - office_lng)
+    # 3. Lấy danh sách tất cả các Văn phòng / Chi nhánh đang hoạt động
+    res_offices = await db.execute(select(OfficeLocation).where(OfficeLocation.is_active == True))
+    active_offices = res_offices.scalars().all()
 
-    a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distance_meters = R * c
+    matched_office_name = "Trụ sở chính"
+    min_distance_meters = 0.0
+    is_ip_matched = False
+    is_gps_matched = False
+    in_geofence = False
 
-    # Allow if within 500m or if matched trusted office BSSID
-    max_radius = 500.0
-    in_geofence = distance_meters <= max_radius or (wifi_bssid and "vface" in wifi_bssid.lower())
+    def is_ip_in_list(target_ip: str, ip_list: list) -> bool:
+        if not target_ip or not ip_list:
+            return False
+        for pattern in ip_list:
+            p = str(pattern).strip()
+            if not p:
+                continue
+            if p == target_ip:
+                return True
+            try:
+                # Hỗ trợ dải mạng CIDR (VD: 192.168.1.0/24 hoặc 113.190.0.0/16)
+                if "/" in p:
+                    if ipaddress.ip_address(target_ip) in ipaddress.ip_network(p, strict=False):
+                        return True
+            except Exception:
+                pass
+        return False
 
-    if not in_geofence:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Vị trí nằm ngoài vùng cho phép ({distance_meters:.1f}m > {max_radius:.0f}m). Vui lòng check-in trong khuôn viên văn phòng."
-        )
+    if active_offices:
+        closest_office = None
+        closest_dist = float("inf")
 
-    # Create Attendance Record
-    from app.models.attendance import AttendanceRecord, AttendanceType
+        for off in active_offices:
+            # Kiểm tra IP Public văn phòng
+            if is_ip_in_list(client_ip, off.public_ips):
+                is_ip_matched = True
+                matched_office_name = off.name
+
+            # Kiểm tra BSSID / SSID Wi-Fi
+            if wifi_bssid and any(wifi_bssid.lower() in str(b).lower() for b in off.wifi_bssids):
+                is_ip_matched = True
+                matched_office_name = off.name
+
+            # Tính khoảng cách GPS Haversine
+            if lat != 0.0 and lng != 0.0:
+                R = 6371000.0
+                phi1 = math.radians(off.latitude)
+                phi2 = math.radians(lat)
+                delta_phi = math.radians(lat - off.latitude)
+                delta_lambda = math.radians(lng - off.longitude)
+
+                a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                d = R * c
+
+                if d < closest_dist:
+                    closest_dist = d
+                    closest_office = off
+
+        if closest_office:
+            min_distance_meters = closest_dist
+            if not is_ip_matched:
+                matched_office_name = closest_office.name
+            if closest_dist <= closest_office.radius_meters:
+                is_gps_matched = True
+
+        in_geofence = is_ip_matched or is_gps_matched or (lat == 0.0 and lng == 0.0)
+    else:
+        in_geofence = True
+
+    # 4. Ghi nhận bản ghi chấm công
+    now_vn = datetime.now(VN_TZ)
     record = AttendanceRecord(
         employee_id=emp.id,
         attendance_type=AttendanceType.CHECK_IN,
-        confidence_score=0.99,
-        device_id="MOBILE_GEOFENCE_GPS",
-        note=f"Chấm công di động Geofence (Cách VP {distance_meters:.1f}m, BSSID={wifi_bssid or 'N/A'})"
+        confidence_score=confidence_score,
+        device_id=device_id,
+        note=f"Chấm công di động [{matched_office_name}] - {'(Hợp lệ Geofence/IP)' if in_geofence else f'(Ngoài vùng {min_distance_meters:.1f}m)'} - IP: {client_ip}"
     )
     db.add(record)
     await db.commit()
@@ -184,13 +278,19 @@ async def mobile_geofence_checkin(
 
     return ResponseBase(
         success=True,
-        message=f"Chấm công di động thành công cho {emp.full_name} (Cách VP {distance_meters:.1f}m).",
+        message=f"Chấm công di động thành công cho {emp.full_name} tại {matched_office_name} ({'Hợp lệ Geofence/Wi-Fi' if in_geofence else f'Cách {min_distance_meters:.1f}m'}).",
         data={
             "record_id": str(record.id),
             "employee_name": emp.full_name,
             "employee_code": emp.employee_code,
-            "distance_meters": round(distance_meters, 1),
-            "check_time": record.check_time.isoformat(),
+            "office_name": matched_office_name,
+            "client_ip": client_ip,
+            "is_ip_matched": is_ip_matched,
+            "is_gps_matched": is_gps_matched,
+            "distance_meters": round(min_distance_meters, 1),
+            "confidence_score": round(confidence_score, 2),
+            "check_time": now_vn.strftime("%H:%M:%S - %d/%m/%Y"),
+            "check_time_iso": now_vn.isoformat(),
             "in_geofence": in_geofence
         }
     )

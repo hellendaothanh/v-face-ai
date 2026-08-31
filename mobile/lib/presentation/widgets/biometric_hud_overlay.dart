@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 
 class BiometricHudOverlay extends StatefulWidget {
   final String instruction;
@@ -15,33 +16,25 @@ class BiometricHudOverlay extends StatefulWidget {
   State<BiometricHudOverlay> createState() => _BiometricHudOverlayState();
 }
 
-class _BiometricHudOverlayState extends State<BiometricHudOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
+class _BiometricHudOverlayState extends State<BiometricHudOverlay> {
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final shortestSide = screenSize.shortestSide;
+    final bool isTablet = shortestSide >= 600;
+
+    final double hudWidth = isTablet
+        ? (shortestSide * 0.55).clamp(380.0, 520.0)
+        : (screenSize.width * 0.72).clamp(260.0, 340.0);
+    final double hudHeight = hudWidth * 1.3;
+    final double hudRadius = hudWidth / 2;
+
     return Stack(
       children: [
-        // Darkened surrounding mask
+        // Darkened surrounding mask with dynamic oval cutout
         ColorFiltered(
           colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.65),
+            Colors.black.withOpacity(0.6),
             BlendMode.srcOut,
           ),
           child: Stack(
@@ -56,11 +49,11 @@ class _BiometricHudOverlayState extends State<BiometricHudOverlay>
               Align(
                 alignment: const Alignment(0, -0.2),
                 child: Container(
-                  width: 270,
-                  height: 350,
+                  width: hudWidth,
+                  height: hudHeight,
                   decoration: BoxDecoration(
                     color: Colors.red,
-                    borderRadius: BorderRadius.circular(160),
+                    borderRadius: BorderRadius.circular(hudRadius),
                   ),
                 ),
               ),
@@ -68,90 +61,101 @@ class _BiometricHudOverlayState extends State<BiometricHudOverlay>
           ),
         ),
 
-        // Glowing Oval Border
+        // Clean Professional Oval Guide Border
         Align(
           alignment: const Alignment(0, -0.2),
-          child: AnimatedBuilder(
-            animation: _animController,
-            builder: (context, child) {
-              return Container(
-                width: 270,
-                height: 350,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(160),
-                  border: Border.all(
-                    color: widget.isScanning
-                        ? AppColors.accentNeon
-                        : AppColors.primaryLight,
-                    width: 3.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (widget.isScanning
-                              ? AppColors.accentNeon
-                              : AppColors.primary)
-                          .withOpacity(0.3 + 0.3 * _animController.value),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-
-        // Scanner horizontal line moving up and down when scanning
-        if (widget.isScanning)
-          Align(
-            alignment: const Alignment(0, -0.2),
-            child: SizedBox(
-              width: 250,
-              height: 330,
-              child: AnimatedBuilder(
-                animation: _animController,
-                builder: (context, child) {
-                  return Align(
-                    alignment: Alignment(0, -1.0 + (2.0 * _animController.value)),
-                    child: Container(
-                      height: 2,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.accentNeon,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accentNeon.withOpacity(0.8),
-                            blurRadius: 10,
-                            spreadRadius: 3,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+          child: Container(
+            width: hudWidth,
+            height: hudHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(hudRadius),
+              border: Border.all(
+                color: widget.isScanning ? AppColors.success : AppColors.primaryLight,
+                width: isTablet ? 3.5 : 2.5,
               ),
             ),
           ),
+        ),
 
-        // Instruction Text Banner at bottom
-        Align(
-          alignment: const Alignment(0, 0.65),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            margin: const EdgeInsets.symmetric(horizontal: 32),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white24),
+        // Top Navigation Bar and Device Header
+        Positioned(
+          top: 16,
+          left: 16,
+          right: 16,
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black45,
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isTablet ? Icons.tablet_android_rounded : Icons.smartphone_rounded,
+                        color: AppColors.primaryLight,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isTablet ? context.tr('tablet_mode') : context.tr('checkin_screen_title'),
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 40),
+              ],
             ),
-            child: Text(
-              widget.instruction,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
+          ),
+        ),
+
+        // Bottom Instruction Pill
+        Positioned(
+          bottom: 120,
+          left: 24,
+          right: 24,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark.withOpacity(0.92),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.borderDark),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.isScanning ? Icons.sync_rounded : Icons.center_focus_strong_rounded,
+                    color: widget.isScanning ? AppColors.success : AppColors.primaryLight,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      widget.instruction,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

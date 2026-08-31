@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.exceptions import VFaceException
-from app.database.session import init_db, seed_sample_employees
+from app.database.session import init_db, seed_sample_employees, seed_sample_offices
 from app.services.camera_manager import camera_manager
 from app.services.face_engine import face_engine
 from app.services.stream_processor import stream_processor
@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI):
     try:
         await init_db()
         await seed_sample_employees()
+        await seed_sample_offices()
         logger.info("Database & pgvector extension checked successfully.")
     except Exception as e:
         logger.error(f"Database initialization error (check PostgreSQL container): {e}")

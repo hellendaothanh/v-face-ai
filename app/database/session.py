@@ -82,6 +82,70 @@ async def seed_sample_employees() -> None:
             logger.warning(f"Error seeding sample employees: {e}")
 
 
+async def seed_sample_offices() -> None:
+    """Seed sample enterprise office locations with GPS coordinates & IP configurations."""
+    import uuid
+    from sqlalchemy import select
+    from app.models.office_location import OfficeLocation
+
+    sample_offices = [
+        {
+            "name": "Trụ sở chính Hà Nội",
+            "address": "123 Phố Huế, Quận Hai Bà Trưng, TP. Hà Nội",
+            "latitude": 21.0285,
+            "longitude": 105.8542,
+            "radius_meters": 500.0,
+            "public_ips": ["14.162.144.10", "118.69.182.50", "192.168.1.7", "127.0.0.1"],
+            "wifi_bssids": ["vface_corp_hanoi", "vface_guest_hanoi"],
+            "is_active": True,
+        },
+        {
+            "name": "Chi nhánh TP. Hồ Chí Minh",
+            "address": "45 Lê Duẩn, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+            "latitude": 10.7769,
+            "longitude": 106.7009,
+            "radius_meters": 500.0,
+            "public_ips": ["113.190.234.12", "115.79.200.8"],
+            "wifi_bssids": ["vface_corp_hcm"],
+            "is_active": True,
+        },
+        {
+            "name": "Chi nhánh Đà Nẵng",
+            "address": "78 Bạch Đằng, Quận Hải Châu, TP. Đà Nẵng",
+            "latitude": 16.0678,
+            "longitude": 108.2208,
+            "radius_meters": 500.0,
+            "public_ips": ["171.244.15.30"],
+            "wifi_bssids": ["vface_corp_danang"],
+            "is_active": True,
+        }
+    ]
+
+    async with AsyncSessionLocal() as session:
+        try:
+            for item in sample_offices:
+                stmt = select(OfficeLocation).where(OfficeLocation.name == item["name"])
+                res = await session.execute(stmt)
+                if not res.scalar_one_or_none():
+                    office = OfficeLocation(
+                        id=uuid.uuid4(),
+                        name=item["name"],
+                        address=item["address"],
+                        latitude=item["latitude"],
+                        longitude=item["longitude"],
+                        radius_meters=item["radius_meters"],
+                        public_ips=item["public_ips"],
+                        wifi_bssids=item["wifi_bssids"],
+                        is_active=item["is_active"],
+                    )
+                    session.add(office)
+            await session.commit()
+            logger.info("✔ Sample enterprise offices checked / seeded successfully.")
+        except Exception as e:
+            await session.rollback()
+            logger.warning(f"Error seeding sample offices: {e}")
+
+
 async def init_db() -> None:
     """
     Initialize database:

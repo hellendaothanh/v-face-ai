@@ -257,6 +257,15 @@ export const api = {
   updateKBArticle: (id, data) => coreUserClient.put(`/helpdesk/kb/articles/${id}`, data),
   deleteKBArticle: (id) => coreUserClient.delete(`/helpdesk/kb/articles/${id}`),
   markKBArticleHelpful: (id) => coreUserClient.post(`/helpdesk/kb/articles/${id}/helpful`),
+
+  // ============================================================================
+  // Multi-Office & Geofencing Public IP Management (Port 8000)
+  // ============================================================================
+  getOffices: () => apiClient.get('/offices'),
+  createOffice: (data) => apiClient.post('/offices', data),
+  updateOffice: (id, data) => apiClient.put(`/offices/${id}`, data),
+  deleteOffice: (id) => apiClient.delete(`/offices/${id}`),
+  getMyIp: () => apiClient.get('/offices/my-ip'),
 };
 
 export default api;

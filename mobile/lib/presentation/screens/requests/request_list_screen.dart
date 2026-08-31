@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../data/models/request_model.dart';
 import '../../../data/repositories/hrm_repository.dart';
 import '../../widgets/status_badge.dart';
@@ -15,6 +16,7 @@ class RequestListScreen extends StatefulWidget {
 class _RequestListScreenState extends State<RequestListScreen> {
   final HrmRepository _repo = HrmRepository();
   bool _isLoading = true;
+  String? _errorMessage;
   List<HrmRequestModel> _requests = [];
 
   @override
@@ -24,7 +26,10 @@ class _RequestListScreenState extends State<RequestListScreen> {
   }
 
   Future<void> _loadRequests() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final list = await _repo.getMyRequests();
       if (mounted) {
@@ -33,14 +38,10 @@ class _RequestListScreenState extends State<RequestListScreen> {
           _isLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _requests = [
-            HrmRequestModel(id: 1, requestType: "leave_full", title: "Nghỉ phép thường niên", reason: "Giải quyết việc cá nhân gia đình", startDate: "02/09/2026", endDate: "02/09/2026", status: "approved", approvedBy: "Lê Tuyết Mai (HR)", createdAt: "28/08/2026"),
-            HrmRequestModel(id: 2, requestType: "late_excuse", title: "Giải trình đi muộn", reason: "Mưa lớn kẹt xe tại đường Nguyễn Trãi", startDate: "28/08/2026 08:30", endDate: "28/08/2026 08:45", status: "approved", approvedBy: "Phạm Quốc Hùng (Manager)", createdAt: "28/08/2026"),
-            HrmRequestModel(id: 3, requestType: "overtime", title: "Đăng ký làm thêm giờ (OT)", reason: "Triển khai nâng cấp hệ thống máy chủ Face AI", startDate: "31/08/2026 18:00", endDate: "31/08/2026 21:00", status: "pending", createdAt: "29/08/2026"),
-          ];
+          _errorMessage = context.tr('submit_request_error');
           _isLoading = false;
         });
       }
@@ -52,10 +53,10 @@ class _RequestListScreenState extends State<RequestListScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
-        title: const Text("Quản Lý Đơn Từ & Phép"),
+        title: Text(context.tr('requests_title')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh_rounded, size: 20),
             onPressed: _loadRequests,
           ),
         ],
@@ -69,81 +70,108 @@ class _RequestListScreenState extends State<RequestListScreen> {
           if (res == true) _loadRequests();
         },
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text("Tạo Đơn Mới", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+        label: Text(context.tr('create_request_btn'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : RefreshIndicator(
-              onRefresh: _loadRequests,
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                itemCount: _requests.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final req = _requests[index];
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceDark,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                req.title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            StatusBadge(status: req.status),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          req.reason,
-                          style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.04),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.accentNeon),
-                              const SizedBox(width: 6),
-                              Text(
-                                "${req.startDate} ➜ ${req.endDate}",
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (req.approvedBy != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            "Người duyệt: ${req.approvedBy}",
-                            style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w500),
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 44),
+                      const SizedBox(height: 12),
+                      Text(_errorMessage!, style: const TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadRequests,
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                        child: Text(context.tr('retry'), style: const TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                )
+              : _requests.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.assignment_outlined, color: Colors.white.withOpacity(0.25), size: 56),
+                          const SizedBox(height: 16),
+                          Text(context.tr('no_requests'), style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Text(context.tr('no_requests_sub'), textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
                           ),
                         ],
-                      ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadRequests,
+                      color: AppColors.primary,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                        itemCount: _requests.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final req = _requests[index];
+                          return Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceDark,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.borderDark),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        req.title,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    StatusBadge(status: req.status),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  req.reason,
+                                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white.withOpacity(0.4)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      req.startDate,
+                                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                                    ),
+                                    if (req.approvedBy != null) ...[
+                                      const Spacer(),
+                                      Text(
+                                        "${context.tr('approved_by_label')}: ${req.approvedBy}",
+                                        style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
     );
   }
 }

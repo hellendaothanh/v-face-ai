@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import 'home/home_dashboard_screen.dart';
 import 'attendance/attendance_history_screen.dart';
 import 'requests/request_list_screen.dart';
 import 'helpdesk/ticket_list_screen.dart';
 import 'profile/profile_screen.dart';
-import 'attendance/mobile_checkin_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -28,53 +28,43 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgDark,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MobileCheckInScreen()),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
         backgroundColor: AppColors.surfaceDark,
-        indicatorColor: AppColors.primaryLight.withOpacity(0.25),
-        destinations: const [
+        indicatorColor: AppColors.primary.withOpacity(0.18),
+        elevation: 0,
+        height: 68,
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined, color: Colors.white70),
-            selectedIcon: Icon(Icons.home, color: AppColors.accentNeon),
-            label: "Trang chủ",
+            icon: const Icon(Icons.dashboard_outlined, color: Colors.white60, size: 22),
+            selectedIcon: const Icon(Icons.dashboard_rounded, color: AppColors.primaryLight, size: 22),
+            label: context.tr('nav_home'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined, color: Colors.white70),
-            selectedIcon: Icon(Icons.calendar_month, color: AppColors.accentNeon),
-            label: "Bảng công",
+            icon: const Icon(Icons.calendar_today_outlined, color: Colors.white60, size: 20),
+            selectedIcon: const Icon(Icons.calendar_today_rounded, color: AppColors.primaryLight, size: 20),
+            label: context.tr('nav_attendance'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.description_outlined, color: Colors.white70),
-            selectedIcon: Icon(Icons.description, color: AppColors.accentNeon),
-            label: "Đơn từ",
+            icon: const Icon(Icons.assignment_outlined, color: Colors.white60, size: 22),
+            selectedIcon: const Icon(Icons.assignment_rounded, color: AppColors.primaryLight, size: 22),
+            label: context.tr('nav_requests'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.headset_mic_outlined, color: Colors.white70),
-            selectedIcon: Icon(Icons.headset_mic, color: AppColors.accentNeon),
-            label: "Hỗ trợ",
+            icon: const Icon(Icons.support_agent_outlined, color: Colors.white60, size: 22),
+            selectedIcon: const Icon(Icons.support_agent_rounded, color: AppColors.primaryLight, size: 22),
+            label: context.tr('nav_helpdesk'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline, color: Colors.white70),
-            selectedIcon: Icon(Icons.person, color: AppColors.accentNeon),
-            label: "Cá nhân",
+            icon: const Icon(Icons.person_outline_rounded, color: Colors.white60, size: 22),
+            selectedIcon: const Icon(Icons.person_rounded, color: AppColors.primaryLight, size: 22),
+            label: context.tr('nav_profile'),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../main_navigation_screen.dart';
 import 'face_login_screen.dart';
@@ -29,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vui lòng nhập tài khoản và mật khẩu")),
+        SnackBar(content: Text(context.tr('login_empty_fields'))),
       );
       return;
     }
@@ -66,39 +67,41 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo
+                  // Enterprise Corporate Logo
                   Center(
                     child: Container(
-                      width: 72,
-                      height: 72,
+                      width: 68,
+                      height: 68,
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(20),
+                        color: AppColors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.4), width: 1.5),
                       ),
                       child: const Icon(
-                        Icons.face_retouching_natural_rounded,
-                        color: Colors.white,
-                        size: 40,
+                        Icons.shield_outlined,
+                        color: AppColors.primaryLight,
+                        size: 34,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    "V-Face Portal",
+                    "V-FACE ENTERPRISE",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "Đăng nhập tài khoản nhân viên",
+                    context.tr('app_tagline'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.55),
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 36),
@@ -108,18 +111,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _usernameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: "Tên đăng nhập hoặc Email",
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                      prefixIcon: const Icon(Icons.person_outline, color: AppColors.primaryLight),
+                      hintText: context.tr('login_username_hint'),
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                      prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primaryLight, size: 20),
                       filled: true,
                       fillColor: AppColors.surfaceDark,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.borderDark),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // Password field
                   TextField(
@@ -127,22 +135,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: "Mật khẩu",
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                      prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryLight),
+                      hintText: context.tr('login_password_hint'),
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight, size: 20),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.white54,
+                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: Colors.white38,
+                          size: 20,
                         ),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
                       filled: true,
                       fillColor: AppColors.surfaceDark,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.borderDark),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -151,68 +165,72 @@ class _LoginScreenState extends State<LoginScreen> {
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final isLoading = state is AuthLoadingState;
-                      return ElevatedButton(
-                        onPressed: isLoading ? null : _onLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                      return SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _onLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
                           ),
-                          elevation: 0,
-                        ),
-                        child: isLoading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                              )
-                            : const Text(
-                                "Đăng Nhập",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : Text(
+                                  context.tr('login_btn'),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
+                        ),
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                      const Expanded(child: Divider(color: AppColors.borderDark)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          "HOẶC",
-                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                          context.tr('or'),
+                          style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                      const Expanded(child: Divider(color: AppColors.borderDark)),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // 1-Click Face ID Login Button
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const FaceLoginScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.camera_front_outlined, color: AppColors.accentNeon),
-                    label: const Text(
-                      "Đăng Nhập 1-Chạm Face ID",
-                      style: TextStyle(color: AppColors.accentNeon, fontWeight: FontWeight.w600),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.accentNeon, width: 1.5),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  // 1-Click Biometric Face ID Login Button
+                  SizedBox(
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const FaceLoginScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryLight, size: 20),
+                      label: Text(
+                        context.tr('login_face_id_btn'),
+                        style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.borderDark, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ),
                 ],

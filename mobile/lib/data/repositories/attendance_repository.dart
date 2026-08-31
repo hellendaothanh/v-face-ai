@@ -33,11 +33,24 @@ class AttendanceRepository {
   Future<List<AttendanceRecordModel>> getHistory({int limit = 30}) async {
     final response = await _dio.get(
       ApiEndpoints.attendanceHistory,
-      queryParameters: {'limit': limit},
+      queryParameters: {'page_size': limit},
     );
 
-    final List list = response.data['items'] ?? response.data ?? [];
-    return list.map((item) => AttendanceRecordModel.fromJson(item)).toList();
+    final rawData = response.data;
+    List list = [];
+    if (rawData is Map) {
+      if (rawData['data'] is Map && rawData['data']['items'] is List) {
+        list = rawData['data']['items'];
+      } else if (rawData['data'] is List) {
+        list = rawData['data'];
+      } else if (rawData['items'] is List) {
+        list = rawData['items'];
+      }
+    } else if (rawData is List) {
+      list = rawData;
+    }
+
+    return list.map((item) => AttendanceRecordModel.fromJson(item as Map<String, dynamic>)).toList();
   }
 
   Future<bool> registerFaceAngles({

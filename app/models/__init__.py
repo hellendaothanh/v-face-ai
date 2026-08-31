@@ -5,6 +5,7 @@ from app.models.attendance_request import AttendanceRequest, AttendanceRequestTy
 from app.models.device import Device, DevicePurpose
 from app.models.work_shift import WorkShift, ShiftAssignment, PayrollRecord, ShiftType, PayrollStatus
 from app.models.notification import OTTNotificationLog, OTTChannel, NotificationStatus
+from app.models.office_location import OfficeLocation
 
 __all__ = [
     "Employee",
@@ -24,6 +25,7 @@ __all__ = [
     "OTTNotificationLog",
     "OTTChannel",
     "NotificationStatus",
+    "OfficeLocation",
 ]
 
 

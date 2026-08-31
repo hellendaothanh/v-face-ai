@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import '../blocs/auth/auth_bloc.dart';
 import 'auth/login_screen.dart';
 import 'main_navigation_screen.dart';
@@ -16,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
         context.read<AuthBloc>().add(CheckAuthSessionEvent());
       }
@@ -46,41 +47,35 @@ class _SplashScreenState extends State<SplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 90,
-                height: 90,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.5),
-                      blurRadius: 25,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  color: AppColors.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.primaryLight.withOpacity(0.4), width: 1.5),
                 ),
                 child: const Icon(
-                  Icons.face_retouching_natural_rounded,
-                  color: Colors.white,
-                  size: 48,
+                  Icons.shield_outlined,
+                  color: AppColors.primaryLight,
+                  size: 40,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const Text(
-                "V-FACE PRO",
+                "V-FACE ENTERPRISE",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 26,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
+                  letterSpacing: 1.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                "AI Biometric Workforce Solution",
+                context.tr('splash_subtitle'),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.55),
+                  fontSize: 13,
                 ),
               ),
             ],

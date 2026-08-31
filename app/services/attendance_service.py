@@ -326,11 +326,13 @@ class AttendanceService:
             logger.warning(f"Could not save check-in snapshot image: {e}")
             snapshot_path = None
 
-        # Create attendance record
+        from zoneinfo import ZoneInfo
+        vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+
         record = AttendanceRecord(
             id=uuid.uuid4(),
             employee_id=matched_employee.id,
-            check_time=datetime.now(timezone.utc),
+            check_time=vn_now,
             attendance_type=attendance_type,
             confidence_score=round(similarity, 4),
             matched_face_id=matched_face.id,

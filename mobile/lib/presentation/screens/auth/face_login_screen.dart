@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/biometric_hud_overlay.dart';
 import '../main_navigation_screen.dart';
@@ -18,7 +19,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
   CameraController? _cameraController;
   bool _isCameraReady = false;
   bool _isProcessing = false;
-  String _hudInstruction = "Đặt khuôn mặt vào trong khung Oval";
+  String? _customHudInstruction;
 
   @override
   void initState() {
@@ -46,7 +47,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _hudInstruction = "Không thể khởi động camera");
+        setState(() => _customHudInstruction = context.tr('camera_init_failed'));
       }
     }
   }
@@ -58,7 +59,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
 
     setState(() {
       _isProcessing = true;
-      _hudInstruction = "Đang nhận diện & kiểm tra liveness...";
+      _customHudInstruction = context.tr('face_login_processing');
     });
 
     try {
@@ -71,7 +72,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
     } catch (e) {
       setState(() {
         _isProcessing = false;
-        _hudInstruction = "Lỗi khi chụp ảnh, vui lòng thử lại";
+        _customHudInstruction = context.tr('photo_capture_error');
       });
     }
   }
@@ -95,7 +96,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
         } else if (state is AuthErrorState) {
           setState(() {
             _isProcessing = false;
-            _hudInstruction = state.errorMessage;
+            _customHudInstruction = state.errorMessage;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.errorMessage), backgroundColor: AppColors.error),
@@ -111,7 +112,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text("1-Chạm Face ID", style: TextStyle(color: Colors.white)),
+          title: Text(context.tr('face_login_title'), style: const TextStyle(color: Colors.white)),
         ),
         body: Stack(
           fit: StackFit.expand,
@@ -120,12 +121,12 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
               CameraPreview(_cameraController!)
             else
               const Center(
-                child: CircularProgressIndicator(color: AppColors.accentNeon),
+                child: CircularProgressIndicator(color: AppColors.primaryLight),
               ),
 
             // Oval HUD Overlay
             BiometricHudOverlay(
-              instruction: _hudInstruction,
+              instruction: _customHudInstruction ?? context.tr('face_login_instruction'),
               isScanning: _isProcessing,
             ),
 
@@ -143,10 +144,10 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 4),
-                      color: _isProcessing ? Colors.grey : AppColors.accentNeon,
+                      color: _isProcessing ? Colors.grey : AppColors.primary,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentNeon.withOpacity(0.4),
+                          color: AppColors.primary.withOpacity(0.4),
                           blurRadius: 16,
                           spreadRadius: 2,
                         ),
@@ -154,7 +155,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
                     ),
                     child: Icon(
                       _isProcessing ? Icons.hourglass_top : Icons.camera_alt_rounded,
-                      color: AppColors.bgDark,
+                      color: Colors.white,
                       size: 36,
                     ),
                   ),

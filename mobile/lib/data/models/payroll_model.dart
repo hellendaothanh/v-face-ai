@@ -1,5 +1,5 @@
 class PayrollRecordModel {
-  final int id;
+  final dynamic id;
   final int month;
   final int year;
   final double baseSalary;
@@ -10,7 +10,7 @@ class PayrollRecordModel {
   final double allowances;
   final double deductions;
   final double netSalary;
-  final String status; // 'draft', 'confirmed', 'paid'
+  final String status; // 'draft', 'confirmed', 'paid', 'approved'
 
   PayrollRecordModel({
     required this.id,
@@ -33,14 +33,14 @@ class PayrollRecordModel {
       month: json['month'] ?? DateTime.now().month,
       year: json['year'] ?? DateTime.now().year,
       baseSalary: (json['base_salary'] as num?)?.toDouble() ?? 0.0,
-      standardDays: (json['standard_days'] as num?)?.toDouble() ?? 22.0,
-      actualWorkingDays: (json['actual_working_days'] as num?)?.toDouble() ?? 0.0,
-      otHours: (json['ot_hours'] as num?)?.toDouble() ?? 0.0,
-      otPay: (json['ot_pay'] as num?)?.toDouble() ?? 0.0,
-      allowances: (json['allowances'] as num?)?.toDouble() ?? 0.0,
-      deductions: (json['deductions'] as num?)?.toDouble() ?? 0.0,
+      standardDays: (json['standard_work_days'] ?? json['standard_days'] as num?)?.toDouble() ?? 22.0,
+      actualWorkingDays: (json['actual_worked_days'] ?? json['actual_working_days'] as num?)?.toDouble() ?? 0.0,
+      otHours: (json['overtime_hours'] ?? json['ot_hours'] as num?)?.toDouble() ?? 0.0,
+      otPay: (json['overtime_pay'] ?? json['ot_pay'] as num?)?.toDouble() ?? 0.0,
+      allowances: (json['allowance'] ?? json['allowances'] as num?)?.toDouble() ?? 0.0,
+      deductions: (json['insurance_deduction'] ?? json['deductions'] as num?)?.toDouble() ?? 0.0,
       netSalary: (json['net_salary'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] ?? 'confirmed',
+      status: (json['status'] ?? 'confirmed').toString().toLowerCase(),
     );
   }
 }

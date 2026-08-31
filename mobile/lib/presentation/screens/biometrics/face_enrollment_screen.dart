@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../data/repositories/attendance_repository.dart';
 import '../../widgets/biometric_hud_overlay.dart';
@@ -22,13 +23,15 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
   int _currentStep = 0; // 0 to 4
   final List<Uint8List> _capturedAngles = [];
 
-  final List<Map<String, dynamic>> _angleSteps = const [
-    {"label": "Chính diện (0°)", "instruction": "Nhìn thẳng vào tâm camera", "icon": Icons.center_focus_strong_rounded},
-    {"label": "Ngước lên (+15°)", "instruction": "Hơi ngước cằm lên trên ⬆️", "icon": Icons.arrow_upward_rounded},
-    {"label": "Cúi xuống (-15°)", "instruction": "Hơi cúi cằm xuống dưới ⬇️", "icon": Icons.arrow_downward_rounded},
-    {"label": "Quay trái (-30°)", "instruction": "Hơi nghiêng mặt sang trái ⬅️", "icon": Icons.arrow_back_rounded},
-    {"label": "Quay phải (+30°)", "instruction": "Hơi nghiêng mặt sang phải ➡️", "icon": Icons.arrow_forward_rounded},
-  ];
+  List<Map<String, dynamic>> _getAngleSteps(BuildContext context) {
+    return [
+      {"label": context.tr('angle_front'), "instruction": context.tr('angle_front_inst'), "icon": Icons.center_focus_strong_rounded},
+      {"label": context.tr('angle_up'), "instruction": context.tr('angle_up_inst'), "icon": Icons.arrow_upward_rounded},
+      {"label": context.tr('angle_down'), "instruction": context.tr('angle_down_inst'), "icon": Icons.arrow_downward_rounded},
+      {"label": context.tr('angle_left'), "instruction": context.tr('angle_left_inst'), "icon": Icons.arrow_back_rounded},
+      {"label": context.tr('angle_right'), "instruction": context.tr('angle_right_inst'), "icon": Icons.arrow_forward_rounded},
+    ];
+  }
 
   @override
   void initState() {
@@ -90,11 +93,11 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppColors.surfaceDark,
-          title: const Text("Hoàn Tất Đăng Ký", style: TextStyle(color: Colors.white)),
+          title: Text(context.tr('face_enroll_complete'), style: const TextStyle(color: Colors.white)),
           content: Text(
             success
-                ? "Đã trích xuất và cập nhật thành công 5 vector ArcFace vào hệ thống."
-                : "Không thể lưu dữ liệu khuôn mặt. Vui lòng thử lại.",
+                ? context.tr('face_enroll_success_desc')
+                : context.tr('face_enroll_fail_desc'),
             style: TextStyle(color: Colors.white.withOpacity(0.8)),
           ),
           actions: [
@@ -104,7 +107,7 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text("Đóng", style: TextStyle(color: Colors.white)),
+              child: Text(context.tr('close'), style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -112,7 +115,7 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Lỗi khi kết nối đến máy chủ lưu trữ.")),
+          SnackBar(content: Text(context.tr('server_connect_error'))),
         );
       }
     } finally {
@@ -128,7 +131,8 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stepInfo = _angleSteps[_currentStep];
+    final angleSteps = _getAngleSteps(context);
+    final stepInfo = angleSteps[_currentStep];
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -140,7 +144,7 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Tự Đăng Ký 5 Góc (${_currentStep + 1}/5)",
+          "${context.tr('face_enroll_title')} (${_currentStep + 1}/5)",
           style: const TextStyle(color: Colors.white),
         ),
       ),
@@ -150,7 +154,7 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
           if (_isCameraReady && _cameraController != null)
             CameraPreview(_cameraController!)
           else
-            const Center(child: CircularProgressIndicator(color: AppColors.accentNeon)),
+            const Center(child: CircularProgressIndicator(color: AppColors.primaryLight)),
 
           BiometricHudOverlay(
             instruction: "${stepInfo['label']}\n${stepInfo['instruction']}",
@@ -172,7 +176,7 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
                   width: isCurrent ? 24 : 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: isDone || isCurrent ? AppColors.accentNeon : Colors.white24,
+                    color: isDone || isCurrent ? AppColors.primaryLight : Colors.white24,
                     borderRadius: BorderRadius.circular(5),
                   ),
                 );
