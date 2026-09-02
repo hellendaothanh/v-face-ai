@@ -343,8 +343,8 @@ async def seed_initial_data(session: AsyncSession) -> None:
 """,
             tags="camera,rtsp,face_ai,offline,troubleshoot",
             is_published=True,
-            view_count=28,
-            helpful_count=12,
+            view_count=0,
+            helpful_count=0,
             author_id=admin_user.id,
         )
 
@@ -362,8 +362,8 @@ async def seed_initial_data(session: AsyncSession) -> None:
 """,
             tags="iam,login,password,reset,unlock",
             is_published=True,
-            view_count=45,
-            helpful_count=19,
+            view_count=0,
+            helpful_count=0,
             author_id=admin_user.id,
         )
         session.add_all([art_rtsp, art_auth])

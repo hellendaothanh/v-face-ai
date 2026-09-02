@@ -1,7 +1,10 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
+
+VN_TZ = timezone(timedelta(hours=7))
 
 from app.api.deps import get_db
 from app.core.config import settings
@@ -136,14 +139,11 @@ async def mobile_geofence_checkin(
     import base64
     import ipaddress
     import math
-    from zoneinfo import ZoneInfo
     from app.models.employee import Employee
     from app.models.attendance import AttendanceRecord, AttendanceType
     from app.models.office_location import OfficeLocation
     from app.api.v1.endpoints.offices import extract_client_ip
     from sqlalchemy import select
-
-    VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
     emp_code = payload.get("employee_code")
     image_base64 = payload.get("image_base64")

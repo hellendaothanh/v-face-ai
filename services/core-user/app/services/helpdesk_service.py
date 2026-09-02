@@ -133,7 +133,13 @@ class HelpdeskService:
     async def update_article(
         db: AsyncSession, article_id: uuid.UUID, data: Any
     ) -> Optional[KBArticle]:
-        article = await db.get(KBArticle, article_id)
+        stmt = (
+            select(KBArticle)
+            .options(selectinload(KBArticle.category))
+            .where(KBArticle.id == article_id)
+        )
+        res = await db.execute(stmt)
+        article = res.scalar_one_or_none()
         if not article:
             return None
         
@@ -157,7 +163,13 @@ class HelpdeskService:
 
     @staticmethod
     async def mark_article_helpful(db: AsyncSession, article_id: uuid.UUID) -> Optional[KBArticle]:
-        article = await db.get(KBArticle, article_id)
+        stmt = (
+            select(KBArticle)
+            .options(selectinload(KBArticle.category))
+            .where(KBArticle.id == article_id)
+        )
+        res = await db.execute(stmt)
+        article = res.scalar_one_or_none()
         if article:
             article.helpful_count += 1
             await db.commit()

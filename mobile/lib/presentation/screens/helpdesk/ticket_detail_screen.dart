@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/models/helpdesk_model.dart';
@@ -67,6 +68,100 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
+  }
+
+  MarkdownStyleSheet _buildMarkdownStyleSheet({double baseFontSize = 14}) {
+    return MarkdownStyleSheet(
+      p: TextStyle(
+        color: Colors.white.withOpacity(0.9),
+        fontSize: baseFontSize,
+        height: 1.55,
+      ),
+      h1: TextStyle(
+        color: Colors.white,
+        fontSize: baseFontSize + 6,
+        fontWeight: FontWeight.bold,
+        height: 1.4,
+      ),
+      h2: TextStyle(
+        color: Colors.white,
+        fontSize: baseFontSize + 4,
+        fontWeight: FontWeight.bold,
+        height: 1.4,
+      ),
+      h3: TextStyle(
+        color: AppColors.primaryLight,
+        fontSize: baseFontSize + 2,
+        fontWeight: FontWeight.w600,
+        height: 1.4,
+      ),
+      h4: TextStyle(
+        color: Colors.white,
+        fontSize: baseFontSize + 1,
+        fontWeight: FontWeight.w600,
+      ),
+      strong: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
+      em: TextStyle(
+        color: Colors.white.withOpacity(0.85),
+        fontStyle: FontStyle.italic,
+      ),
+      code: TextStyle(
+        color: AppColors.primaryLight,
+        backgroundColor: AppColors.bgDark,
+        fontFamily: 'monospace',
+        fontSize: baseFontSize - 1,
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: AppColors.bgDark,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.borderDark),
+      ),
+      codeblockPadding: const EdgeInsets.all(12),
+      blockquote: TextStyle(
+        color: Colors.white.withOpacity(0.85),
+        fontStyle: FontStyle.italic,
+        fontSize: baseFontSize,
+      ),
+      blockquoteDecoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: const Border(
+          left: BorderSide(color: AppColors.primaryLight, width: 3.5),
+        ),
+      ),
+      blockquotePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      listBullet: const TextStyle(
+        color: AppColors.primaryLight,
+        fontSize: 14,
+      ),
+      listIndent: 20,
+      tableBorder: TableBorder.all(
+        color: AppColors.borderDark,
+        width: 1,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      tableHead: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
+      ),
+      tableBody: TextStyle(
+        color: Colors.white.withOpacity(0.9),
+        fontSize: 13,
+      ),
+      tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withOpacity(0.15),
+            width: 1,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -141,9 +236,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          _ticket.description,
-                          style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                        MarkdownBody(
+                          data: _ticket.description,
+                          selectable: true,
+                          styleSheet: _buildMarkdownStyleSheet(baseFontSize: 14),
                         ),
                       ],
                     ),
@@ -197,9 +293,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            _ticket.resolutionSummary!,
-                            style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                          MarkdownBody(
+                            data: _ticket.resolutionSummary!,
+                            selectable: true,
+                            styleSheet: _buildMarkdownStyleSheet(baseFontSize: 14),
                           ),
                         ],
                       ),
@@ -224,19 +321,22 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _ticket.comments.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final c = _ticket.comments[index];
                         final author = c['author_name'] ?? 'IT Support';
                         final content = c['content'] ?? '';
                         final time = c['created_at'] != null ? c['created_at'].toString().substring(0, 10) : '';
+                        final isAiAuthor = author.toLowerCase().contains('ai') || content.contains('🤖') || author.toLowerCase().contains('bot');
 
                         return Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceDark,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderDark),
+                            color: isAiAuthor ? AppColors.primary.withOpacity(0.08) : AppColors.surfaceDark,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isAiAuthor ? AppColors.primaryLight.withOpacity(0.35) : AppColors.borderDark,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,9 +344,22 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    author,
-                                    style: const TextStyle(color: AppColors.primaryLight, fontSize: 12, fontWeight: FontWeight.bold),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isAiAuthor) ...[
+                                        const Icon(Icons.auto_awesome_rounded, color: AppColors.primaryLight, size: 14),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      Text(
+                                        author,
+                                        style: TextStyle(
+                                          color: isAiAuthor ? AppColors.primaryLight : Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   Text(
                                     time,
@@ -254,10 +367,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                content,
-                                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                              const SizedBox(height: 8),
+                              MarkdownBody(
+                                data: content,
+                                selectable: true,
+                                styleSheet: _buildMarkdownStyleSheet(baseFontSize: 13),
                               ),
                             ],
                           ),

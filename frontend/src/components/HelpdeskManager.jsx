@@ -38,121 +38,12 @@ import api from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../context/AuthContext';
 
-// Helper Rich Content Renderer for KB (Markdown parser without external dependency)
-const renderRichMarkdown = (content) => {
-  if (!content) return null;
-
-  const lines = content.split('\n');
-  const elements = [];
-  let inCodeBlock = false;
-  let codeBuffer = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Code block check
-    if (line.trim().startsWith('```')) {
-      if (inCodeBlock) {
-        elements.push(
-          <pre key={`code-${i}`} className="p-4 my-2 rounded-xl bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-[11px] overflow-x-auto">
-            <code>{codeBuffer.join('\n')}</code>
-          </pre>
-        );
-        codeBuffer = [];
-        inCodeBlock = false;
-      } else {
-        inCodeBlock = true;
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      codeBuffer.push(line);
-      continue;
-    }
-
-    // Callout Note / Warning check
-    if (line.trim().startsWith('> [!NOTE]') || line.trim().startsWith('> [!TIP]')) {
-      elements.push(
-        <div key={`note-${i}`} className="p-3.5 my-2 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs flex items-start space-x-2.5">
-          <Info className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
-          <div>{line.replace(/^>\s*\[!(NOTE|TIP)\]/i, '').trim()}</div>
-        </div>
-      );
-      continue;
-    }
-
-    if (line.trim().startsWith('> [!WARNING]') || line.trim().startsWith('> [!CAUTION]')) {
-      elements.push(
-        <div key={`warn-${i}`} className="p-3.5 my-2 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex items-start space-x-2.5">
-          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-          <div>{line.replace(/^>\s*\[!(WARNING|CAUTION)\]/i, '').trim()}</div>
-        </div>
-      );
-      continue;
-    }
-
-    // Heading H1, H2, H3
-    if (line.startsWith('# ')) {
-      elements.push(
-        <h2 key={`h1-${i}`} className="text-base font-bold text-white mt-4 mb-2 pb-1 border-b border-slate-800">
-          {line.replace(/^#\s+/, '')}
-        </h2>
-      );
-      continue;
-    }
-
-    if (line.startsWith('## ')) {
-      elements.push(
-        <h3 key={`h2-${i}`} className="text-sm font-bold text-amber-300 mt-3 mb-1.5 flex items-center space-x-1.5">
-          <span>{line.replace(/^##\s+/, '')}</span>
-        </h3>
-      );
-      continue;
-    }
-
-    if (line.startsWith('### ')) {
-      elements.push(
-        <h4 key={`h3-${i}`} className="text-xs font-bold text-cyan-300 mt-2 mb-1">
-          {line.replace(/^###\s+/, '')}
-        </h4>
-      );
-      continue;
-    }
-
-    // List item
-    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-      elements.push(
-        <li key={`li-${i}`} className="ml-4 list-disc text-xs text-slate-300 my-0.5">
-          {formatInlineStyles(line.trim().replace(/^[-*]\s+/, ''))}
-        </li>
-      );
-      continue;
-    }
-
-    // Empty line spacer
-    if (!line.trim()) {
-      elements.push(<div key={`sp-${i}`} className="h-2" />);
-      continue;
-    }
-
-    // Regular paragraph
-    elements.push(
-      <p key={`p-${i}`} className="text-xs text-slate-300 leading-relaxed my-1">
-        {formatInlineStyles(line)}
-      </p>
-    );
-  }
-
-  return <div className="space-y-1">{elements}</div>;
-};
-
-// Helper for inline bold, code, and italic
+// Helper for inline bold, code, italic, and links
 const formatInlineStyles = (text) => {
   if (!text) return text;
   const parts = [];
-  // Tokenize `code`, **bold**, *italic*
-  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  // Tokenize `code`, **bold**, *italic*, [text](url)
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[([^\]]+)\]\(([^)]+)\))/g;
   let lastIndex = 0;
   let match;
 
@@ -171,6 +62,19 @@ const formatInlineStyles = (text) => {
       parts.push(<strong key={match.index} className="font-bold text-white">{token.slice(2, -2)}</strong>);
     } else if (token.startsWith('*') && token.endsWith('*')) {
       parts.push(<em key={match.index} className="italic text-slate-200">{token.slice(1, -1)}</em>);
+    } else if (match[2] && match[3]) {
+      // Link [text](url)
+      parts.push(
+        <a
+          key={match.index}
+          href={match[3]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-400 hover:text-cyan-300 underline font-medium inline-flex items-center space-x-0.5"
+        >
+          <span>{match[2]}</span>
+        </a>
+      );
     }
     lastIndex = regex.lastIndex;
   }
@@ -180,6 +84,154 @@ const formatInlineStyles = (text) => {
   }
 
   return parts.length > 0 ? parts : text;
+};
+
+// Helper Rich Content Renderer (Markdown parser without external dependency)
+const renderRichMarkdown = (content) => {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+  const elements = [];
+  let inCodeBlock = false;
+  let codeBuffer = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Code block check
+    if (line.trim().startsWith('```')) {
+      if (inCodeBlock) {
+        elements.push(
+          <pre key={`code-${i}`} className="p-4 my-2 rounded-xl bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-[11px] overflow-x-auto leading-relaxed">
+            <code>{codeBuffer.join('\n')}</code>
+          </pre>
+        );
+        codeBuffer = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBuffer.push(line);
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^(\*{3,}|-{3,}|_{3,})$/.test(line.trim())) {
+      elements.push(<hr key={`hr-${i}`} className="my-3 border-slate-800" />);
+      continue;
+    }
+
+    // Callout Note / Warning check
+    if (line.trim().startsWith('> [!NOTE]') || line.trim().startsWith('> [!TIP]')) {
+      elements.push(
+        <div key={`note-${i}`} className="p-3.5 my-2 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs flex items-start space-x-2.5">
+          <Info className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
+          <div>{formatInlineStyles(line.replace(/^>\s*\[!(NOTE|TIP)\]/i, '').trim())}</div>
+        </div>
+      );
+      continue;
+    }
+
+    if (line.trim().startsWith('> [!WARNING]') || line.trim().startsWith('> [!CAUTION]')) {
+      elements.push(
+        <div key={`warn-${i}`} className="p-3.5 my-2 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex items-start space-x-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+          <div>{formatInlineStyles(line.replace(/^>\s*\[!(WARNING|CAUTION)\]/i, '').trim())}</div>
+        </div>
+      );
+      continue;
+    }
+
+    // Generic Blockquote
+    if (line.trim().startsWith('>')) {
+      const quoteText = line.trim().replace(/^>\s*/, '');
+      elements.push(
+        <div key={`quote-${i}`} className="pl-3.5 my-2 border-l-2 border-indigo-500/60 bg-indigo-950/20 py-1.5 rounded-r-lg text-xs text-slate-300 italic">
+          {formatInlineStyles(quoteText)}
+        </div>
+      );
+      continue;
+    }
+
+    // Heading H1, H2, H3, H4
+    if (line.startsWith('# ')) {
+      elements.push(
+        <h2 key={`h1-${i}`} className="text-base font-bold text-white mt-4 mb-2 pb-1 border-b border-slate-800">
+          {formatInlineStyles(line.replace(/^#\s+/, ''))}
+        </h2>
+      );
+      continue;
+    }
+
+    if (line.startsWith('## ')) {
+      elements.push(
+        <h3 key={`h2-${i}`} className="text-sm font-bold text-amber-300 mt-3 mb-1.5 flex items-center space-x-1.5">
+          <span>{formatInlineStyles(line.replace(/^##\s+/, ''))}</span>
+        </h3>
+      );
+      continue;
+    }
+
+    if (line.startsWith('### ')) {
+      elements.push(
+        <h4 key={`h3-${i}`} className="text-xs font-bold text-cyan-300 mt-2.5 mb-1">
+          {formatInlineStyles(line.replace(/^###\s+/, ''))}
+        </h4>
+      );
+      continue;
+    }
+
+    if (line.startsWith('#### ')) {
+      elements.push(
+        <h5 key={`h4-${i}`} className="text-xs font-bold text-indigo-300 mt-2 mb-1">
+          {formatInlineStyles(line.replace(/^####\s+/, ''))}
+        </h5>
+      );
+      continue;
+    }
+
+    // Unordered list item
+    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+      elements.push(
+        <li key={`li-${i}`} className="ml-4 list-disc text-xs text-slate-300 my-0.5">
+          {formatInlineStyles(line.trim().replace(/^[-*]\s+/, ''))}
+        </li>
+      );
+      continue;
+    }
+
+    // Ordered list item
+    if (/^\d+\.\s+/.test(line.trim())) {
+      const numMatch = line.trim().match(/^(\d+)\.\s+(.*)/);
+      if (numMatch) {
+        elements.push(
+          <li key={`ol-${i}`} className="ml-4 list-decimal text-xs text-slate-300 my-0.5">
+            {formatInlineStyles(numMatch[2])}
+          </li>
+        );
+        continue;
+      }
+    }
+
+    // Empty line spacer
+    if (!line.trim()) {
+      elements.push(<div key={`sp-${i}`} className="h-2" />);
+      continue;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <p key={`p-${i}`} className="text-xs text-slate-300 leading-relaxed my-1">
+        {formatInlineStyles(line)}
+      </p>
+    );
+  }
+
+  return <div className="space-y-1">{elements}</div>;
 };
 
 // Helper to get consistent Tag badge color
@@ -523,6 +575,20 @@ const HelpdeskManager = () => {
     }
   };
 
+  // Helper to open and increment view count for KB article
+  const handleSelectArticle = async (art) => {
+    setSelectedArticle(art);
+    try {
+      const detail = await api.getKBArticleDetail(art.id);
+      if (detail) {
+        setSelectedArticle(detail);
+        setArticles((prev) => prev.map((a) => (a.id === detail.id ? detail : a)));
+      }
+    } catch (e) {
+      console.error('Failed to fetch article detail:', e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
@@ -644,9 +710,9 @@ const HelpdeskManager = () => {
                       <div>{renderStatusBadge(selectedTicket.status)}</div>
                     </div>
 
-                    <p className="text-xs text-slate-300 whitespace-pre-line bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-                      {selectedTicket.description}
-                    </p>
+                    <div className="text-xs text-slate-300 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                      {renderRichMarkdown(selectedTicket.description)}
+                    </div>
 
                     {/* Linked Knowledge Base Solution Badge */}
                     {selectedTicket.linked_kb_title && (
@@ -659,7 +725,7 @@ const HelpdeskManager = () => {
                           onClick={() => {
                             const found = articles.find(a => a.id === selectedTicket.linked_kb_id);
                             if (found) {
-                              setSelectedArticle(found);
+                              handleSelectArticle(found);
                               setActiveTab('kb');
                             }
                           }}
@@ -678,7 +744,9 @@ const HelpdeskManager = () => {
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                           <span>{t('helpdesk_resolution_note_title', 'Tóm tắt cách giải quyết (Resolution Note):')}</span>
                         </div>
-                        <p className="text-slate-300">{selectedTicket.resolution_summary}</p>
+                        <div className="text-slate-300 mt-1">
+                          {renderRichMarkdown(selectedTicket.resolution_summary)}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -759,14 +827,10 @@ const HelpdeskManager = () => {
                               <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString()}</span>
                             </div>
 
-                            {/* Markdown Render for AI or plain content */}
-                            {isAI ? (
-                              <div className="prose prose-invert max-w-none text-xs text-slate-200">
-                                {renderRichMarkdown(c.content)}
-                              </div>
-                            ) : (
-                              <p className="whitespace-pre-line text-slate-200">{c.content}</p>
-                            )}
+                            {/* Markdown Render for all comments */}
+                            <div className="text-xs text-slate-200">
+                              {renderRichMarkdown(c.content)}
+                            </div>
                           </div>
                         );
                       })}
@@ -1024,6 +1088,21 @@ const HelpdeskManager = () => {
                 </p>
               </div>
 
+              {/* Short Summary Box (if present) */}
+              {selectedArticle.summary && (
+                <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs flex items-start space-x-3 shadow-lg shadow-indigo-950/20">
+                  <div className="w-7 h-7 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Info className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
+                      {t('helpdesk_kb_summary_title', 'Tóm tắt bài viết (Short Summary)')}
+                    </div>
+                    <p className="text-slate-200 text-xs leading-relaxed">{selectedArticle.summary}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Rich Markdown Formatted Article Body */}
               <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 text-slate-300">
                 {renderRichMarkdown(selectedArticle.content)}
@@ -1152,7 +1231,7 @@ const HelpdeskManager = () => {
                   .map((art) => (
                     <div
                       key={art.id}
-                      onClick={() => setSelectedArticle(art)}
+                      onClick={() => handleSelectArticle(art)}
                       className="glass-panel p-5 rounded-2xl border border-slate-800 hover:border-amber-500/40 transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-2">

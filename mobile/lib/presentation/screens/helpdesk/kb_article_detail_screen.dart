@@ -17,12 +17,27 @@ class KBArticleDetailScreen extends StatefulWidget {
 class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
   final HelpdeskRepository _repo = HelpdeskRepository();
   late int _helpfulCount;
+  late int _viewCount;
   bool _hasVoted = false;
 
   @override
   void initState() {
     super.initState();
     _helpfulCount = widget.article.helpfulVotes;
+    _viewCount = widget.article.viewCount;
+    _loadFreshDetail();
+  }
+
+  Future<void> _loadFreshDetail() async {
+    try {
+      final fresh = await _repo.getKBArticleDetail(widget.article.id);
+      if (mounted) {
+        setState(() {
+          _helpfulCount = fresh.helpfulVotes;
+          _viewCount = fresh.viewCount;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _voteHelpful() async {
@@ -87,7 +102,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                     Icon(Icons.visibility_outlined, size: 14, color: Colors.white.withOpacity(0.4)),
                     const SizedBox(width: 4),
                     Text(
-                      "${widget.article.viewCount} ${context.tr('views_count')}",
+                      "$_viewCount ${context.tr('views_count')}",
                       style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
                     ),
                     const SizedBox(width: 12),
