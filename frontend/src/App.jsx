@@ -83,8 +83,6 @@ function App() {
           subtitle: t('header_my_account_sub') || (language === 'en' ? 'Manage corporate identity information and secure password' : 'Quản lý thông tin định danh doanh nghiệp và đổi mật khẩu bảo mật'),
         };
       case NAV_TABS.HR_HUB:
-      case 'EMPLOYEES':
-      case 'CORE_USER':
         return {
           title: t('header_hr_hub_title') || (language === 'en' ? 'Unified HR & Biometrics Hub' : 'Trung Tâm Quản Trị Nhân Sự & Sinh Trắc Học'),
           subtitle: t('header_hr_hub_sub') || (language === 'en' ? 'Centralized management of employee profiles, 512D face vectors, and IAM identities' : 'Quản lý tập trung hồ sơ nhân viên, trích xuất vector khuôn mặt 512D và danh tính bảo mật IAM'),
@@ -215,7 +213,7 @@ function App() {
 
           {currentTab === NAV_TABS.SHIFTS_PAYROLL && <ShiftAndPayrollManager />}
 
-          {(currentTab === NAV_TABS.HR_HUB || currentTab === 'EMPLOYEES' || currentTab === 'CORE_USER') && (
+          {currentTab === NAV_TABS.HR_HUB && (
             (isHR || isAdmin || hasPermission(['user:read', 'user:create', 'rbac:manage', 'org:manage'])) ? (
               <UnifiedHRHub />
             ) : (

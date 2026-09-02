@@ -1,4 +1,4 @@
-import requests
+import httpx
 from loguru import logger
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -128,7 +128,7 @@ async def face_login(
         )
 
     # 4. Request JWT Token from Core User Service (Port 8001)
-    core_user_url = "http://127.0.0.1:8001/api/v1/auth/face-token"
+    core_user_url = f"{settings.CORE_USER_SERVICE_URL}/auth/face-token"
     token_payload = {
         "user_code": matched_employee.employee_code,
         "username": matched_employee.employee_code,
@@ -141,18 +141,19 @@ async def face_login(
     }
 
     try:
-        resp = requests.post(core_user_url, json=token_payload, timeout=10.0)
-        if resp.status_code != 200:
-            logger.error(f"Core User IAM token issue failed: {resp.status_code} {resp.text}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={
-                    "code": "IAM_AUTH_FAILED",
-                    "message": "Xác thực phân quyền IAM thất bại"
-                }
-            )
-        token_data = resp.json()
-    except requests.RequestException as e:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(core_user_url, json=token_payload)
+            if resp.status_code != 200:
+                logger.error(f"Core User IAM token issue failed: {resp.status_code} {resp.text}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "code": "IAM_AUTH_FAILED",
+                        "message": "Xác thực phân quyền IAM thất bại"
+                    }
+                )
+            token_data = resp.json()
+    except httpx.RequestError as e:
         logger.error(f"Failed to connect to Core User IAM at {core_user_url}: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

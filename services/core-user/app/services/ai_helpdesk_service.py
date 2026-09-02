@@ -2,8 +2,8 @@ import json
 import re
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
+import httpx
 from loguru import logger
-import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -81,8 +81,8 @@ class AIHelpdeskService:
         return scored_articles
 
     @classmethod
-    def call_gemini_api(cls, prompt: str, api_key: str, model: str = "gemini-1.5-flash") -> Optional[str]:
-        """Invoke Google Gemini REST API."""
+    async def call_gemini_api(cls, prompt: str, api_key: str, model: str = "gemini-1.5-flash") -> Optional[str]:
+        """Invoke Google Gemini REST API asynchronously."""
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             headers = {"Content-Type": "application/json"}
@@ -93,23 +93,24 @@ class AIHelpdeskService:
                     "maxOutputTokens": 1024,
                 }
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=12)
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates and "content" in candidates[0]:
-                    parts = candidates[0]["content"].get("parts", [])
-                    if parts and "text" in parts[0]:
-                        return parts[0]["text"]
-            else:
-                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text}")
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                resp = await client.post(url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        parts = candidates[0]["content"].get("parts", [])
+                        if parts and "text" in parts[0]:
+                            return parts[0]["text"]
+                else:
+                    logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text}")
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}")
         return None
 
     @classmethod
-    def call_openai_api(cls, prompt: str, api_key: str, model: str = "gpt-4o-mini") -> Optional[str]:
-        """Invoke OpenAI or OpenAI-compatible endpoint."""
+    async def call_openai_api(cls, prompt: str, api_key: str, model: str = "gpt-4o-mini") -> Optional[str]:
+        """Invoke OpenAI or OpenAI-compatible endpoint asynchronously."""
         try:
             url = "https://api.openai.com/v1/chat/completions"
             headers = {
@@ -125,14 +126,15 @@ class AIHelpdeskService:
                 "temperature": 0.2,
                 "max_tokens": 1024,
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=12)
-            if resp.status_code == 200:
-                data = resp.json()
-                choices = data.get("choices", [])
-                if choices:
-                    return choices[0].get("message", {}).get("content")
-            else:
-                logger.warning(f"OpenAI API returned status {resp.status_code}: {resp.text}")
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                resp = await client.post(url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        return choices[0].get("message", {}).get("content")
+                else:
+                    logger.warning(f"OpenAI API returned status {resp.status_code}: {resp.text}")
         except Exception as e:
             logger.error(f"Error calling OpenAI API: {e}")
         return None
@@ -244,9 +246,9 @@ YÊU CẦU ĐỊNH DẠNG:
 - Nếu có KNOWLEDGE BASE CONTEXT, hãy dựa vào đó để hướng dẫn chuẩn xác.
 """
             if settings.AI_PROVIDER == "gemini":
-                ai_response_text = cls.call_gemini_api(prompt, settings.AI_API_KEY, settings.AI_MODEL_NAME)
+                ai_response_text = await cls.call_gemini_api(prompt, settings.AI_API_KEY, settings.AI_MODEL_NAME)
             elif settings.AI_PROVIDER == "openai":
-                ai_response_text = cls.call_openai_api(prompt, settings.AI_API_KEY, settings.AI_MODEL_NAME)
+                ai_response_text = await cls.call_openai_api(prompt, settings.AI_API_KEY, settings.AI_MODEL_NAME)
 
         # Fallback if API not configured or failed
         if not ai_response_text:
