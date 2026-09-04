@@ -97,7 +97,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -155,9 +155,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -179,9 +179,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.15),
+                        color: AppColors.success.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.success.withOpacity(0.4)),
+                        border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +217,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   if (_ticket.comments.isEmpty) ...[
                     Text(
                       context.tr('no_discussion_yet'),
-                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
                     ),
                   ] else ...[
                     ListView.separated(
@@ -250,7 +250,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                   ),
                                   Text(
                                     time,
-                                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -286,7 +286,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: context.tr('reply_hint'),
-                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 13),
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
                         filled: true,
                         fillColor: AppColors.bgDark,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),

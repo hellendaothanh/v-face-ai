@@ -50,9 +50,9 @@ class _SplashScreenState extends State<SplashScreen> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
+                  color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.primaryLight.withOpacity(0.4), width: 1.5),
+                  border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4), width: 1.5),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
               Text(
                 context.tr('splash_subtitle'),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.55),
+                  color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 13,
                 ),
               ),

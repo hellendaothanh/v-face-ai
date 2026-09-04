@@ -34,7 +34,7 @@ class _BiometricHudOverlayState extends State<BiometricHudOverlay> {
         // Darkened surrounding mask with dynamic oval cutout
         ColorFiltered(
           colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.6),
+            Colors.black.withValues(alpha: 0.6),
             BlendMode.srcOut,
           ),
           child: Stack(
@@ -131,7 +131,7 @@ class _BiometricHudOverlayState extends State<BiometricHudOverlay> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.surfaceDark.withOpacity(0.92),
+                color: AppColors.surfaceDark.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.borderDark),
               ),

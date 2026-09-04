@@ -117,7 +117,7 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.receipt_long_outlined, color: Colors.white.withOpacity(0.25), size: 48),
+                    Icon(Icons.receipt_long_outlined, color: Colors.white.withValues(alpha: 0.25), size: 48),
                     const SizedBox(height: 12),
                     Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 14)),
                     const SizedBox(height: 16),
@@ -143,7 +143,7 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
                   children: [
                     Text(
                       context.tr('net_salary'),
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, letterSpacing: 1.2, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12, letterSpacing: 1.2, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -154,7 +154,7 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.12),
+                        color: AppColors.success.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -221,7 +221,7 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 13)),
+          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 13)),
           Text(value, style: TextStyle(color: color ?? Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
         ],
       ),

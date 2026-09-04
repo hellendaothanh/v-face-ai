@@ -134,7 +134,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: (success ? AppColors.success : AppColors.error).withOpacity(0.15),
+                color: (success ? AppColors.success : AppColors.error).withValues(alpha: 0.15),
               ),
               child: Icon(
                 success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
@@ -156,13 +156,13 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -257,7 +257,7 @@ class _MobileCheckInScreenState extends State<MobileCheckInScreen> {
                     color: _isProcessing ? Colors.grey : AppColors.primary,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.5),
+                        color: AppColors.primary.withValues(alpha: 0.5),
                         blurRadius: 16,
                         spreadRadius: 2,
                       ),

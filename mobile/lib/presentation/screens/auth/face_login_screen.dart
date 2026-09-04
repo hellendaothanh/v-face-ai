@@ -147,7 +147,7 @@ class _FaceLoginScreenState extends State<FaceLoginScreen> {
                       color: _isProcessing ? Colors.grey : AppColors.primary,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
+                          color: AppColors.primary.withValues(alpha: 0.4),
                           blurRadius: 16,
                           spreadRadius: 2,
                         ),

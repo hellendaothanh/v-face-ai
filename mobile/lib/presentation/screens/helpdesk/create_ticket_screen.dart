@@ -174,7 +174,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: context.tr('ticket_title_hint'),
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                 filled: true,
                 fillColor: AppColors.surfaceDark,
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.borderDark)),
@@ -193,7 +193,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: context.tr('ticket_desc_hint'),
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                 filled: true,
                 fillColor: AppColors.surfaceDark,
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.borderDark)),

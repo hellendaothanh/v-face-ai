@@ -138,8 +138,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                             height: 46,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.primary.withOpacity(0.15),
-                              border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                             ),
                             child: Center(
                               child: Text(
@@ -169,7 +169,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                 Text(
                                   "$code  •  $role  •  $dept",
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
+                                    color: Colors.white.withValues(alpha: 0.6),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -215,7 +215,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.12),
+                              color: AppColors.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -313,7 +313,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     ),
                     Text(
                       "${_recentRecords.length} ${context.tr('records_count')}",
-                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
                     ),
                   ],
                 ),
@@ -333,7 +333,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     child: Center(
                       child: Text(
                         context.tr('no_recent_records'),
-                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
                       ),
                     ),
                   ),
@@ -358,7 +358,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(Icons.access_time_rounded, color: AppColors.primaryLight, size: 18),
@@ -375,7 +375,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     "${context.tr('time_in')}: ${item.checkIn ?? '--:--'}  •  ${context.tr('device_prefix')}: ${item.deviceName ?? 'Mobile'}",
-                                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -406,7 +406,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           children: [
             Icon(icon, size: 12, color: color),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+            Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
           ],
         ),
         const SizedBox(height: 4),
@@ -443,7 +443,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
+                  color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: AppColors.primaryLight, size: 20),

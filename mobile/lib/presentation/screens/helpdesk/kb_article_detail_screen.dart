@@ -66,9 +66,9 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: AppColors.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.primaryLight.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -84,14 +84,14 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                 ),
                 Row(
                   children: [
-                    Icon(Icons.visibility_outlined, size: 14, color: Colors.white.withOpacity(0.4)),
+                    Icon(Icons.visibility_outlined, size: 14, color: Colors.white.withValues(alpha: 0.4)),
                     const SizedBox(width: 4),
                     Text(
                       "${widget.article.viewCount} ${context.tr('views_count')}",
-                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.thumb_up_alt_outlined, size: 14, color: AppColors.success.withOpacity(0.8)),
+                    Icon(Icons.thumb_up_alt_outlined, size: 14, color: AppColors.success.withValues(alpha: 0.8)),
                     const SizedBox(width: 4),
                     Text(
                       "$_helpfulCount",
@@ -131,7 +131,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                     child: Text(
                       "#$tag",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -151,9 +151,9 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +164,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                       child: Text(
                         widget.article.summary,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -182,7 +182,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
               selectable: true,
               styleSheet: MarkdownStyleSheet(
                 p: TextStyle(
-                  color: Colors.white.withOpacity(0.88),
+                  color: Colors.white.withValues(alpha: 0.88),
                   fontSize: 15,
                   height: 1.65,
                 ),
@@ -214,7 +214,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                   fontWeight: FontWeight.bold,
                 ),
                 em: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withValues(alpha: 0.85),
                   fontStyle: FontStyle.italic,
                 ),
                 code: const TextStyle(
@@ -230,7 +230,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                 ),
                 codeblockPadding: const EdgeInsets.all(14),
                 blockquote: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontStyle: FontStyle.italic,
                   fontSize: 14,
                 ),
@@ -258,7 +258,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                   fontSize: 14,
                 ),
                 tableBody: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 13,
                 ),
                 tableHeadAlign: TextAlign.center,
@@ -266,7 +266,7 @@ class _KBArticleDetailScreenState extends State<KBArticleDetailScreen> {
                 horizontalRuleDecoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(
-                      color: AppColors.borderDark.withOpacity(0.8),
+                      color: AppColors.borderDark.withValues(alpha: 0.8),
                       width: 1,
                     ),
                   ),

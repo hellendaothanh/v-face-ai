@@ -27,8 +27,9 @@ class HrmRequestModel {
     final reqType = json['request_type'] ?? 'HALF_DAY_LEAVE_AM';
     String displayTitle = json['title'] ?? '';
     if (displayTitle.isEmpty) {
-      if (reqType == 'HALF_DAY_LEAVE_AM') displayTitle = 'Nghỉ phép nửa ngày (Sáng)';
-      else if (reqType == 'HALF_DAY_LEAVE_PM') displayTitle = 'Nghỉ phép nửa ngày (Chiều)';
+      if (reqType == 'HALF_DAY_LEAVE_AM') {
+        displayTitle = 'Nghỉ phép nửa ngày (Sáng)';
+      } else if (reqType == 'HALF_DAY_LEAVE_PM') displayTitle = 'Nghỉ phép nửa ngày (Chiều)';
       else if (reqType == 'BUSINESS_TRIP') displayTitle = 'Đăng ký công tác / Ra ngoài';
       else if (reqType == 'LATE_EXCUSE') displayTitle = 'Giải trình đi muộn / về sớm';
       else displayTitle = reqType.toString();

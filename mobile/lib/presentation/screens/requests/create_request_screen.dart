@@ -183,7 +183,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: context.tr('request_title_hint'),
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                 filled: true,
                 fillColor: AppColors.surfaceDark,
                 enabledBorder: OutlineInputBorder(
@@ -276,7 +276,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: context.tr('reason_hint'),
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                 filled: true,
                 fillColor: AppColors.surfaceDark,
                 enabledBorder: OutlineInputBorder(

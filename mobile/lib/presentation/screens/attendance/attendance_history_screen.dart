@@ -87,11 +87,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.calendar_today_outlined, color: Colors.white.withOpacity(0.25), size: 56),
+                          Icon(Icons.calendar_today_outlined, color: Colors.white.withValues(alpha: 0.25), size: 56),
                           const SizedBox(height: 16),
                           Text(context.tr('no_attendance_history'), style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 6),
-                          Text(context.tr('no_attendance_sub'), style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                          Text(context.tr('no_attendance_sub'), style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
                         ],
                       ),
                     )
@@ -117,7 +117,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.12),
+                                    color: AppColors.primary.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: const Icon(Icons.access_time_rounded, color: AppColors.primaryLight, size: 22),
@@ -141,7 +141,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                                             const SizedBox(width: 8),
                                             Text(
                                               "• ${item.employeeName}",
-                                              style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
+                                              style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
                                             ),
                                           ],
                                         ],
@@ -149,13 +149,13 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                                       const SizedBox(height: 4),
                                       Text(
                                         "${context.tr('time_in')}: ${item.checkIn ?? '--:--'}    ${context.tr('time_out')}: ${item.checkOut ?? '--:--'}",
-                                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
                                       ),
                                       if (item.deviceName != null) ...[
                                         const SizedBox(height: 3),
                                         Text(
                                           "${context.tr('device_prefix')}: ${item.deviceName}",
-                                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                                          style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
                                         ),
                                       ],
                                     ],

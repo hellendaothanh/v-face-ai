@@ -98,7 +98,7 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen> {
             success
                 ? context.tr('face_enroll_success_desc')
                 : context.tr('face_enroll_fail_desc'),
-            style: TextStyle(color: Colors.white.withOpacity(0.8)),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
           ),
           actions: [
             ElevatedButton(

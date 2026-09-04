@@ -41,7 +41,7 @@ class ProfileScreen extends StatelessWidget {
                       ? const Icon(Icons.check_circle_rounded, color: AppColors.primaryLight)
                       : null,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  tileColor: currentLang == 'vi' ? AppColors.primary.withOpacity(0.12) : null,
+                  tileColor: currentLang == 'vi' ? AppColors.primary.withValues(alpha: 0.12) : null,
                   onTap: () {
                     context.read<LanguageCubit>().setLanguage('vi');
                     Navigator.pop(ctx);
@@ -56,7 +56,7 @@ class ProfileScreen extends StatelessWidget {
                       ? const Icon(Icons.check_circle_rounded, color: AppColors.primaryLight)
                       : null,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  tileColor: currentLang == 'en' ? AppColors.primary.withOpacity(0.12) : null,
+                  tileColor: currentLang == 'en' ? AppColors.primary.withValues(alpha: 0.12) : null,
                   onTap: () {
                     context.read<LanguageCubit>().setLanguage('en');
                     Navigator.pop(ctx);
@@ -122,8 +122,8 @@ class ProfileScreen extends StatelessWidget {
                         height: 64,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.primary.withOpacity(0.15),
-                          border: Border.all(color: AppColors.primaryLight.withOpacity(0.5), width: 2),
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5), width: 2),
                         ),
                         child: Center(
                           child: Text(
@@ -140,13 +140,13 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         email,
-                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
                       ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.12),
+                          color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -200,7 +200,7 @@ class ProfileScreen extends StatelessWidget {
                           color: AppColors.success,
                           trailing: Switch(
                             value: true,
-                            activeTrackColor: AppColors.primary.withOpacity(0.5),
+                            activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                             activeThumbColor: AppColors.primaryLight,
                             onChanged: (val) {},
                           ),
@@ -288,13 +288,13 @@ class ProfileScreen extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: color, size: 20),
       ),
       title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
-      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)) : null,
+      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)) : null,
       trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: Colors.white30, size: 20),
       onTap: onTap,
     );

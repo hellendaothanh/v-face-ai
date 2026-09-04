@@ -97,13 +97,13 @@ class _RequestListScreenState extends State<RequestListScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.assignment_outlined, color: Colors.white.withOpacity(0.25), size: 56),
+                          Icon(Icons.assignment_outlined, color: Colors.white.withValues(alpha: 0.25), size: 56),
                           const SizedBox(height: 16),
                           Text(context.tr('no_requests'), style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 6),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(context.tr('no_requests_sub'), textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                            child: Text(context.tr('no_requests_sub'), textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
                           ),
                         ],
                       ),
@@ -146,16 +146,16 @@ class _RequestListScreenState extends State<RequestListScreen> {
                                 const SizedBox(height: 6),
                                 Text(
                                   req.reason,
-                                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
                                 ),
                                 const SizedBox(height: 10),
                                 Row(
                                   children: [
-                                    Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white.withOpacity(0.4)),
+                                    Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white.withValues(alpha: 0.4)),
                                     const SizedBox(width: 4),
                                     Text(
                                       req.startDate,
-                                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
                                     ),
                                     if (req.approvedBy != null) ...[
                                       const Spacer(),

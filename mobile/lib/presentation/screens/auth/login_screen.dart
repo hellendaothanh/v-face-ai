@@ -73,9 +73,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 68,
                       height: 68,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.4), width: 1.5),
+                        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4), width: 1.5),
                       ),
                       child: const Icon(
                         Icons.shield_outlined,
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     context.tr('app_tagline'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
+                      color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 13,
                     ),
                   ),
@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: context.tr('login_username_hint'),
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                       prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primaryLight, size: 20),
                       filled: true,
                       fillColor: AppColors.surfaceDark,
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: context.tr('login_password_hint'),
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                       prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight, size: 20),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -204,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           context.tr('or'),
-                          style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ),
                       const Expanded(child: Divider(color: AppColors.borderDark)),

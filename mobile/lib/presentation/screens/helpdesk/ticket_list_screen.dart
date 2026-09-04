@@ -164,13 +164,13 @@ class _TicketListScreenState extends State<TicketListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.support_agent_rounded, color: Colors.white.withOpacity(0.25), size: 56),
+            Icon(Icons.support_agent_rounded, color: Colors.white.withValues(alpha: 0.25), size: 56),
             const SizedBox(height: 16),
             Text(context.tr('no_tickets'), style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(context.tr('no_tickets_sub'), textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+              child: Text(context.tr('no_tickets_sub'), textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
             ),
           ],
         ),
@@ -210,7 +210,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -231,16 +231,16 @@ class _TicketListScreenState extends State<TicketListScreen> {
                     ticket.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white.withOpacity(0.4)),
+                      Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white.withValues(alpha: 0.4)),
                       const SizedBox(width: 4),
                       Text(
                         ticket.createdAt.length > 10 ? ticket.createdAt.substring(0, 10) : ticket.createdAt,
-                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -276,7 +276,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: context.tr('search_kb_hint'),
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
               prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70, size: 20),
               suffixIcon: _searchKBController.text.isNotEmpty
                   ? IconButton(
@@ -323,7 +323,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.menu_book_rounded, color: Colors.white.withOpacity(0.25), size: 56),
+                              Icon(Icons.menu_book_rounded, color: Colors.white.withValues(alpha: 0.25), size: 56),
                               const SizedBox(height: 16),
                               Text(context.tr('no_articles'), style: const TextStyle(color: Colors.white70, fontSize: 15)),
                             ],
@@ -364,9 +364,9 @@ class _TicketListScreenState extends State<TicketListScreen> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                                               decoration: BoxDecoration(
-                                                color: AppColors.primary.withOpacity(0.15),
+                                                color: AppColors.primary.withValues(alpha: 0.15),
                                                 borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: AppColors.primaryLight.withOpacity(0.25)),
+                                                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.25)),
                                               ),
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
@@ -382,11 +382,11 @@ class _TicketListScreenState extends State<TicketListScreen> {
                                             ),
                                             Row(
                                               children: [
-                                                Icon(Icons.visibility_outlined, size: 12, color: Colors.white.withOpacity(0.4)),
+                                                Icon(Icons.visibility_outlined, size: 12, color: Colors.white.withValues(alpha: 0.4)),
                                                 const SizedBox(width: 4),
-                                                Text("${art.viewCount}", style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                                                Text("${art.viewCount}", style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
                                                 const SizedBox(width: 10),
-                                                Icon(Icons.thumb_up_alt_outlined, size: 12, color: AppColors.success.withOpacity(0.8)),
+                                                Icon(Icons.thumb_up_alt_outlined, size: 12, color: AppColors.success.withValues(alpha: 0.8)),
                                                 const SizedBox(width: 4),
                                                 Text("${art.helpfulVotes}", style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
                                               ],
@@ -404,7 +404,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
                                             art.summary,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 13, height: 1.4),
+                                            style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 13, height: 1.4),
                                           ),
                                         ],
                                         if (tags.isNotEmpty) ...[
@@ -416,13 +416,13 @@ class _TicketListScreenState extends State<TicketListScreen> {
                                               return Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withOpacity(0.05),
+                                                  color: Colors.white.withValues(alpha: 0.05),
                                                   borderRadius: BorderRadius.circular(4),
                                                   border: Border.all(color: Colors.white12),
                                                 ),
                                                 child: Text(
                                                   "#$tag",
-                                                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w500),
+                                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 10, fontWeight: FontWeight.w500),
                                                 ),
                                               );
                                             }).toList(),
