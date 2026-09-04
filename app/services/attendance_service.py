@@ -1,8 +1,10 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 from loguru import logger
+
+VN_TZ = timezone(timedelta(hours=7))
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -326,8 +328,7 @@ class AttendanceService:
             logger.warning(f"Could not save check-in snapshot image: {e}")
             snapshot_path = None
 
-        from zoneinfo import ZoneInfo
-        vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+        vn_now = datetime.now(VN_TZ)
 
         record = AttendanceRecord(
             id=uuid.uuid4(),

@@ -88,6 +88,13 @@ class HelpdeskRepository {
     return list.map((e) => KBArticleModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<KBArticleModel> getKBArticleDetail(dynamic articleId) async {
+    final response = await _dio.get("${ApiEndpoints.helpdeskKB}/$articleId");
+    final raw = response.data;
+    final data = (raw is Map && raw.containsKey('data') && raw['data'] is Map) ? raw['data'] : raw;
+    return KBArticleModel.fromJson(data as Map<String, dynamic>);
+  }
+
   Future<void> voteHelpful(dynamic articleId) async {
     await _dio.post("${ApiEndpoints.helpdeskKB}/$articleId/helpful");
   }

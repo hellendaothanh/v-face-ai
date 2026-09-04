@@ -116,31 +116,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# WebSocket root endpoint: /ws/attendance
-@app.websocket("/ws/attendance")
-async def root_websocket_attendance(websocket: WebSocket):
-    """
-    Direct root WebSocket endpoint for Frontend clients to receive live attendance events.
-    Connect to: ws://localhost:8000/ws/attendance
-    """
-    await ws_manager.connect(websocket)
-    await ws_manager.send_personal_message(
-        {
-            "event": "CONNECTION_ESTABLISHED",
-            "message": "Connected to V-Face Attendance Realtime WebSocket Stream."
-        },
-        websocket
-    )
-    try:
-        while True:
-            data = await websocket.receive_text()
-            if data.strip().lower() == "ping":
-                await ws_manager.send_personal_message({"type": "pong"}, websocket)
-    except WebSocketDisconnect:
-        await ws_manager.disconnect(websocket)
-    except Exception as e:
-        logger.warning(f"WebSocket client disconnected/error: {e}")
-        await ws_manager.disconnect(websocket)
+from app.api.v1.endpoints.websocket import websocket_attendance_endpoint
+
+# WebSocket root endpoint: /ws/attendance (reusing unified handler)
+app.add_api_websocket_route("/ws/attendance", websocket_attendance_endpoint)
 
 
 # Include API V1 Router

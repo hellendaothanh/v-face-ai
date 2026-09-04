@@ -568,6 +568,7 @@ const vi = {
   helpdesk_kb_article_title_lbl: 'Tiêu đề bài viết giải pháp *',
   helpdesk_kb_article_title_ph: 'Ví dụ: Hướng dẫn cấu hình độ nhạy Face AI khi đeo khẩu trang...',
   helpdesk_kb_category_lbl: 'Danh mục bài viết *',
+  helpdesk_kb_summary_title: 'Tóm tắt bài viết (Short Summary)',
   helpdesk_kb_summary_lbl: 'Tóm tắt giải pháp (Hiển thị xem trước)',
   helpdesk_kb_summary_ph: 'Mô tả ngắn gọn về giải pháp kỹ thuật...',
   helpdesk_kb_tags_ph: 'Nhập tags phân loại, cách nhau bằng dấu phẩy (vd: camera, network, iam)...',

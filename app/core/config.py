@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     PORT: int = 8000
     HOST: str = "0.0.0.0"
+    CORE_USER_SERVICE_URL: str = "http://127.0.0.1:8001/api/v1"
     
     # CORS
     BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = ["*"]

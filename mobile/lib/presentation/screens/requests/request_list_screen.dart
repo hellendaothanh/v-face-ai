@@ -62,6 +62,7 @@ class _RequestListScreenState extends State<RequestListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'create_request_fab',
         onPressed: () async {
           final res = await Navigator.push(
             context,

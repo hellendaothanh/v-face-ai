@@ -116,6 +116,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'create_ticket_fab',
           onPressed: () async {
             final res = await Navigator.push(
               context,

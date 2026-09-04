@@ -567,6 +567,7 @@ const en = {
   helpdesk_kb_article_title_lbl: 'Solution Article Title *',
   helpdesk_kb_article_title_ph: 'e.g. How to tune Face AI sensitivity when wearing masks...',
   helpdesk_kb_category_lbl: 'Article Category *',
+  helpdesk_kb_summary_title: 'Article Summary (Short Summary)',
   helpdesk_kb_summary_lbl: 'Short Summary (Shown in catalog cards)',
   helpdesk_kb_summary_ph: 'Brief explanation of this technical solution...',
   helpdesk_kb_tags_ph: 'Enter tags separated by commas (e.g. camera, network, iam)...',
